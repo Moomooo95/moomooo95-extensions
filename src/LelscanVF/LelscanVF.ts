@@ -36,7 +36,7 @@ export const LelscanVFInfo: SourceInfo = {
   version: '1.0.0',
   name: 'LelscanVF',
   icon: 'logo.png',
-  author: 'Momo',
+  author: 'Moomooo',
   authorWebsite: '',
   description: 'LELSCAN-VF',
   hentaiSource: false,
@@ -116,10 +116,9 @@ export class LelscanVF extends Source {
     
     const search = generateSearch(query)
     const request = createRequestObject({
-      url: `${LELSCANVF_DOMAIN}/search`,
+      url: `${LELSCANVF_DOMAIN}/search?query=${search}`,
       method,
-      headers,
-      param: `?query=${search}`
+      headers
     })
 
     const response = await this.requestManager.schedule(request, 1)

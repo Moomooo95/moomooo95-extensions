@@ -1,5 +1,21 @@
-import { Chapter, ChapterDetails, HomeSection, LanguageCode, Manga, MangaStatus, MangaTile, MangaUpdates, PagedResults, SearchRequest, TagSection } from "paperback-extensions-common";
-import { parseJsonText } from "typescript";
+import {
+  Chapter,
+  ChapterDetails,
+  HomeSection,
+  LanguageCode,
+  Manga, 
+  MangaStatus,
+  MangaTile,
+  MangaUpdates,
+  PagedResults,
+  SearchRequest,
+  TagSection 
+} from "paperback-extensions-common";
+
+import { 
+  parseJsonText
+} from "typescript";
+
 
 
 ///////////////////////////////
@@ -27,9 +43,12 @@ export const parseLelscanVFMangaDetails = ($: CheerioStatic, mangaId: string): M
 
     // Tags
     const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: [] })]
-    let tags = $('.tag-links') ?? ''
     let genres = new Array()
-    tags = tags.children().each(function (){ genres.push($("this").text()) })
+
+    for (const item of $('.tag-links a').toArray())
+    {   
+        genres.push($(item).text())
+    }
     tagSections[0].tags = genres.map((elem: string) => createTag({ id: elem, label: elem }))
 
     let hentai = (genres.includes('Adulte')) ? true : false;
@@ -38,7 +57,7 @@ export const parseLelscanVFMangaDetails = ($: CheerioStatic, mangaId: string): M
 
     const rating = Number($('dt:contains("Note")').next().children().text().trim().replace(/(\r\n|\n|\r)/gm, "").substr(11,3)) ?? ''
 
-    const summary = $('.well').children('p').text().trim().replace(/^\s+|\s+$/g, '')
+    const summary = unescape($('.well').children('p').text().trim().replace(/^\s+|\s+$/g, ''))
 
 
     return createManga({
@@ -129,30 +148,16 @@ export const generateSearch = (query: SearchRequest): string => {
   return search
 }
 
-export const parseSearch = ($: CheerioStatic, data: string): MangaTile[] => {
+export const parseSearch = ($: CheerioStatic): MangaTile[] => {
   const manga: MangaTile[] = []
 
-  // const panel = $('autocomplete-suggestions')
-  // const items = $('.autocomplete-suggestion', panel).toArray();
-  // for (const item of items) {
-  //   const id = $(item).text().replaceAll(/[^a-zA-Z0-9 ]/g, "").replaceAll(" ", "-") ?? ''
-  //   const title = $(item).text()
-  //   const image = "https://lelscan-vf.co/uploads/manga/" + id + "/cover/cover_250x350.jpg" ?? ''
-
-  //   manga.push(createMangaTile({
-  //     id,
-  //     image,
-  //     title: createIconText({ text: title }),
-  //   }))
-  // }
-
-  const items = $('.objectBox-string').toArray();
+  const items = $('.objectBox-string').filter(function( index ) {return index % 2 === 0;}).toArray();
   for (const item of items) {
-    const id = $(item).text().replaceAll(/[^a-zA-Z0-9 ]/g, "").replaceAll(" ", "-") ?? ''
+    const id = $(item).text().replaceAll(/[^a-zA-Z0-9 ]/g, "").replaceAll(" ", "-").toLowerCase() ?? ''
     const title = $(item).text()
     const image = "https://lelscan-vf.co/uploads/manga/" + id + "/cover/cover_250x350.jpg" ?? ''
 
-    console.log(id)
+    console.log(id + " " + title + " " + image)
 
     manga.push(createMangaTile({
       id,

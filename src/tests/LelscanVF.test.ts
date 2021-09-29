@@ -15,7 +15,7 @@ describe('LelScanVF Tests', function () {
      * Try to choose a manga which is updated frequently, so that the historical checking test can 
      * return proper results, as it is limited to searching 30 days back due to extremely long processing times otherwise.
      */
-    var mangaId = "a-returners-magic-should-be-special";  
+    var mangaId = "slave-b";  
 
     it("Retrieve Manga Details", async () => {
         let details = await wrapper.getMangaDetails(source, mangaId);
@@ -33,30 +33,31 @@ describe('LelScanVF Tests', function () {
         expect(data.rating, "Missing Rating").to.exist;
     });
 
-    // it("Get Chapters", async () => {
-    //     let data = await wrapper.getChapters(source, mangaId);
+    it("Get Chapters", async () => {
+        let data = await wrapper.getChapters(source, mangaId);
 
-    //     expect(data, "No chapters present for: [" + mangaId + "]").to.not.be.empty;
+        expect(data, "No chapters present for: [" + mangaId + "]").to.not.be.empty;
 
-    //     let entry = data[0]
-    //     expect(entry.id, "No ID present").to.not.be.empty;
-    //     expect(entry.time, "No date present").to.exist
-    //     expect(entry.name, "No title available").to.not.be.empty
-    //     expect(entry.chapNum, "No chapter number present").to.exist
-    // });
+        let entry = data[0]
+        expect(entry.id, "No ID present").to.not.be.empty;
+        expect(entry.time, "No date present").to.exist
+        expect(entry.name, "No title available").to.not.be.empty
+        expect(entry.chapNum, "No chapter number present").to.exist
+    });
 
-    // it("Get Chapter Details", async () => {
+    it("Get Chapter Details", async () => {
 
-    //     let chapters = await wrapper.getChapters(source, mangaId);
-    //     let data = await wrapper.getChapterDetails(source, mangaId, chapters[0].id);
+        let chapters = await wrapper.getChapters(source, mangaId);
+        let data = await wrapper.getChapterDetails(source, mangaId, chapters[0].id);
 
-    //     expect(data, "No server response").to.exist;
-    //     expect(data, "Empty server response").to.not.be.empty;
+        console.log("chapterId = " + chapters[0].id)
+        expect(data, "No server response").to.exist;
+        expect(data, "Empty server response").to.not.be.empty;
 
-    //     expect(data.id, "Missing ID").to.be.not.empty;
-    //     expect(data.mangaId, "Missing MangaID").to.be.not.empty;
-    //     expect(data.pages, "No pages present").to.be.not.empty;
-    // });
+        expect(data.id, "Missing ID").to.be.not.empty;
+        expect(data.mangaId, "Missing MangaID").to.be.not.empty;
+        expect(data.pages, "No pages present").to.be.not.empty;
+    });
 
     it("Testing search", async () => {
         let testSearch = createSearchRequest({

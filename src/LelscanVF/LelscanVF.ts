@@ -14,7 +14,6 @@ import {
 } from "paperback-extensions-common"
 
 import {
-  generateSearch,
   parseHomeSections,
   parseLelscanVFChapterDetails,
   parseLelscanVFChapters,
@@ -26,7 +25,6 @@ import {
 } from "./LelscanVFParser";
 
 const LELSCANVF_DOMAIN = "https://www.lelscan-vf.co";
-const LELSCANVF_DOMAIN_MANGA_LIST = "https://www.lelscan-vf.co/manga-list";
 const method = 'GET'
 const headers = {
   'Host': 'www.lelscan-vf.co',
@@ -50,6 +48,16 @@ export const LelscanVFInfo: SourceInfo = {
 }
 
 export class LelscanVF extends Source {
+
+
+  //////////////////////////////////
+  /////    getMangaShareUrl    /////
+  //////////////////////////////////
+
+  getMangaShareUrl(mangaId: string): string | null {
+    return `${LELSCANVF_DOMAIN}/manga/${mangaId}`
+  }
+
 
   /////////////////////////////////
   /////    getMangaDetails    /////
@@ -112,9 +120,9 @@ export class LelscanVF extends Source {
   /////    searchRequest    /////
   ///////////////////////////////
 
-  async searchRequest(query: SearchRequest, metadata: any): Promise<PagedResults> {
+  async searchRequest(query: SearchRequest): Promise<PagedResults> {
     
-    const search = generateSearch(query)
+    const search = query.title?.replace(' ', '+')
     const request = createRequestObject({
       url: `${LELSCANVF_DOMAIN}/search?query=${search}`,
       method,
@@ -122,12 +130,11 @@ export class LelscanVF extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
-    const $ = this.cheerio.load(response.data)
-    const manga = parseSearch($)
+
+    const manga = parseSearch(response.data)
 
     return createPagedResults({
-      results: manga,
-      metadata
+      results: manga
     })    
   }
 
@@ -208,12 +215,14 @@ export class LelscanVF extends Source {
 
   async getTags(): Promise<TagSection[] | null> {
     const request = createRequestObject({
-      url: `${LELSCANVF_DOMAIN_MANGA_LIST}`,
+      url: `${LELSCANVF_DOMAIN}/manga-list`,
       method,
+      headers
     })
 
     const response = await this.requestManager.schedule(request, 1)
     const $ = this.cheerio.load(response.data)
+    
     return parseTags($)
   }
 }

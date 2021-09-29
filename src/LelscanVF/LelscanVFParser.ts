@@ -9,13 +9,13 @@ import {
   MangaUpdates,
   PagedResults,
   SearchRequest,
+  Tag,
   TagSection 
 } from "paperback-extensions-common";
 
 import { 
   parseJsonText
 } from "typescript";
-
 
 
 ///////////////////////////////
@@ -25,39 +25,66 @@ import {
 ///////////////////////////////
 
 export const parseLelscanVFMangaDetails = ($: CheerioStatic, mangaId: string): Manga => {
-    const title = $('.widget-title').eq(0).text().trim().replace(/(\r\n|\n|\r)/gm, "")
-    const image = "https:" + $('.img-responsive').attr('src')
+    const title = decodeHTMLEntity($('.widget-title').eq(0).text().trim())
+    const image = ($('.img-responsive').attr('src') ?? "").split("/")[0] == "https:" ? $('.img-responsive').attr('src') ?? "" : "https:" + $('.img-responsive').attr('src') ?? ""
+
     
-    const status = $('dt:contains("Statut")').next().text().trim().replace(/(\r\n|\n|\r)/gm, "") == 'Ongoing' ? MangaStatus.ONGOING : MangaStatus.COMPLETED
+    const status = $('dt:contains("Statut")').next().text().trim() == 'Ongoing' ? MangaStatus.ONGOING : MangaStatus.COMPLETED
 
     // Others Titles
     let titles = [title]
-    let othersTitles = $('dt:contains("Autres noms")').next().text().trim().replace(/(\r\n|\n|\r)/gm, "").split(',') ?? ''
+    let othersTitles = $('dt:contains("Autres noms")').next().text().trim().split(',')
     for (let title of othersTitles)
     {   
-        titles.push(title.trim())
+        titles.push(decodeHTMLEntity(title.trim()))
     }
     
-    const author = $('dt:contains("Auteur(s)")').next().text().trim().replace(/(\r\n|\n|\r)/gm, "") ?? ''
-    const artist = $('dt:contains("Artist(s)")').next().text().trim().replace(/(\r\n|\n|\r)/gm, "") ?? ''
+    const author = $('dt:contains("Auteur(s)")').next().text().trim().replaceAll('\n', '') != "" ? $('dt:contains("Auteur(s)")').next().text().trim() : "Unknown"
+    const artist = $('dt:contains("Artist(s)")').next().text().trim() != "" ? $('dt:contains("Artist(s)")').next().text().trim() : "Unknown"
 
-    // Tags
-    const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: [] })]
-    let genres = new Array()
+    let hentai = false;
 
-    for (const item of $('.tag-links a').toArray())
-    {   
-        genres.push($(item).text())
+    const arrayTags: Tag[] = []
+
+    // Categories
+    if ($('dt:contains("Catégories")').length > 0)
+    {
+      const categories = $('dt:contains("Catégories")').next().text().trim().split(',') ?? ""
+      for (const category of categories) {
+        const label = category.trim()
+        const id = category.replace(" ", "-").toLowerCase().trim() ?? label
+
+        if (['Mature'].includes(label)) {
+            hentai = true;
+        }
+        arrayTags.push({ id: id, label: label })
+      }
     }
-    tagSections[0].tags = genres.map((elem: string) => createTag({ id: elem, label: elem }))
+    
+    // Tags
+    if ($('dt:contains("Tags")').length > 0)
+    {
+      const tags = $('dt:contains("Tags")').next().text().trim().split('\n') ?? ""
+      for (const tag of tags) {
+        const label = tag.trim()
+        const id = tag.replace(" ", "-").toLowerCase().trim() ?? label
+  
+        if (['Mature'].includes(label)) {
+            hentai = true;
+        }
+        if (!arrayTags.includes({ id: id, label: label })) {
+          arrayTags.push({ id: id, label: label })
+        }
+      }
+    }
 
-    let hentai = (genres.includes('Adulte')) ? true : false;
+    const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
 
-    const views = Number($('dt:contains("Vues")').next().text().trim().replace(/(\r\n|\n|\r)/gm, ""))
+    const views = Number($('dt:contains("Vues")').next().text().trim())
 
-    const rating = Number($('dt:contains("Note")').next().children().text().trim().replace(/(\r\n|\n|\r)/gm, "").substr(11,3)) ?? ''
+    const rating = Number($('dt:contains("Note")').next().children().text().trim().substr(11,3)) ?? ''
 
-    const summary = unescape($('.well').children('p').text().trim().replace(/^\s+|\s+$/g, ''))
+    const summary = decodeHTMLEntity($('.well').children('p').text().trim())
 
 
     return createManga({
@@ -66,8 +93,8 @@ export const parseLelscanVFMangaDetails = ($: CheerioStatic, mangaId: string): M
         image,
         rating: Number(rating),
         status,
-        author,
         artist,
+        author,
         tags: tagSections,
         views,
         desc: summary,
@@ -139,34 +166,26 @@ export const parseLelscanVFChapterDetails = ($: CheerioStatic, mangaId: string, 
 /////              /////
 ////////////////////////
 
-export const generateSearch = (query: SearchRequest): string => {
-  let keyword = (query.title ?? '').replace(/ /g, '_')
-  if (query.author)
-    keyword += (query.author ?? '').replace(/ /g, '_')
-  let search: string = `${keyword}`
+export const parseSearch = (data: any): MangaTile[] => {
 
-  return search
-}
-
-export const parseSearch = ($: CheerioStatic): MangaTile[] => {
+  const json = JSON.parse(data)
+  const items = json["suggestions"]
   const manga: MangaTile[] = []
 
-  const items = $('.objectBox-string').filter(function( index ) {return index % 2 === 0;}).toArray();
-  for (const item of items) {
-    const id = $(item).text().replaceAll(/[^a-zA-Z0-9 ]/g, "").replaceAll(" ", "-").toLowerCase() ?? ''
-    const title = $(item).text()
-    const image = "https://lelscan-vf.co/uploads/manga/" + id + "/cover/cover_250x350.jpg" ?? ''
-
-    console.log(id + " " + title + " " + image)
-
+  for(const item of items) {
+    const id = item.data
+    const image = `https://lelscan-vf.co/uploads/manga/${id}/cover/cover_250x350.jpg`
+    const title = item.value
     manga.push(createMangaTile({
-      id,
-      image,
-      title: createIconText({ text: title }),
+        id: id,
+        title: createIconText({ text: title }),
+        subtitleText: createIconText({ text: '' }),
+        image: image
     }))
   }
 
   return manga
+
 }
 
 //////////////////////
@@ -191,8 +210,8 @@ const parseLatestManga = ($: CheerioStatic): MangaTile[] => {
   for (const item of $('.mangalist .manga-item').toArray()) {
     let url = $('a', item).first().attr('href')?.split("/")[4]
     let image = "https://lelscan-vf.co/uploads/manga/" + url + "/cover/cover_250x350.jpg"
-    let title = $('a', item).first().text()
-    let subtitle = "Chapitre " + $('a', item).eq(1).text().replace(/[^\d]/g, "")
+    let title = decodeHTMLEntity($('a', item).first().text())
+    let subtitle = "Chapitre " + $('a', item).eq(1).text().trim().split(' ').reverse()[2]
     
     console.log(url + " " + image + " " + title + " " + subtitle)
 
@@ -223,8 +242,8 @@ const parsePopularManga = ($: CheerioStatic): MangaTile[] => {
   for (const item of $('.hot-thumbnails li').toArray()) {
     let url = $('a', item).first().attr('href')?.split("/")[4]
     let image = "https:" + $('img', item).attr('src')
-    let title = $('a', item).first().text()
-    let subtitle = "Chapitre " + $('p', item).text().replace(/[^\d]/g, "")
+    let title = decodeHTMLEntity($('a', item).first().text())
+    let subtitle = "Chapitre " + $('p', item).text().split(' ').reverse()[1]
 
     // console.log(url + " " + image + " " + title + " " + subtitle)
 
@@ -255,7 +274,7 @@ const parseTopManga = ($: CheerioStatic): MangaTile[] => {
   for (const item of $('body li').toArray()) {
     let url = $('a', item).first().attr('href')?.split("/")[4]
     let image = "https://lelscan-vf.co/uploads/manga/" + url + "/cover/cover_250x350.jpg"
-    let title = $('strong', item).text()
+    let title = decodeHTMLEntity($('strong', item).text())
     let subtitle = $('a', item).eq(2).text()
     
     // console.log(url + " " + image + " " + title + " " + subtitle)
@@ -332,15 +351,22 @@ export const parseViewMore = ($: CheerioStatic, section: String): MangaTile[] =>
 //////////////////////
 
 export const parseTags = ($: CheerioStatic): TagSection[] | null => {
-    let items = $('.tag-links').children().clone().toArray()
-    const genres = createTagSection({
-      id: 'genre',
-      label: 'Genre',
-      tags: []
-    })
-    for (let item of items) {
-      let label = $(item).text()
-      genres.tags.push(createTag({ id: label, label: label }))
-    }
-    return [genres]
+  
+  const arrayTags: Tag[] = []
+
+  for (let item of $('.tag-links a').toArray()) {
+    let label = $(item).text()
+    arrayTags.push({ id: label, label: label })
+  }
+  
+  const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })]
+
+  return tagSections
 }
+
+function decodeHTMLEntity(str: string) {
+  return str.replace(/&#(\d+);/g, function (match, dec) {
+      return String.fromCharCode(dec);
+  })
+}
+

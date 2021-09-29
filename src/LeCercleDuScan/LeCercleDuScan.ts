@@ -55,7 +55,16 @@ sourceTags: [
 
 export class LeCercleDuScan extends Source {
 
-    
+
+    //////////////////////////////////
+    /////    getMangaShareUrl    /////
+    //////////////////////////////////
+
+    getMangaShareUrl(mangaId: string): string | null {
+        return `${LECERCLEDUSCAN_DOMAIN}/series/${mangaId}`
+    }
+
+
     /////////////////////////////////
     /////    getMangaDetails    /////
     /////////////////////////////////
@@ -82,9 +91,9 @@ export class LeCercleDuScan extends Source {
     async getChapters(mangaId: string): Promise<Chapter[]> {
 
         const request = createRequestObject({
-        url: `${LECERCLEDUSCAN_DOMAIN}/series/${mangaId}`,
-        method,
-        headers
+            url: `${LECERCLEDUSCAN_DOMAIN}/series/${mangaId}`,
+            method,
+            headers
         })
 
         const data = await this.requestManager.schedule(request, 1);
@@ -117,7 +126,7 @@ export class LeCercleDuScan extends Source {
     /////    searchRequest    /////
     ///////////////////////////////
 
-    async searchRequest(query: SearchRequest, metadata: any): Promise<PagedResults> {
+    async searchRequest(query: SearchRequest): Promise<PagedResults> {
         
         const search = generateSearch(query)
         const request = createRequestObject({
@@ -129,11 +138,11 @@ export class LeCercleDuScan extends Source {
 
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
+        
         const manga = parseSearch($)
 
         return createPagedResults({
-            results: manga,
-            metadata
+            results: manga
         })    
     }
 
@@ -179,6 +188,7 @@ export class LeCercleDuScan extends Source {
     //////////////////////////////////
     
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults | null> {
+
         let page: number = metadata?.page ?? 1
         let param = ''
         switch (homepageSectionId) {
@@ -193,17 +203,16 @@ export class LeCercleDuScan extends Source {
         }
 
         const request = createRequestObject({
-            url: LECERCLEDUSCAN_DOMAIN,
+            url: `${LECERCLEDUSCAN_DOMAIN}/${param}`,
             method,
-            headers,
-            param
+            headers
         })
 
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
 
         const manga = parseViewMore($, homepageSectionId)
-        metadata = !isLastPage($) ? { page: page + 1 } : undefined
+        metadata = !isLastPage($) ? { page: (page + 1) } : undefined
 
         return createPagedResults({
             results: manga,

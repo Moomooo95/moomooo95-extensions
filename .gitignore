@@ -12,6 +12,8 @@ coverage
 docs
 
 .idea
+.vscode
+.run
 
 # mac stuff
 .DS_Store

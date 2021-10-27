@@ -28,15 +28,9 @@ export const parseReaperScansDetails = ($: CheerioStatic, mangaId: string): Mang
     
   const titles = [$('.entry-title').text().trim()]
   const image = $('.info-left-margin img').attr('src') ?? ""
-
-  
-
   let follows = Number($('.bmc').text().trim().replace(/[^\d]/g, ""))
-  
   let rating = Number($('.num').text().trim())
-  
   const multipleInfo = $('.tsinfo.bixbox .imptdt').toArray()
-
   let status = MangaStatus.ONGOING
   let author = "Unknown"
   let artist = undefined
@@ -106,9 +100,7 @@ export const parseReaperScansDetails = ($: CheerioStatic, mangaId: string): Mang
 
 
 //////////////////////////
-/////                /////
 /////    Chapters    /////
-/////                /////
 //////////////////////////
 
 export const parseReaperScansChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
@@ -140,7 +132,8 @@ export const parseReaperScansChapters = ($: CheerioStatic, mangaId: string): Cha
 
 export const parseReaperScansChapterDetails = ($: CheerioStatic, mangaId: string, chapterId: string): ChapterDetails => {
   const pages: string[] = []
-  const allItems = $('#readerarea img').toArray()
+  
+  const allItems = $($.parseHTML($('noscript').text())).children().toArray()
 
   for(let item of allItems)
   {
@@ -190,21 +183,9 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
 }
 
 
-//////////////////////
-/////            /////
-/////    HOME    /////
-/////            /////
-//////////////////////
-
-
-    //////////////////////////////////////////
-    /////    DEFINITIONS DES SECTIONS    /////
-    //////////////////////////////////////////
-
-
-              //////////////////////////////////////
-              /////    DERNIERS MANGA SORTI    /////
-              //////////////////////////////////////
+//////////////////////////////////////
+/////    DERNIERS MANGA SORTI    /////
+//////////////////////////////////////
 
 const parseHotManga = ($: CheerioStatic): MangaTile[] => {
   const hotManga: MangaTile[] = []
@@ -233,10 +214,9 @@ const parseHotManga = ($: CheerioStatic): MangaTile[] => {
   return hotManga
 }
 
-
-              //////////////////////////////////////
-              /////    MANGA POPULAIRE JOUR    /////
-              //////////////////////////////////////
+//////////////////////////////////////
+/////    MANGA POPULAIRE JOUR    /////
+//////////////////////////////////////
 
 const parsePopularMangaToday = ($: CheerioStatic): MangaTile[] => {
   const popularMangaToday: MangaTile[] = []
@@ -265,10 +245,9 @@ const parsePopularMangaToday = ($: CheerioStatic): MangaTile[] => {
   return popularMangaToday
 }
 
-
-              /////////////////////////////////////////
-              /////    MANGA POPULAIRE SEMAINE    /////
-              /////////////////////////////////////////
+/////////////////////////////////////////
+/////    MANGA POPULAIRE SEMAINE    /////
+/////////////////////////////////////////
 
 const parsePopularMangaWeek = ($: CheerioStatic): MangaTile[] => {
   const popularMangaWeek: MangaTile[] = []
@@ -297,10 +276,9 @@ const parsePopularMangaWeek = ($: CheerioStatic): MangaTile[] => {
   return popularMangaWeek
 }
 
-
-              //////////////////////////////////////
-              /////    MANGA POPULAIRE MOIS    /////
-              //////////////////////////////////////
+//////////////////////////////////////
+/////    MANGA POPULAIRE MOIS    /////
+//////////////////////////////////////
 
 const parsePopularMangaMonth = ($: CheerioStatic): MangaTile[] => {
   const popularMangaMonth: MangaTile[] = []
@@ -329,10 +307,9 @@ const parsePopularMangaMonth = ($: CheerioStatic): MangaTile[] => {
   return popularMangaMonth
 }
 
-
-              //////////////////////////////////////
-              /////    MANGA POPULAIRE MOIS    /////
-              //////////////////////////////////////
+//////////////////////////////////////
+/////    MANGA POPULAIRE MOIS    /////
+//////////////////////////////////////
 
 const parsePopularMangaAllTime = ($: CheerioStatic): MangaTile[] => {
   const popularMangaAllTime: MangaTile[] = []
@@ -361,10 +338,9 @@ const parsePopularMangaAllTime = ($: CheerioStatic): MangaTile[] => {
   return popularMangaAllTime
 }
 
-
-              //////////////////////////////////
-              /////    DERNIERS PROJETS    /////
-              //////////////////////////////////
+//////////////////////////////////
+/////    DERNIERS PROJETS    /////
+//////////////////////////////////
 
 const parseLastProjects = ($: CheerioStatic): MangaTile[] => {
   const LastProjects: MangaTile[] = []
@@ -393,10 +369,9 @@ const parseLastProjects = ($: CheerioStatic): MangaTile[] => {
   return LastProjects
 }
 
-
-              ///////////////////////////////////
-              /////    DERNIERES SORTIES    /////
-              ///////////////////////////////////
+///////////////////////////////////
+/////    DERNIERES SORTIES    /////
+///////////////////////////////////
 
 const parseLastUpdate = ($: CheerioStatic): MangaTile[] => {
   const LastUpdate: MangaTile[] = []
@@ -425,10 +400,9 @@ const parseLastUpdate = ($: CheerioStatic): MangaTile[] => {
   return LastUpdate
 }
 
-
-              ///////////////////////////////////
-              /////    DERNIERES SORTIES    /////
-              ///////////////////////////////////
+///////////////////////////////////
+/////    DERNIERES SORTIES    /////
+///////////////////////////////////
 
 const parseNewProjects = ($: CheerioStatic): MangaTile[] => {
   const NewProjects: MangaTile[] = []
@@ -456,9 +430,10 @@ const parseNewProjects = ($: CheerioStatic): MangaTile[] => {
 
   return NewProjects
 }
-    //////////////////////////////
-    /////    HOME SECTION    /////
-    //////////////////////////////
+
+//////////////////////////////
+/////    HOME SECTION    /////
+//////////////////////////////
 
 export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sectionCallback: (section: HomeSection) => void): void => {
   for (const section of sections) sectionCallback(section)
@@ -483,7 +458,6 @@ export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sec
   // Perform the callbacks again now that the home page sections are filled with data
   for (const section of sections) sectionCallback(section)
 }
-
 
 ///////////////////////////
 /////    VIEW MORE    /////

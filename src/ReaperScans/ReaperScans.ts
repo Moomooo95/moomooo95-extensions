@@ -46,7 +46,7 @@ export class ReaperScans extends Source {
 
     getMangaShareUrl(mangaId: string): string | null {
       return `${REAPERSCANS_DOMAIN}/manga/${mangaId}`
-  }
+    }
 
 
     /////////////////////////////////
@@ -172,10 +172,10 @@ export class ReaperScans extends Source {
     let param = ''
     switch (homepageSectionId) {
       case 'latest_projects':
-        param = `/projets/page/${page}`
+        param = `projets/page/${page}`
         break;
       case 'latest_updated':
-        param = `/manga/?order=update&page=${page}`
+        param = `manga/?order=update&page=${page}`
         break;
       default:
         return Promise.resolve(null)
@@ -214,6 +214,25 @@ export class ReaperScans extends Source {
     const $ = this.cheerio.load(response.data)
     
     return parseTags($)
+  }
+
+
+  ///////////////////////////////////
+  /////    CLOUDFLARE BYPASS    /////
+  ///////////////////////////////////
+
+  CloudFlareError(status: any) {
+    if(status == 503) {
+        throw new Error('CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass')
+    }
+  }
+
+
+  getCloudflareBypassRequest() {
+    return createRequestObject({
+        url: `${REAPERSCANS_DOMAIN}`,
+        method: 'GET'
+    }) 
   }
 
 }

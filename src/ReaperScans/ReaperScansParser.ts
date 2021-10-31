@@ -534,12 +534,15 @@ function decodeHTMLEntity(str: string) {
 }
 
 function parseDate(str: string) {
-
+  if (str.length == 0)
+  {
+    let date = new Date()
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  }
+  
   let year = str.split(" ")[2]
-
   let months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
   let month = months.findIndex((element) => element == str.split(" ")[0]).toString()
-  
   let day = str.split(" ")[1].replace(",", "")
 
   return new Date(parseInt(year), parseInt(month), parseInt(day))

@@ -110,7 +110,7 @@ export const parseMangasOriginesChapters = ($: CheerioStatic, mangaId: string): 
     const id: string = $('a', chapter).first().attr('href') + "?style=list" ?? ''
     const name: string = $('a', chapter).first().text().trim()
     const chapNum: number = Number( (name.match(/(\d+)(\.?)(\d*)/gm) ?? '')[0] )
-    const time: Date = new Date(parseDate($('.chapter-release-date', chapter).text()))
+    const time: Date = parseDate($('.chapter-release-date i', chapter).text())
 
     chapters.push(createChapter({
       id,
@@ -150,6 +150,32 @@ export const parseMangasOriginesChapterDetails = ($: CheerioStatic, mangaId: str
       pages,
       longStrip: false
   })
+}
+
+
+////////////////////////
+/////    Search    /////
+////////////////////////
+
+export const parseSearch = ($: CheerioStatic): MangaTile[] => {
+  const manga: MangaTile[] = []
+
+  for (const item of $('.site-content .search-wrap .tab-content-wrap .row').toArray()) {
+      const url = $('h3 a', item).attr('href')?.split('/')[4] ?? ''
+      const title = $('h3 a', item).text() ?? '' 
+      const image = $('img', item).attr("data-src") ?? ''
+      const subtitle = $('.latest-chap .chapter a', item).text()
+  
+  
+      manga.push(createMangaTile({
+          id : url,
+          image,
+          title: createIconText({ text: title }),
+          subtitleText : createIconText({ text: subtitle })
+      }))
+  }
+
+  return manga
 }
 
 
@@ -301,7 +327,7 @@ export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
       let url = $('h3 a', item).attr('href')?.split("/")[4]
       let image = $('.img-responsive', item).attr('data-src')
-      let title = $('h3', item).first().attr('title') ?? ''
+      let title = $('h3 a', item).text().trim()
       let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim()
 
       // Credit to @GameFuzzy
@@ -342,18 +368,21 @@ export const isLastPage = ($: CheerioStatic, section: String): boolean => {
 //////////////////////
 
 export const parseTags = ($: CheerioStatic): TagSection[] | null => {
-  
-    const arrayTags: Tag[] = []
-    for (let item of $('.sub-nav_list.list-inline.second-menu li').toArray()) {
-        let id = $('a', item).attr('href') ?? ""
-        let label = $('a', item).text()
-        arrayTags.push({ id: id, label: label })
-    }
-    
-    const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })]
-  
-    return tagSections
+  const arrayTags: Tag[] = []
+  for (let item of $('.sub-nav_list.list-inline.second-menu a').toArray()) {
+      let label = $(item).text().trim()
+      if (label == "PLUS" || label == "Tout public") {
+        continue
+      }
+      let id = $(item).attr('href')?.split('/')[4] ?? ""
+      
+      arrayTags.push({ id: id, label: label })
   }
+  
+  const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })]
+
+  return tagSections
+}
 
 //////////////////////////////
 /////    FUNCTION ADD    /////
@@ -365,7 +394,13 @@ function decodeHTMLEntity(str: string) {
     })
 }
 
-function parseDate(str: string) {
+export function parseDate(str: string) {
+    if (str.length == 0)
+    {
+      let date = new Date()
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    }
+      
     let date = str.split(" ") 
     let year = date[2]
     let months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]

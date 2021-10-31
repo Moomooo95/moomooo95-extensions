@@ -10,7 +10,8 @@ import {
     SourceInfo,
     MangaUpdates,
     RequestHeaders,
-    TagType
+    TagType,
+    MangaTile
 } from "paperback-extensions-common"
 
 import { 
@@ -20,7 +21,9 @@ import {
   parseMangasOriginesChapterDetails,
   parseViewMore,
   isLastPage,
-  parseTags
+  parseTags,
+  parseSearch,
+  parseDate
 } from "./MangasOriginesParser";
 
 const MANGASORIGINES_DOMAIN = "https://mangas-origines.fr";
@@ -118,8 +121,40 @@ export class MangasOrigines extends Source {
     /////    SEARCH REQUEST    /////
     //////////////////////////////////
 
-    searchRequest(query: SearchRequest, metadata: any): Promise<PagedResults> {
-        throw new Error("Method not implemented.");
+    async searchRequest(query: SearchRequest, metadata: any): Promise<PagedResults> {
+      const search = query.title?.replace(' ', '+')
+      let manga: MangaTile[] = []
+
+      if (query.includeGenre && query.includeGenre?.length != 0)
+      {
+        const request = createRequestObject({
+            url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga&genre[]=${query.includeGenre[0]}`,
+            method : 'GET',
+            headers
+        })
+    
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data)
+        
+        manga = parseSearch($)
+      }
+      else
+      {
+        const request = createRequestObject({
+            url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga`,
+            method : 'GET',
+            headers
+        })
+    
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data)
+        
+        manga = parseSearch($)
+      }
+
+      return createPagedResults({
+          results: manga
+      })
     }
 
 
@@ -175,12 +210,43 @@ export class MangasOrigines extends Source {
       const response = await this.requestManager.schedule(request, 1)
       const $ = this.cheerio.load(response.data)
       const manga = parseViewMore($)
-      metadata = !isLastPage($, homepageSectionId) ? { page: (page + 1) } : undefined
+      metadata = { page: (page + 1) }
 
       return createPagedResults({
         results: manga,
         metadata
       })
+    }
+
+
+    //////////////////////////////////////
+    /////    FILTER UPDATED MANGA    /////
+    //////////////////////////////////////
+
+    async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+      const request = createRequestObject({
+          url: `${MANGASORIGINES_DOMAIN}`,
+          method,
+          headers
+      })
+
+      const response = await this.requestManager.schedule(request, 1)
+      const $ = this.cheerio.load(response.data)
+
+      const updatedManga: string[] = []
+      for (const manga of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
+        let id = $('h3 a', manga).attr('href')
+        let mangaDate = parseDate($('.post-on.font-meta', manga).text())
+    
+        if (!id) continue
+        if (mangaDate > time) {
+            if (ids.includes(id)) {
+                updatedManga.push(id)
+            }
+        }
+      }
+
+      mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
     }
 
     

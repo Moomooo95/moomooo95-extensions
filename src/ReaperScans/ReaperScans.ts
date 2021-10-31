@@ -40,93 +40,93 @@ export const ReaperScansInfo: SourceInfo = {
 export class ReaperScans extends Source {
 
 
-    //////////////////////////////////
-    /////    getMangaShareUrl    /////
-    //////////////////////////////////
+  //////////////////////////////////
+  /////    getMangaShareUrl    /////
+  //////////////////////////////////
 
-    getMangaShareUrl(mangaId: string): string | null {
-      return `${REAPERSCANS_DOMAIN}/manga/${mangaId}`
-    }
+  getMangaShareUrl(mangaId: string): string | null {
+    return `${REAPERSCANS_DOMAIN}/manga/${mangaId}`
+  }
 
 
-    /////////////////////////////////
-    /////    getMangaDetails    /////
-    /////////////////////////////////
+  /////////////////////////////////
+  /////    getMangaDetails    /////
+  /////////////////////////////////
 
-    async getMangaDetails(mangaId: string): Promise<Manga> {
-        
-      const request = createRequestObject({
-          url: `${REAPERSCANS_DOMAIN}/manga/${mangaId}`,
-          method,
-          headers
-      })
-
-      const data = await this.requestManager.schedule(request, 1);
-      const $ = this.cheerio.load(data.data);
+  async getMangaDetails(mangaId: string): Promise<Manga> {
       
-      return await parseReaperScansDetails($, mangaId);
-    }
-
-
-    /////////////////////////////
-    /////    getChapters    /////
-    /////////////////////////////
-
-    async getChapters(mangaId: string): Promise<Chapter[]> {
-
-      const request = createRequestObject({
+    const request = createRequestObject({
         url: `${REAPERSCANS_DOMAIN}/manga/${mangaId}`,
         method,
         headers
-      })
+    })
 
-      const data = await this.requestManager.schedule(request, 1);
-      const $ = this.cheerio.load(data.data);
+    const data = await this.requestManager.schedule(request, 1);
+    const $ = this.cheerio.load(data.data);
+    
+    return await parseReaperScansDetails($, mangaId);
+  }
+
+
+  /////////////////////////////
+  /////    getChapters    /////
+  /////////////////////////////
+
+  async getChapters(mangaId: string): Promise<Chapter[]> {
+
+    const request = createRequestObject({
+      url: `${REAPERSCANS_DOMAIN}/manga/${mangaId}`,
+      method,
+      headers
+    })
+
+    const data = await this.requestManager.schedule(request, 1);
+    const $ = this.cheerio.load(data.data);
+    
+    return await parseReaperScansChapters($, mangaId);
+  }
+
+
+  ////////////////////////////////////
+  /////    getChaptersDetails    /////
+  ////////////////////////////////////
+
+  async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
       
-      return await parseReaperScansChapters($, mangaId);
-    }
+    const request = createRequestObject({
+        url: `${chapterId}`,
+        method,
+        headers 
+    })
+
+    const data = await this.requestManager.schedule(request, 1);
+    const $ = this.cheerio.load(data.data);
+    
+    return await parseReaperScansChapterDetails($, mangaId, chapterId);
+  }
 
 
-    ////////////////////////////////////
-    /////    getChaptersDetails    /////
-    ////////////////////////////////////
+  ///////////////////////////////
+  /////    searchRequest    /////
+  ///////////////////////////////
 
-    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        
-      const request = createRequestObject({
-          url: `${chapterId}`,
-          method,
-          headers 
-      })
-
-      const data = await this.requestManager.schedule(request, 1);
-      const $ = this.cheerio.load(data.data);
+  async searchRequest(query: SearchRequest): Promise<PagedResults> {
       
-      return await parseReaperScansChapterDetails($, mangaId, chapterId);
-    }
+    const search = query.title
+    const request = createRequestObject({
+        url: `${REAPERSCANS_DOMAIN}/?s=${search}`,
+        method : 'GET',
+        headers
+    })
 
+    const response = await this.requestManager.schedule(request, 1)
+    const $ = this.cheerio.load(response.data)
+    
+    const manga = parseSearch($)
 
-    ///////////////////////////////
-    /////    searchRequest    /////
-    ///////////////////////////////
-
-    async searchRequest(query: SearchRequest): Promise<PagedResults> {
-        
-      const search = query.title
-      const request = createRequestObject({
-          url: `${REAPERSCANS_DOMAIN}/?s=${search}`,
-          method : 'GET',
-          headers
-      })
-
-      const response = await this.requestManager.schedule(request, 1)
-      const $ = this.cheerio.load(response.data)
-      
-      const manga = parseSearch($)
-
-      return createPagedResults({
-          results: manga
-      })    
+    return createPagedResults({
+        results: manga
+    })
   }
 
 

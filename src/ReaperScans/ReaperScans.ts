@@ -247,7 +247,7 @@ export class ReaperScans extends Source {
     const updatedManga: string[] = []
     for (const manga of $('.postbody .listupd').eq(1).children().toArray()) {
       let id = $('a', manga).first().attr('href')
-      let mangaDate = parseDate($('.luf span', manga).text().trim().split('Il y a ')[1])
+      let mangaDate = parseDate(($('.luf span', manga).text() ?? '').trim().split('Il y a ')[1])
   
       if (!id) continue
       if (mangaDate > time) {

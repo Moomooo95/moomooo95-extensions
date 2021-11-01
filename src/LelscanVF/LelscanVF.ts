@@ -36,7 +36,7 @@ const headers = {
 }
 
 export const LelscanVFInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0',
     name: 'LelscanVF',
     icon: 'logo.png',
     author: 'Moomooo95',

@@ -37,7 +37,7 @@ const headers_search = {
 }
 
 export const LeCercleDuScanInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0',
     name: 'Le Cercle du Scan',
     icon: 'logo.png',
     author: 'Moomooo95',

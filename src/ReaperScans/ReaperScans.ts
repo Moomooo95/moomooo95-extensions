@@ -34,7 +34,7 @@ const headers = {
 }
 
 export const ReaperScansInfo: SourceInfo = {
-  version: '1.0.0',
+  version: '1.0',
   name: 'ReaperScans',
   icon: 'logo.png',
   author: 'Moomooo95',

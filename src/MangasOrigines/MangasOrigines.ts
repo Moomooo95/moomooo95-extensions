@@ -34,7 +34,7 @@ const headers = {
 }
 
 export const MangasOriginesInfo: SourceInfo = {
-  version: '1.0.0',
+  version: '1.0',
   name: 'MangasOrigines',
   icon: 'logo.png',
   author: 'Moomooo95',

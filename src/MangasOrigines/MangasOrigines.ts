@@ -50,6 +50,10 @@ export const MangasOriginesInfo: SourceInfo = {
     {
         text: 'Notifications',
         type: TagType.GREEN
+    },
+    {
+      text: 'Cloudflare',
+      type: TagType.RED
     }
   ]
 }

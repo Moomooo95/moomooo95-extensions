@@ -568,6 +568,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
     /////    FILTER UPDATED MANGA    /////
     //////////////////////////////////////
     filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
                 url: `${REAPERSCANS_DOMAIN}`,
@@ -579,7 +580,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
             const updatedManga = [];
             for (const manga of $('.postbody .listupd').eq(1).children().toArray()) {
                 let id = $('a', manga).first().attr('href');
-                let mangaDate = ReaperScansParser_1.parseDate($('.luf span', manga).text().trim().split('Il y a ')[1]);
+                let mangaDate = ReaperScansParser_1.parseDate(((_a = $('.luf span', manga).text()) !== null && _a !== void 0 ? _a : '').trim().split('Il y a ')[1]);
                 if (!id)
                     continue;
                 if (mangaDate > time) {

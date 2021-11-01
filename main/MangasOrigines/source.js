@@ -412,6 +412,10 @@ exports.MangasOriginesInfo = {
         {
             text: 'Notifications',
             type: paperback_extensions_common_1.TagType.GREEN
+        },
+        {
+            text: 'Cloudflare',
+            type: paperback_extensions_common_1.TagType.RED
         }
     ]
 };

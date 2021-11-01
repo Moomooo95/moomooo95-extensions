@@ -1,18 +1,14 @@
 import {
-    Chapter,
-    ChapterDetails,
-    HomeSection,
-    LanguageCode,
-    Manga, 
-    MangaStatus,
-    MangaTile,
-    MangaUpdates,
-    PagedResults,
-    SearchRequest,
-    Tag,
-    TagSection 
+  Chapter,
+  ChapterDetails,
+  HomeSection,
+  LanguageCode,
+  Manga, 
+  MangaStatus,
+  MangaTile,
+  Tag,
+  TagSection 
 } from "paperback-extensions-common";
-
 
 
 ///////////////////////////////
@@ -20,64 +16,61 @@ import {
 ///////////////////////////////
 
 export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): Manga => {
-
     const panel = $('.container .tab-summary')
-    const titles = [$('.container .post-title h1').text().trim()]
+    const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())]
     const image = $('img', panel).attr('data-src') ?? ""
     const rating = Number($('.post-total-rating .score', panel).text().trim())
     const arrayTags: Tag[] = []
 
-    let status = MangaStatus.ONGOING
+    let status = MangaStatus.UNKNOWN
     let author = "Unknown"
     let artist = undefined
     let hentai = false
     
     const infoContent = $('.post-content_item', panel).toArray()
-    for (let info of infoContent)
-    {
-        let item = $('.summary-heading', info).text().trim().split(' ')[1]
-        let val = $('.summary-content', info).text().trim()
+    for (let info of infoContent) {
+      let item = $('.summary-heading', info).text().trim().split(' ')[1]
+      let val = $('.summary-content', info).text().trim()
 
-        switch (item) {
-            case "Rang":
-                let nb_views = (val.match(/(\d+\.?\d*\w?) /gm) ?? "")[0].trim()
-                const views = convertNbViews(nb_views)
-                break;
-            case "Alternatif":
-                let otherTitles = val.split(',')
-                for (let title of otherTitles)
-                {
-                    titles.push(title.trim())
-                }
-                break;
-            case "Auteur(s)":
-                author = val
-                break;
-            case "Artiste(s)":
-                artist = val
-                break;
-            case "Genre(s)":
-                const tags = $('.summary-content .genres-content a', info).toArray()
-                for (const tag of tags)
-                {
-                    const label = $(tag).text()
-                    const id = $(tag).attr('href')?.split("/")[4] ?? label
-                    if (['Adulte'].includes(label) || ['Hentai'].includes(label) || ['Sexe'].includes(label) || ['Uncensored'].includes(label)) {
-                        hentai = true;
-                    }
-                    arrayTags.push({ id: id, label: label })
-                }
-                break;
-            case "Type":
-                // VOIR COMMENT CHANGER LE TYPE DANS LA PAGE DU MANGA
-                break;
-            case "STATUS":
-                status = val.split(" ")[0].trim() == "Terminé" ? MangaStatus.COMPLETED : MangaStatus.ONGOING
-                break;
-            
-            default:
-                break;
-        }
+      switch (item) {
+        case "Rang":
+          let nb_views = (val.match(/(\d+\.?\d*\w?) /gm) ?? "")[0].trim()
+          const views = convertNbViews(nb_views)
+          break;
+        case "Alternatif":
+          let otherTitles = val.split(',')
+          for (let title of otherTitles) {
+              titles.push(decodeHTMLEntity(title.trim()))
+          }
+          break;
+        case "Auteur(s)":
+          author = val
+          break;
+        case "Artiste(s)":
+          artist = val
+          break;
+        case "Genre(s)":
+          const tags = $('.summary-content .genres-content a', info).toArray()
+          for (const tag of tags) {
+            const label = $(tag).text()
+            const id = $(tag).attr('href')?.split("/")[4] ?? label
+            if (['Adulte'].includes(label) || ['Hentai'].includes(label) || ['Sexe'].includes(label) || ['Uncensored'].includes(label)) {
+              hentai = true
+            }
+            arrayTags.push({ id: id, label: label })
+          }
+          break;
+        case "STATUS":
+          switch (val.split(" ")[0].trim()) {
+            case "Terminé":
+              status = MangaStatus.COMPLETED
+              break;
+            case "En cours":
+              status = MangaStatus.ONGOING
+              break;
+          }
+          break;
+      }
     }
 
     const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
@@ -133,22 +126,20 @@ export const parseMangasOriginesChapterDetails = ($: CheerioStatic, mangaId: str
   const pages: string[] = []
   const allItems = $('.container .reading-content img').toArray()
 
-  for(let item of allItems)
-  {
-      let page = $(item).attr('data-src')?.trim()
+  for(let item of allItems) {
+    let page = $(item).attr('data-src')?.trim()
 
-      // If page is undefined, dont push it
-      if (typeof page === 'undefined')
-          continue;
-  
-      pages.push(page);
+    if (typeof page === 'undefined')
+      continue;
+
+    pages.push(page);
   }
 
   return createChapterDetails({
-      id: chapterId,
-      mangaId: mangaId,
-      pages,
-      longStrip: false
+    id: chapterId,
+    mangaId: mangaId,
+    pages,
+    longStrip: false
   })
 }
 
@@ -160,18 +151,17 @@ export const parseMangasOriginesChapterDetails = ($: CheerioStatic, mangaId: str
 export const parseSearch = ($: CheerioStatic): MangaTile[] => {
   const manga: MangaTile[] = []
 
-  for (const item of $('.site-content .search-wrap .tab-content-wrap .row').toArray()) {
+  for (const item of $('.row .c-tabs-item__content').toArray()) {
       const url = $('h3 a', item).attr('href')?.split('/')[4] ?? ''
       const title = $('h3 a', item).text() ?? '' 
       const image = $('img', item).attr("data-src") ?? ''
       const subtitle = $('.latest-chap .chapter a', item).text()
   
-  
       manga.push(createMangaTile({
-          id : url,
-          image,
-          title: createIconText({ text: title }),
-          subtitleText : createIconText({ text: subtitle })
+        id : url,
+        image,
+        title: createIconText({ text: title }),
+        subtitleText : createIconText({ text: subtitle })
       }))
   }
 
@@ -192,16 +182,14 @@ const parseHotManga = ($: CheerioStatic): MangaTile[] => {
     let title = $('h4', item).text().trim()
     let subtitle = ""
 
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
     hotManga.push(createMangaTile({
-        id: url,
-        image: image,
-        title: createIconText({ text: title }),
-        subtitleText: createIconText({ text: subtitle })
+      id: url,
+      image: image,
+      title: createIconText({ text: title }),
+      subtitleText: createIconText({ text: subtitle })
     }))
   }
 
@@ -221,16 +209,14 @@ const parsePopularTodayManga = ($: CheerioStatic): MangaTile[] => {
     let title = $('h5 a', item).text().trim()
     let subtitle = $('.chapter-item .chapter.font-meta', item).eq(0).text().trim()
 
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
     popularTodayManga.push(createMangaTile({
-        id: url,
-        image: image,
-        title: createIconText({ text: title }),
-        subtitleText: createIconText({ text: subtitle })
+      id: url,
+      image: image,
+      title: createIconText({ text: title }),
+      subtitleText: createIconText({ text: subtitle })
     }))
   }
 
@@ -250,16 +236,14 @@ const parseLatestUpdatedManga = ($: CheerioStatic): MangaTile[] => {
     let title = $('h3 a', item).text().trim()
     let subtitle = $('.chapter-item .chapter.font-meta', item).eq(0).text().trim()
 
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
     latestUpdatedManga.push(createMangaTile({
-        id: url,
-        image: image,
-        title: createIconText({ text: title }),
-        subtitleText: createIconText({ text: subtitle })
+      id: url,
+      image: image,
+      title: createIconText({ text: title }),
+      subtitleText: createIconText({ text: subtitle })
     }))
   }
 
@@ -279,18 +263,14 @@ const parseNoveltyManga = ($: CheerioStatic): MangaTile[] => {
     let title = $('h4 a', item).text().trim()
     let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim()
 
-    console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
     noveltyManga.push(createMangaTile({
-        id: url,
-        image: image,
-        title: createIconText({ text: title }),
-        subtitleText: createIconText({ text: subtitle })
+      id: url,
+      image: image,
+      title: createIconText({ text: title }),
+      subtitleText: createIconText({ text: subtitle })
     }))
   }
 
@@ -313,7 +293,6 @@ export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sec
   sections[2].items = latestUpdatedManga
   sections[3].items = noveltyManga
 
-  // Perform the callbacks again now that the home page sections are filled with data
   for (const section of sections) sectionCallback(section)
 }
 
@@ -322,44 +301,34 @@ export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sec
 ///////////////////////////
 
 export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
-    const ViewMore: MangaTile[] = []
-  
-    for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
-      let url = $('h3 a', item).attr('href')?.split("/")[4]
-      let image = $('.img-responsive', item).attr('data-src')
-      let title = $('h3 a', item).text().trim()
-      let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim()
+  const viewMore: MangaTile[] = []
 
-      // Credit to @GameFuzzy
-      // Checks for when no id or image found
-      if (typeof url === 'undefined' || typeof image === 'undefined') 
-        continue
-  
-        ViewMore.push(createMangaTile({
-        id: url,
-        image: image,
-        title: createIconText({ text: title }),
-        subtitleText: createIconText({ text: subtitle })
-      }))
-    }
-  
-    return ViewMore
+  for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
+    let url = $('h3 a', item).attr('href')?.split("/")[4]
+    let image = $('.img-responsive', item).attr('data-src')
+    let title = $('h3 a', item).text().trim()
+    let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim()
+
+    if (typeof url === 'undefined' || typeof image === 'undefined') 
+      continue
+
+    viewMore.push(createMangaTile({
+      id: url,
+      image: image,
+      title: createIconText({ text: title }),
+      subtitleText: createIconText({ text: subtitle })
+    }))
+  }
+
+  return viewMore
 }
 
-////////////////////////////
-/////    isLastPage    /////
-////////////////////////////
+/////////////////////////////////
+/////    CHECK LAST PAGE    /////
+/////////////////////////////////
 
-export const isLastPage = ($: CheerioStatic, section: String): boolean => {
-    switch (section) {
-      case 'popular_today':
-        return (($('.next.page-numbers').length == 0) ? true : false)
-      case 'latest_updated':
-        return (($('.r i').length == 0) ? true : false)
-      default:
-        return false
-        break;
-    }
+export const isLastPage = ($: CheerioStatic): boolean => {
+  return $('.error-404.not-found').length !=0
 }
 
 
@@ -367,64 +336,62 @@ export const isLastPage = ($: CheerioStatic, section: String): boolean => {
 /////    TAGS    /////
 //////////////////////
 
-export const parseTags = ($: CheerioStatic): TagSection[] | null => {
+export const parseTags = ($: CheerioStatic): TagSection[] => {
   const arrayTags: Tag[] = []
-  for (let item of $('.sub-nav_list.list-inline.second-menu a').toArray()) {
-      let label = $(item).text().trim()
-      if (label == "PLUS" || label == "Tout public") {
-        continue
-      }
-      let id = $(item).attr('href')?.split('/')[4] ?? ""
-      
-      arrayTags.push({ id: id, label: label })
+
+  for (let item of $('.search-advanced-form .checkbox').toArray()) {
+    let id = $('input', item).attr('value') ?? ''
+    let label = $('label', item).text().trim()
+    
+    arrayTags.push({ id: id, label: label })
   }
-  
   const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })]
 
   return tagSections
 }
 
-//////////////////////////////
-/////    FUNCTION ADD    /////
-//////////////////////////////
+/////////////////////////////////
+/////    ADDED FUNCTIONS    /////
+/////////////////////////////////
 
 function decodeHTMLEntity(str: string) {
-    return str.replace(/&#(\d+);/g, function (match, dec) {
-        return String.fromCharCode(dec);
-    })
+  return str.replace(/&#(\d+);/g, function (match, dec) {
+    return String.fromCharCode(dec);
+  })
 }
 
 export function parseDate(str: string) {
-    if (str.length == 0)
-    {
-      let date = new Date()
-      return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-    }
-      
-    let date = str.split(" ") 
-    let year = date[2]
-    let months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
-    let month = months.findIndex((element) => element == date[1]).toString()
-    let day = date[0]
+  str = str.trim()
+  if (str.length == 0)
+  {
+    let date = new Date()
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  }
+    
+  let date = str.split(" ") 
+  let year = date[2]
+  let months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+  let month = months.findIndex((element) => element == date[1]).toString()
+  let day = date[0]
 
-    return new Date(parseInt(year), parseInt(month), parseInt(day))
+  return new Date(parseInt(year), parseInt(month), parseInt(day))
 }
 
 function convertNbViews(str: string) {
-    let views = undefined
-    let number = parseInt((str.match(/(\d+\.?\d?)/gm) ?? "")[0])
-    let unit = (str.match(/[a-zA-Z]/gm) ?? "")[0]
-    
-    switch (unit) {
-      case "K":
-        views = number * 1e3
-        break;
-      case "M":
-        views = number * 1e6
-        break;
-      default:
-        views = number
-        break;
-    }
-    return Number(views)
+  let views = undefined
+  let number = parseInt((str.match(/(\d+\.?\d?)/gm) ?? "")[0])
+  let unit = (str.match(/[a-zA-Z]/gm) ?? "")[0]
+  
+  switch (unit) {
+    case "K":
+      views = number * 1e3
+      break;
+    case "M":
+      views = number * 1e6
+      break;
+    default:
+      views = number
+      break;
+  }
+  return Number(views)
 }

@@ -6,44 +6,41 @@ import {
     Manga, 
     MangaStatus,
     MangaTile,
-    MangaUpdates,
-    PagedResults,
-    SearchRequest,
     Tag,
     TagSection 
 } from "paperback-extensions-common";
 
-import { 
-    parseJsonText
-} from "typescript";
-
-
-
 
 ///////////////////////////////
-/////    Manga Details    /////
+/////    MANGA DETAILS    /////
 ///////////////////////////////
 
 export const parseReaperScansDetails = ($: CheerioStatic, mangaId: string): Manga => {
-    
-  const titles = [$('.entry-title').text().trim()]
+  const titles = [decodeHTMLEntity($('.entry-title').text().trim())]
   const image = $('.info-left-margin img').attr('src') ?? ""
   let follows = Number($('.bmc').text().trim().replace(/[^\d]/g, ""))
   let rating = Number($('.num').text().trim())
-  const multipleInfo = $('.tsinfo.bixbox .imptdt').toArray()
-  let status = MangaStatus.ONGOING
+  
+  let status = MangaStatus.UNKNOWN
   let author = "Unknown"
   let artist = undefined
   let lastUpdate = undefined
-    
-  for (let info of multipleInfo)
-  {
+
+  const multipleInfo = $('.tsinfo.bixbox .imptdt').toArray()
+  for (let info of multipleInfo) {
     let item = ($(info).html() ?? "").split("<i>")[0].trim()
     let val = $('i', info).text().trim()
 
     switch (item) {
       case "Statut":
-        status = val == "Terminée" ? MangaStatus.COMPLETED : MangaStatus.ONGOING
+        switch (val) {
+          case "Terminée":
+            status = MangaStatus.COMPLETED
+            break;
+          case "En cours":
+            status = MangaStatus.ONGOING
+            break;
+        }
         break;
       case "Auteur(e)":
         author = val
@@ -52,49 +49,39 @@ export const parseReaperScansDetails = ($: CheerioStatic, mangaId: string): Mang
         artist = val
         break;
       case "Mis à jour le":
-        lastUpdate = val
+        lastUpdate = new Date(val)
         break;
       default:
         break;
     }
   }
 
-  let hentai = false
-
-  const arrayTags: Tag[] = []
-    
+  const arrayTags: Tag[] = []  
   // Tags 
   const tags = $('.info-desc.bixbox .mgen a').toArray()
   for (const tag of tags) {
+    const id = $(tag).first().attr('href')?.split("/")[4] ?? ''
     const label = $(tag).text()
-    const id = $(tag).first().attr('href')?.split("/")[4] ?? label
-
-    if (['Mature'].includes(label)) {
-        hentai = true;
-    }
 
     arrayTags.push({ id: id, label: label })
   }
-
   const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
 
   let summary = decodeHTMLEntity($('.entry-content-single').text())
 
-
-
   return createManga({
-      id: mangaId,
-      titles,
-      image,
-      author,
-      artist,
-      rating,
-      follows,
-      status,
-      tags: tagSections,
-      lastUpdate,
-      desc: summary,
-      hentai : false
+    id: mangaId,
+    titles,
+    image,
+    author,
+    artist,
+    rating,
+    follows,
+    status,
+    tags: tagSections,
+    lastUpdate,
+    desc: summary,
+    hentai: false
   })
 }
 
@@ -111,7 +98,7 @@ export const parseReaperScansChapters = ($: CheerioStatic, mangaId: string): Cha
     const id: string = $('a', chapter).attr('href') ?? ''
     const name: string = $('.chapternum', chapter).text()
     const chapNum: number = Number( $('.chapternum', chapter).text().split(' ')[1] )
-    const time: Date = new Date(parseDate($('.chapterdate', chapter).text()))
+    const time: Date = new Date($('.chapterdate', chapter).text())
 
     chapters.push(createChapter({
       id,
@@ -132,26 +119,22 @@ export const parseReaperScansChapters = ($: CheerioStatic, mangaId: string): Cha
 
 export const parseReaperScansChapterDetails = ($: CheerioStatic, mangaId: string, chapterId: string): ChapterDetails => {
   const pages: string[] = []
-  
   const allItems = $($.parseHTML($('noscript').text())).children().toArray()
 
-  for(let item of allItems)
-  {
-      let page = $(item).attr('src')
-      console.log("page = " + page)
+  for(let item of allItems) {
+    let page = $(item).attr('src')
 
-      // If page is undefined, dont push it
-      if (typeof page === 'undefined')
-          continue;
-  
-      pages.push(page);
+    if (typeof page === 'undefined')
+        continue;
+
+    pages.push(page);
   }
 
   return createChapterDetails({
-      id: chapterId,
-      mangaId: mangaId,
-      pages,
-      longStrip: false
+    id: chapterId,
+    mangaId: mangaId,
+    pages,
+    longStrip: false
   })
 }
 
@@ -164,28 +147,27 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
   const manga: MangaTile[] = []
 
   for (const item of $('.listupd .bs').toArray()) {
-      const url = $('a', item).attr('href')?.split('/')[4] ?? ''
-      const title = $('a', item).attr('title') ?? ''
-         
-      const image = $('img', item).attr("src") ?? ''
-      const subtitle = $('.epxs', item).text()
-  
-  
-      manga.push(createMangaTile({
-          id : url,
-          image,
-          title: createIconText({ text: title }),
-          subtitleText : createIconText({ text: subtitle })
-      }))
+    const id = $('a', item).attr('href')?.split('/')[4] ?? ''
+    const title = $('a', item).attr('title') ?? ''
+    const image = $('img', item).attr("src") ?? ''
+    const subtitle = $('.epxs', item).text()
+
+
+    manga.push(createMangaTile({
+      id,
+      image,
+      title: createIconText({ text: title }),
+      subtitleText : createIconText({ text: subtitle })
+    }))
   }
 
   return manga
 }
 
 
-//////////////////////////////////////
-/////    DERNIERS MANGA SORTI    /////
-//////////////////////////////////////
+///////////////////////////
+/////    HOT MANGA    /////
+///////////////////////////
 
 const parseHotManga = ($: CheerioStatic): MangaTile[] => {
   const hotManga: MangaTile[] = []
@@ -196,14 +178,10 @@ const parseHotManga = ($: CheerioStatic): MangaTile[] => {
     let title = $('.name', item).text()
     let subtitle = ""
     
-    console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
-      hotManga.push(createMangaTile({
+    hotManga.push(createMangaTile({
       id: url,
       image: image,
       title: createIconText({ text: title }),
@@ -214,9 +192,9 @@ const parseHotManga = ($: CheerioStatic): MangaTile[] => {
   return hotManga
 }
 
-//////////////////////////////////////
-/////    MANGA POPULAIRE JOUR    /////
-//////////////////////////////////////
+///////////////////////////////////
+/////    POPULAR MANGA DAY    /////
+///////////////////////////////////
 
 const parsePopularMangaToday = ($: CheerioStatic): MangaTile[] => {
   const popularMangaToday: MangaTile[] = []
@@ -226,15 +204,11 @@ const parsePopularMangaToday = ($: CheerioStatic): MangaTile[] => {
     let image = $('img', item).attr('src')
     let title = $('a', item).first().attr('title') ?? ''
     let subtitle = $('.epxs', item).text()
-
-    //console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
+    
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
-      popularMangaToday.push(createMangaTile({
+    popularMangaToday.push(createMangaTile({
       id: url,
       image: image,
       title: createIconText({ text: title }),
@@ -245,9 +219,9 @@ const parsePopularMangaToday = ($: CheerioStatic): MangaTile[] => {
   return popularMangaToday
 }
 
-/////////////////////////////////////////
-/////    MANGA POPULAIRE SEMAINE    /////
-/////////////////////////////////////////
+////////////////////////////////////
+/////    POPULAR MANGA WEEK    /////
+////////////////////////////////////
 
 const parsePopularMangaWeek = ($: CheerioStatic): MangaTile[] => {
   const popularMangaWeek: MangaTile[] = []
@@ -257,15 +231,11 @@ const parsePopularMangaWeek = ($: CheerioStatic): MangaTile[] => {
     let image = $('img', item).attr('src')
     let title = $('.leftseries h2 a', item).text()
     let subtitle = ""
-
-    console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
+    
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
-      popularMangaWeek.push(createMangaTile({
+    popularMangaWeek.push(createMangaTile({
       id: url,
       image: image,
       title: createIconText({ text: title }),
@@ -276,9 +246,9 @@ const parsePopularMangaWeek = ($: CheerioStatic): MangaTile[] => {
   return popularMangaWeek
 }
 
-//////////////////////////////////////
-/////    MANGA POPULAIRE MOIS    /////
-//////////////////////////////////////
+/////////////////////////////////////
+/////    POPULAR MANGA MONTH    /////
+/////////////////////////////////////
 
 const parsePopularMangaMonth = ($: CheerioStatic): MangaTile[] => {
   const popularMangaMonth: MangaTile[] = []
@@ -288,15 +258,11 @@ const parsePopularMangaMonth = ($: CheerioStatic): MangaTile[] => {
     let image = $('img', item).attr('src')
     let title = $('.leftseries h2 a', item).text()
     let subtitle = ""
-
-    console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
+    
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
-      popularMangaMonth.push(createMangaTile({
+    popularMangaMonth.push(createMangaTile({
       id: url,
       image: image,
       title: createIconText({ text: title }),
@@ -307,9 +273,9 @@ const parsePopularMangaMonth = ($: CheerioStatic): MangaTile[] => {
   return popularMangaMonth
 }
 
-//////////////////////////////////////
-/////    MANGA POPULAIRE MOIS    /////
-//////////////////////////////////////
+////////////////////////////////////////////
+/////    POPULAR MANGA ALL THE TIME    /////
+////////////////////////////////////////////
 
 const parsePopularMangaAllTime = ($: CheerioStatic): MangaTile[] => {
   const popularMangaAllTime: MangaTile[] = []
@@ -319,15 +285,11 @@ const parsePopularMangaAllTime = ($: CheerioStatic): MangaTile[] => {
     let image = $('img', item).attr('src')
     let title = $('.leftseries h2 a', item).text()
     let subtitle = ""
-
-    console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
+    
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
-      popularMangaAllTime.push(createMangaTile({
+    popularMangaAllTime.push(createMangaTile({
       id: url,
       image: image,
       title: createIconText({ text: title }),
@@ -338,12 +300,12 @@ const parsePopularMangaAllTime = ($: CheerioStatic): MangaTile[] => {
   return popularMangaAllTime
 }
 
-//////////////////////////////////
-/////    DERNIERS PROJETS    /////
-//////////////////////////////////
+/////////////////////////////////
+/////    LATEST PROJECTS    /////
+/////////////////////////////////
 
 const parseLastProjects = ($: CheerioStatic): MangaTile[] => {
-  const LastProjects: MangaTile[] = []
+  const lastProjects: MangaTile[] = []
 
   for (const item of $('.postbody .listupd').eq(0).children().toArray()) {
     let url = $('a', item).first().attr('href')?.split("/")[3].split("-").slice(0, -1).join("-") ?? 'undefined'
@@ -351,14 +313,10 @@ const parseLastProjects = ($: CheerioStatic): MangaTile[] => {
     let title = $('a', item).first().attr('title')?.split(" ").slice(0, -1).join(" ") ?? ''
     let subtitle = $('.epxs', item).text()
 
-    console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
-      LastProjects.push(createMangaTile({
+    lastProjects.push(createMangaTile({
       id: url,
       image: image,
       title: createIconText({ text: title }),
@@ -366,30 +324,26 @@ const parseLastProjects = ($: CheerioStatic): MangaTile[] => {
     }))
   }
 
-  return LastProjects
+  return lastProjects
 }
 
-///////////////////////////////////
-/////    DERNIERES SORTIES    /////
-///////////////////////////////////
+////////////////////////////////
+/////    LAST RELEASES     /////
+////////////////////////////////
 
 const parseLastUpdate = ($: CheerioStatic): MangaTile[] => {
-  const LastUpdate: MangaTile[] = []
+  const lastUpdate: MangaTile[] = []
 
   for (const item of $('.postbody .listupd').eq(1).children().toArray()) {
     let url = $('a', item).first().attr('href')?.split("/")[4]
     let image = $('img', item).attr('src')
     let title = $('a', item).first().attr('title') ?? ''
     let subtitle = $('a', item).eq(2).text()
-
-    console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
+    
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
-      LastUpdate.push(createMangaTile({
+    lastUpdate.push(createMangaTile({
       id: url,
       image: image,
       title: createIconText({ text: title }),
@@ -397,30 +351,26 @@ const parseLastUpdate = ($: CheerioStatic): MangaTile[] => {
     }))
   }
 
-  return LastUpdate
+  return lastUpdate
 }
 
-///////////////////////////////////
-/////    DERNIERES SORTIES    /////
-///////////////////////////////////
+//////////////////////////////
+/////    NEW PROJECTS    /////
+//////////////////////////////
 
 const parseNewProjects = ($: CheerioStatic): MangaTile[] => {
-  const NewProjects: MangaTile[] = []
+  const newProjects: MangaTile[] = []
 
   for (const item of $('.section .serieslist').eq(3).find('li').toArray()) {
     let url = $('a', item).first().attr('href')?.split("/")[4]
     let image = $('img', item).attr('src')
     let title = $('h2', item).text()
     let subtitle = ''
-
-    console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
+    
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
-      NewProjects.push(createMangaTile({
+    newProjects.push(createMangaTile({
       id: url,
       image: image,
       title: createIconText({ text: title }),
@@ -428,7 +378,7 @@ const parseNewProjects = ($: CheerioStatic): MangaTile[] => {
     }))
   }
 
-  return NewProjects
+  return newProjects
 }
 
 //////////////////////////////
@@ -437,6 +387,7 @@ const parseNewProjects = ($: CheerioStatic): MangaTile[] => {
 
 export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sectionCallback: (section: HomeSection) => void): void => {
   for (const section of sections) sectionCallback(section)
+
   const hotManga: MangaTile[] = parseHotManga($)
   const popularMangaToday: MangaTile[] = parsePopularMangaToday($)
   const popularMangaWeek: MangaTile[] = parsePopularMangaWeek($) 
@@ -455,7 +406,6 @@ export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sec
   sections[6].items = LastUpdate
   sections[7].items = NewProjects
 
-  // Perform the callbacks again now that the home page sections are filled with data
   for (const section of sections) sectionCallback(section)
 }
 
@@ -464,22 +414,18 @@ export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sec
 ///////////////////////////
 
 export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
-  const ViewMore: MangaTile[] = []
+  const viewMore: MangaTile[] = []
 
   for (const item of $('.postbody .listupd').eq(0).children().toArray()) {
     let url = $('a', item).first().attr('href')?.split("/")[4] ?? 'undefined'
     let image = $('img', item).attr('src')
     let title = $('a', item).first().attr('title') ?? ''
     let subtitle = $('.epxs', item).text()
-
-    console.log(url + " " + image + " " + title + " " + subtitle)
-
-    // Credit to @GameFuzzy
-    // Checks for when no id or image found
+    
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue
 
-      ViewMore.push(createMangaTile({
+    viewMore.push(createMangaTile({
       id: url,
       image: image,
       title: createIconText({ text: title }),
@@ -487,23 +433,26 @@ export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
     }))
   }
 
-  return ViewMore
+  return viewMore
 }
 
 
-////////////////////////////
-/////    isLastPage    /////
-////////////////////////////
+/////////////////////////////////
+/////    CHECK LAST PAGE    /////
+/////////////////////////////////
 
 export const isLastPage = ($: CheerioStatic, section: String): boolean => {
   switch (section) {
     case 'latest_projects':
-      return (($('.next.page-numbers').length == 0) ? true : false)
+      return $('.next.page-numbers').length == 0
     case 'latest_updated':
-      return (($('.r i').length == 0) ? true : false)
+      return $('.hpage .r').length == 0
+    case 'search':
+      return $('.next.page-numbers').length == 0
+    case 'search_tags':
+      return $('.hpage .r').length == 0
     default:
       return false
-      break;
   }
 }
 
@@ -512,20 +461,23 @@ export const isLastPage = ($: CheerioStatic, section: String): boolean => {
 /////    TAGS    /////
 //////////////////////
 
-export const parseTags = ($: CheerioStatic): TagSection[] | null => {
-  
+export const parseTags = ($: CheerioStatic): TagSection[] => {
   const arrayTags: Tag[] = []
 
   for (let item of $('.dropdown-menu.c4.genrez li').toArray()) {
+    let id = $('input', item).attr('value') ?? ''
     let label = $('label', item).text()
-    arrayTags.push({ id: label, label: label })
+    arrayTags.push({ id: id, label: label })
   }
-  
   const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })]
 
   return tagSections
 }
 
+
+/////////////////////////////////
+/////    ADDED FUNCTIONS    /////
+/////////////////////////////////
 
 function decodeHTMLEntity(str: string) {
   return str.replace(/&#(\d+);/g, function (match, dec) {
@@ -533,17 +485,31 @@ function decodeHTMLEntity(str: string) {
   })
 }
 
-function parseDate(str: string) {
+export function parseDate(str: string) {
+  str = str.trim()
   if (str.length == 0)
   {
     let date = new Date()
     return new Date(date.getFullYear(), date.getMonth(), date.getDate())
   }
   
-  let year = str.split(" ")[2]
-  let months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
-  let month = months.findIndex((element) => element == str.split(" ")[0]).toString()
-  let day = str.split(" ")[1].replace(",", "")
-
-  return new Date(parseInt(year), parseInt(month), parseInt(day))
+  switch (str.split(' ').pop()) {
+    case "minutes":
+      let minutes = new Date()
+      return new Date(minutes.getFullYear(), minutes.getMonth(), minutes.getDate(), minutes.getHours(), minutes.getMinutes()-parseInt(str.split(' ')[0]))
+    case "heures":
+      let hours = new Date()
+      return new Date(hours.getFullYear(), hours.getMonth(), hours.getDate(), hours.getHours()-parseInt(str.split(' ')[0]))
+    case "jours":
+      let day = new Date()
+      return new Date(day.getFullYear(), day.getMonth(), day.getDate()-parseInt(str.split(' ')[0]))
+    case "semaines":
+      let week = new Date()
+      return new Date(week.getFullYear(), week.getMonth(), week.getDate()-(7*parseInt(str.split(' ')[0])))
+    case "mois":
+      let month = new Date()
+      return new Date(month.getFullYear(), month.getMonth()-parseInt(str.split(' ')[0]), month.getDate()-1)
+    default:
+      return new Date()
+  }
 }

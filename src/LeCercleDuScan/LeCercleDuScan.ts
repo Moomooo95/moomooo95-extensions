@@ -5,28 +5,28 @@ import {
     ChapterDetails,
     HomeSection,
     SearchRequest,
-    TagSection,
     PagedResults,
     SourceInfo,
     MangaUpdates,
-    RequestHeaders,
-    TagType
+    TagType,
+    ContentRating,
+    RequestManager
 } from "paperback-extensions-common"
 
 import {
-    generateSearch,
     parseLeCercleDuScanChapterDetails,
     parseLeCercleDuScanChapters,
     parseLeCercleDuScanMangaDetails,
     parseSearch,
     parseHomeSections,
-    parseMangaSectionTiles,
+    parseMangaSectionOthers,
     parseViewMore,
-    isLastPage
+    isLastPage,
+    parseDate
 } from "./LeCercleDuScanParser";
 
 const LECERCLEDUSCAN_DOMAIN = "https://lel.lecercleduscan.com";
-const method = 'GET'
+const method = 'POST'
 const headers = {
     'Host': 'lel.lecercleduscan.com',
 }
@@ -37,98 +37,103 @@ const headers_search = {
 }
 
 export const LeCercleDuScanInfo: SourceInfo = {
-version: '1.0.0',
-name: 'Le Cercle du Scan',
-icon: 'logo.png',
-author: 'Moomooo',
-authorWebsite: '',
-description: 'Source française Le Cercle du Scan',
-hentaiSource: false,
-websiteBaseURL: LECERCLEDUSCAN_DOMAIN,
-sourceTags: [
-    {
-    text: "Francais",
-    type: TagType.GREEN
-    }
-]
+    version: '1.0.0',
+    name: 'Le Cercle du Scan',
+    icon: 'logo.png',
+    author: 'Moomooo95',
+    authorWebsite: 'https://github.com/Moomooo95',
+    description: 'Source française Le Cercle du Scan',
+    contentRating: ContentRating.EVERYONE,
+    websiteBaseURL: LECERCLEDUSCAN_DOMAIN,
+    sourceTags: [
+        {
+            text: "Francais",
+            type: TagType.GREY
+        },
+        {
+            text: 'Notifications',
+            type: TagType.GREEN
+        }
+    ]
 }
 
 export class LeCercleDuScan extends Source {
+    requestManager: RequestManager = createRequestManager({
+        requestsPerSecond: 3
+    });
 
+    /////////////////////////////////
+    /////    MANGA SHARE URL    /////
+    /////////////////////////////////
 
-    //////////////////////////////////
-    /////    getMangaShareUrl    /////
-    //////////////////////////////////
-
-    getMangaShareUrl(mangaId: string): string | null {
+    getMangaShareUrl(mangaId: string): string {
         return `${LECERCLEDUSCAN_DOMAIN}/series/${mangaId}`
     }
 
 
-    /////////////////////////////////
-    /////    getMangaDetails    /////
-    /////////////////////////////////
+    ///////////////////////////////
+    /////    MANGA DETAILS    /////
+    ///////////////////////////////
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
-        
         const request = createRequestObject({
             url: `${LECERCLEDUSCAN_DOMAIN}/series/${mangaId}`,
             method,
-            headers
+            headers,
+            data: "adult=true"
         })
 
-        const data = await this.requestManager.schedule(request, 1);
-        const $ = this.cheerio.load(data.data);
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
         
         return await parseLeCercleDuScanMangaDetails($, mangaId);
     }
 
 
-    /////////////////////////////
-    /////    getChapters    /////
-    /////////////////////////////
+    //////////////////////////
+    /////    CHAPTERS    /////
+    //////////////////////////
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-
         const request = createRequestObject({
             url: `${LECERCLEDUSCAN_DOMAIN}/series/${mangaId}`,
             method,
-            headers
+            headers,
+            data: "adult=true"
         })
 
-        const data = await this.requestManager.schedule(request, 1);
-        const $ = this.cheerio.load(data.data);
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
         
         return await parseLeCercleDuScanChapters($, mangaId);
     }
 
 
-    ////////////////////////////////////
-    /////    getChaptersDetails    /////
-    ////////////////////////////////////
+    //////////////////////////////////
+    /////    CHAPTERS DETAILS    /////
+    //////////////////////////////////
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        
         const request = createRequestObject({
             url: `${chapterId}`,
             method,
-            headers 
+            headers,
+            data: "adult=true"
         })
 
-        const data = await this.requestManager.schedule(request, 1);
-        const $ = this.cheerio.load(data.data);
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
         
         return await parseLeCercleDuScanChapterDetails($, mangaId, chapterId);
     }
 
 
-    ///////////////////////////////
-    /////    searchRequest    /////
-    ///////////////////////////////
+    ////////////////////////////////
+    /////    SEARCH REQUEST    /////
+    ////////////////////////////////
 
-    async searchRequest(query: SearchRequest): Promise<PagedResults> {
-        
-        const search = generateSearch(query)
+    async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
+        const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27')
         const request = createRequestObject({
             url: `${LECERCLEDUSCAN_DOMAIN}/search`,
             method : 'POST',
@@ -147,24 +152,16 @@ export class LeCercleDuScan extends Source {
     }
 
 
-    /////////////////////////////////////
-    /////    getHomePageSections    /////
-    /////////////////////////////////////
+    //////////////////////////////
+    /////    HOME SECTION    /////
+    //////////////////////////////
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        // Give Paperback a skeleton of what these home sections should look like to pre-render them
         const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernier Manga Sorti', view_more: true })
         const section2 = createHomeSection({ id: 'all_manga', title: 'Tous les mangas', view_more: true  })
 
-        // Fill the homsections with data
         const request1 = createRequestObject({
             url: `${LECERCLEDUSCAN_DOMAIN}/latest`,
-            method: 'GET',
-            headers
-        })
-
-        const request2 = createRequestObject({
-            url: `${LECERCLEDUSCAN_DOMAIN}/directory`,
             method: 'GET',
             headers
         })
@@ -172,34 +169,34 @@ export class LeCercleDuScan extends Source {
         const response1 = await this.requestManager.schedule(request1, 1)
         const $1 = this.cheerio.load(response1.data)
 
+        const request2 = createRequestObject({
+            url: `${LECERCLEDUSCAN_DOMAIN}/directory`,
+            method: 'GET',
+            headers
+        })
+
         const response2 = await this.requestManager.schedule(request2, 1)
         const $2 = this.cheerio.load(response2.data)
         
         parseHomeSections($1, [section1], sectionCallback)
-        parseMangaSectionTiles($2, [section2], sectionCallback)
+        parseMangaSectionOthers($2, [section2], sectionCallback)
     }
 
-
-
-
-
-    //////////////////////////////////
-    /////    getViewMoreItems    /////
-    //////////////////////////////////
+    /////////////////////////////////
+    /////    VIEW MORE ITEMS    /////
+    /////////////////////////////////
     
-    async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults | null> {
-
+    async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         let page: number = metadata?.page ?? 1
         let param = ''
+
         switch (homepageSectionId) {
             case 'latest_updates':
-                param = `/latest/${page}`
+                param = `latest/${page}`
                 break;
             case 'all_manga':
-                param = `/directory/${page}`
+                param = `directory/${page}`
                 break;
-            default:
-                return Promise.resolve(null)
         }
 
         const request = createRequestObject({
@@ -212,12 +209,43 @@ export class LeCercleDuScan extends Source {
         const $ = this.cheerio.load(response.data)
 
         const manga = parseViewMore($, homepageSectionId)
-        metadata = !isLastPage($) ? { page: (page + 1) } : undefined
+        metadata = !isLastPage($) ? { page: page + 1 } : undefined
 
         return createPagedResults({
             results: manga,
             metadata
         })
-  }
+    }
 
+
+    //////////////////////////////////////
+    /////    FILTER UPDATED MANGA    /////
+    //////////////////////////////////////
+
+    async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+        const request = createRequestObject({
+            url: `${LECERCLEDUSCAN_DOMAIN}`,
+            method,
+            headers
+        })
+  
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data)
+  
+        const updatedManga: string[] = []
+        for (const manga of $('.group').toArray()) {
+          let id = $('a', manga).first().attr('href')
+          let mangaDate = parseDate($('.meta_r', manga).text().split(',').pop() ?? '')
+          console.info(id +" - "+ mangaDate)
+
+          if (!id) continue
+          if (mangaDate > time) {
+              if (ids.includes(id)) {
+                  updatedManga.push(id)
+              }
+          }
+        }
+  
+        mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
+    }
 }

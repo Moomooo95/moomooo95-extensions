@@ -9,17 +9,22 @@ import {
   PagedResults,
   SourceInfo,
   MangaUpdates,
-  RequestHeaders,
-  TagType
+  TagType,
+  RequestManager,
+  ContentRating,
+  MangaTile
 } from "paperback-extensions-common"
 
 import {
+  isLastPage,
+  parseDate,
   parseHomeSections,
   parseLelscanVFChapterDetails,
   parseLelscanVFChapters,
   parseLelscanVFMangaDetails,
-  parseMangaSectionTiles,
+  parseMangaSectionOthers,
   parseSearch,
+  parseSearchTags,
   parseTags,
   parseViewMore
 } from "./LelscanVFParser";
@@ -31,125 +36,148 @@ const headers = {
 }
 
 export const LelscanVFInfo: SourceInfo = {
-  version: '1.0.0',
-  name: 'LelscanVF',
-  icon: 'logo.png',
-  author: 'Moomooo',
-  authorWebsite: '',
-  description: 'LELSCAN-VF',
-  hentaiSource: false,
-  websiteBaseURL: LELSCANVF_DOMAIN,
-  sourceTags: [
-    {
-      text: "Francais",
-      type: TagType.GREEN
-    }
-  ]
+    version: '1.0.0',
+    name: 'LelscanVF',
+    icon: 'logo.png',
+    author: 'Moomooo95',
+    authorWebsite: 'https://github.com/Moomooo95',
+    description: 'Source française LELSCANVF',
+    contentRating: ContentRating.MATURE,
+    websiteBaseURL: LELSCANVF_DOMAIN,
+    sourceTags: [
+      {
+        text: "Francais",
+        type: TagType.GREY
+      },
+      {
+          text: 'Notifications',
+          type: TagType.GREEN
+      }
+    ]
 }
 
 export class LelscanVF extends Source {
 
+  requestManager: RequestManager = createRequestManager({
+      requestsPerSecond: 3
+  });
 
-  //////////////////////////////////
-  /////    getMangaShareUrl    /////
-  //////////////////////////////////
 
-  getMangaShareUrl(mangaId: string): string | null {
+  /////////////////////////////////
+  /////    MANGA SHARE URL    /////
+  /////////////////////////////////
+
+  getMangaShareUrl(mangaId: string): string {
     return `${LELSCANVF_DOMAIN}/manga/${mangaId}`
   }
 
 
-  /////////////////////////////////
-  /////    getMangaDetails    /////
-  /////////////////////////////////
+  ///////////////////////////////
+  /////    MANGA DETAILS    /////
+  ///////////////////////////////
 
   async getMangaDetails(mangaId: string): Promise<Manga> {
-    
     const request = createRequestObject({
       url: `${LELSCANVF_DOMAIN}/manga/${mangaId}`,
       method,
-      headers
+        headers
     })
 
-    const data = await this.requestManager.schedule(request, 1);
-    const $ = this.cheerio.load(data.data);
+    const response = await this.requestManager.schedule(request, 1);
+    const $ = this.cheerio.load(response.data);
     
     return await parseLelscanVFMangaDetails($, mangaId);
   }
 
 
-  /////////////////////////////
-  /////    getChapters    /////
-  /////////////////////////////
+  //////////////////////////
+  /////    CHAPTERS    /////
+  //////////////////////////
 
   async getChapters(mangaId: string): Promise<Chapter[]> {
-
     const request = createRequestObject({
       url: `${LELSCANVF_DOMAIN}/manga/${mangaId}`,
       method,
       headers
     })
 
-    const data = await this.requestManager.schedule(request, 1);
-    const $ = this.cheerio.load(data.data);
+    const response = await this.requestManager.schedule(request, 1);
+    const $ = this.cheerio.load(response.data);
     
     return await parseLelscanVFChapters($, mangaId);
   }
   
 
-  ////////////////////////////////////
-  /////    getChaptersDetails    /////
-  ////////////////////////////////////
+  //////////////////////////////////
+  /////    CHAPTERS DETAILS    /////
+  //////////////////////////////////
 
   async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-    
     const request = createRequestObject({
       url: `${chapterId}`,
       method,
       headers 
     })
 
-    const data = await this.requestManager.schedule(request, 1);
-    const $ = this.cheerio.load(data.data);
+    const response = await this.requestManager.schedule(request, 1);
+    const $ = this.cheerio.load(response.data);
     
     return await parseLelscanVFChapterDetails($, mangaId, chapterId);
   }
 
 
-  ///////////////////////////////
-  /////    searchRequest    /////
-  ///////////////////////////////
+  ////////////////////////////////
+  /////    SEARCH REQUEST    /////
+  ////////////////////////////////
 
-  async searchRequest(query: SearchRequest): Promise<PagedResults> {
-    
-    const search = query.title?.replace(' ', '+')
-    const request = createRequestObject({
-      url: `${LELSCANVF_DOMAIN}/search?query=${search}`,
-      method,
-      headers
-    })
+  async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
+    const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? ""
+    let manga: MangaTile[] = []
 
-    const response = await this.requestManager.schedule(request, 1)
+    if (query.includedTags && query.includedTags?.length != 0) {
+      const page: number = metadata?.page ?? 1
 
-    const manga = parseSearch(response.data)
+      const request = createRequestObject({
+        url: `${LELSCANVF_DOMAIN}/filterList?page=${page}&tag=${query.includedTags[0].id}&alpha=${search}&sortBy=name&asc=true`,
+        method,
+        headers
+      })
+  
+      const response = await this.requestManager.schedule(request, 1)
+      const $ = this.cheerio.load(response.data)
+
+      manga = parseSearchTags($)
+      metadata = !isLastPage($) ? { page: page + 1 } : undefined
+    }
+    else {
+      const request = createRequestObject({
+        url: `${LELSCANVF_DOMAIN}/search?query=${search}`,
+        method,
+        headers
+      })
+  
+      const response = await this.requestManager.schedule(request, 1)
+      
+      manga = parseSearch(response.data)
+      metadata = undefined
+    }
 
     return createPagedResults({
-      results: manga
+      results: manga,
+      metadata
     })    
   }
 
 
-  /////////////////////////////////////
-  /////    getHomePageSections    /////
-  /////////////////////////////////////
+  //////////////////////////////
+  /////    HOME SECTION    /////
+  //////////////////////////////
 
   async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-    // Give Paperback a skeleton of what these home sections should look like to pre-render them
     const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernier Manga Sorti', view_more: true })
     const section2 = createHomeSection({ id: 'popular_manga', title: 'Manga Populaire', view_more: true  })
     const section3 = createHomeSection({ id: 'top_manga', title: 'Top MANGA', view_more: true })
 
-    // Fill the homsections with data
     const request1 = createRequestObject({
       url: `${LELSCANVF_DOMAIN}`,
       method: 'GET'
@@ -167,15 +195,15 @@ export class LelscanVF extends Source {
     const $2 = this.cheerio.load(response2.data)
     
     parseHomeSections($1, [section1, section2], sectionCallback)
-    parseMangaSectionTiles($2, [section3], sectionCallback)
+    parseMangaSectionOthers($2, [section3], sectionCallback)
   }
 
 
-  //////////////////////////////////
-  /////    getViewMoreItems    /////
-  //////////////////////////////////
+  /////////////////////////////////
+  /////    VIEW MORE ITEMS    /////
+  /////////////////////////////////
 
-  async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults | null> {
+  async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
     let name = ''
     let param = ''
     switch (homepageSectionId) {
@@ -189,8 +217,6 @@ export class LelscanVF extends Source {
         name = 'top_manga'
         param = '/topManga'
         break;
-      default:
-        return Promise.resolve(null)
     }
 
     const request = createRequestObject({
@@ -209,11 +235,11 @@ export class LelscanVF extends Source {
   }
 
 
-  /////////////////////////
-  /////    getTags    /////
-  /////////////////////////
+  //////////////////////
+  /////    TAGS    /////
+  //////////////////////
 
-  async getTags(): Promise<TagSection[] | null> {
+  async getTags(): Promise<TagSection[]> {
     const request = createRequestObject({
       url: `${LELSCANVF_DOMAIN}/manga-list`,
       method,
@@ -224,5 +250,36 @@ export class LelscanVF extends Source {
     const $ = this.cheerio.load(response.data)
     
     return parseTags($)
+  }
+
+
+  //////////////////////////////////////
+  /////    FILTER UPDATED MANGA    /////
+  //////////////////////////////////////
+
+  async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+    const request = createRequestObject({
+        url: `${LELSCANVF_DOMAIN}`,
+        method,
+        headers
+    })
+
+    const response = await this.requestManager.schedule(request, 1)
+    const $ = this.cheerio.load(response.data)
+
+    const updatedManga: string[] = []
+    for (const manga of $('.mangalist .manga-item').toArray()) {
+      let id = $('a', manga).first().attr('href')
+      let mangaDate = parseDate($('.pull-right', manga).text().trim() ?? '')
+
+      if (!id) continue
+      if (mangaDate > time) {
+          if (ids.includes(id)) {
+              updatedManga.push(id)
+          }
+      }
+    }
+
+    mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
   }
 }

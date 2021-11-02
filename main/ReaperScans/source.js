@@ -578,7 +578,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data);
             const updatedManga = [];
-            for (const manga of $('.postbody .listupd').eq(1).children().toArray()) {
+            for (const manga of $('.postbody .listupd').eq(1).find('.utao.styletwo').toArray()) {
                 let id = $('a', manga).first().attr('href');
                 let mangaDate = ReaperScansParser_1.parseDate(((_a = $('.luf span', manga).text()) !== null && _a !== void 0 ? _a : '').trim().split('Il y a ')[1]);
                 if (!id)

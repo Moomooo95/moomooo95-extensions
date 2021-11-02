@@ -245,7 +245,7 @@ export class ReaperScans extends Source {
     const $ = this.cheerio.load(response.data)
 
     const updatedManga: string[] = []
-    for (const manga of $('.postbody .listupd').eq(1).children().toArray()) {
+    for (const manga of $('.postbody .listupd').eq(1).find('.utao.styletwo').toArray()) {
       let id = $('a', manga).first().attr('href')
       let mangaDate = parseDate(($('.luf span', manga).text() ?? '').trim().split('Il y a ')[1])
   

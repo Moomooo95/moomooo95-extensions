@@ -152,17 +152,17 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
   const manga: MangaTile[] = []
 
   for (const item of $('.row .c-tabs-item__content').toArray()) {
-      const url = $('h3 a', item).attr('href')?.split('/')[4] ?? ''
-      const title = $('h3 a', item).text() ?? '' 
-      const image = $('img', item).attr("data-src") ?? ''
-      const subtitle = $('.latest-chap .chapter a', item).text()
-  
-      manga.push(createMangaTile({
-        id : url,
-        image,
-        title: createIconText({ text: title }),
-        subtitleText : createIconText({ text: subtitle })
-      }))
+    const url = $('h3 a', item).attr('href')?.split('/')[4] ?? ''
+    const title = $('h3 a', item).text() ?? '' 
+    const image = $('img', item).attr("data-src") ?? ''
+    const subtitle = $('.latest-chap .chapter a', item).text()
+
+    manga.push(createMangaTile({
+      id : url,
+      image,
+      title: createIconText({ text: title }),
+      subtitleText : createIconText({ text: subtitle })
+    }))
   }
 
   return manga

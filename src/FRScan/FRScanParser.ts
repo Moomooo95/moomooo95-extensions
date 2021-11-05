@@ -93,7 +93,7 @@ export const parseFRScanChapters = ($: CheerioStatic, mangaId: string): Chapter[
   const allChapters = $('.chapters')
   const chapters: Chapter[] = []
   
-  for (let chapter of $('li', allChapters).toArray()) {
+  for (let chapter of $('li:not(.volume)', allChapters).toArray()) {
     const id: string = $('a', chapter).attr('href') ?? ''
     const name: string = "Chapitre " + $('a', chapter).text().split(" ").pop() ?? ''
     const chapNum: number = Number( id.split('/').pop() )

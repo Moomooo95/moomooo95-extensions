@@ -14,6 +14,7 @@ https://moomooo95.github.io/extensions-french/main
 |    Source Name    |   Link of Source |
 | ---               | ---              |
 | Le Cercle du Scan | [Site Web](https://lel.lecercleduscan.com/) |
-| LelScanVF         | [Site Web](https://lelscan-vf.co/) |
+| FRScan         | [Site Web](https://www.frscan.cc/) |
 | ReaperScans       | [Site Web](https://reaperscans.fr/) |
 | MangasOrigines    | [Site Web](https://mangas-origines.fr/) |
+| FuryoSquad    | [Site Web](https://furyosquad.com/) |

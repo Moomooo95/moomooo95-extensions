@@ -20,11 +20,11 @@ import {
     parseFuryoSquadChapterDetails,
     parseSearch,
     parseHomeSections,
-    parseMangasSections,
+    parseMangaSectionOthers,
     parseDate
 } from "./FuryoSquadParser";
 
-const FURYOSQUAD_DOMAIN = "https://www.furyosquad.com/";
+const FURYOSQUAD_DOMAIN = "https://www.furyosquad.com";
 const method = 'GET'
 const headers = {
     'Host': 'www.furyosquad.com',
@@ -160,12 +160,14 @@ export class FuryoSquad extends Source {
 
         const request1 = createRequestObject({
             url: `${FURYOSQUAD_DOMAIN}`,
-            method: 'GET'
+            method: 'GET',
+            headers
         })
 
         const request2 = createRequestObject({
             url: `${FURYOSQUAD_DOMAIN}/mangas`,
-            method: 'GET'
+            method: 'GET',
+            headers
         })
 
         const response1 = await this.requestManager.schedule(request1, 1)
@@ -175,7 +177,7 @@ export class FuryoSquad extends Source {
         const $2 = this.cheerio.load(response2.data)
         
         parseHomeSections($1, [section1], sectionCallback)
-        parseMangasSections($2, [section2, section3, section4], sectionCallback)
+        parseMangaSectionOthers($2, [section2, section3, section4], sectionCallback)
     }
 
 
@@ -196,7 +198,7 @@ export class FuryoSquad extends Source {
         const updatedManga: string[] = []
         for (const manga of $('table tr').toArray()) {
             let id = $('.fs-comic-title a', manga).attr('href')
-            let mangaDate = parseDate($('.fs-table-chap-date span', manga).text().trim() ?? '')
+            let mangaDate = parseDate($('.fs-table-chap-date .fs-chap-date', manga).text().trim() ?? '')
 
             if (!id) continue
             if (mangaDate > time) {

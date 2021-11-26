@@ -76,7 +76,7 @@ export const parseFuryoSquadChapters = ($: CheerioStatic, mangaId: string): Chap
         const id: string = $('a', chapter).eq(1).attr('href') ?? ''
         const name: string = $('.title', chapter).text() ?? '' + " : " + $('.name', chapter).text() ?? ''
         const chapNum: number = Number(name.split(' ').pop())
-        const time: Date = parseDate($('.meta_r', chapter).text())
+        const time: Date = parseDate($('.meta_r', chapter).text() ?? "")
     
         chapters.push(createChapter({
             id,
@@ -101,7 +101,7 @@ export const parseFuryoSquadChapterDetails = ($: CheerioStatic, mangaId: string,
     const allItems = $('img', '.fs-reader-page').toArray()
   
     for(let item of allItems) {
-        let page = $(item).attr('src')?.trim()
+        let page = encodeURI($(item).attr('src') ?? "")
     
         if (typeof page === 'undefined')
             continue;
@@ -154,7 +154,7 @@ const parseLatestManga = ($: CheerioStatic): MangaTile[] => {
     const latestManga: MangaTile[] = []
   
     for (const item of $('table tbody tr').toArray()) {
-        let url = $('.fs-comic-title a', item).attr('href')?.split("/").pop()
+        let url = $('.fs-comic-title a', item).attr('href')?.split("/")[4]
         let image = $('.fs-chap-img', item).attr('src')
         let title = decodeHTMLEntity($('.fs-comic-title', item).text())
         let subtitle = $('.fs-chapter', item).text() + " : " + $('.fs-chap-name', item).text()
@@ -182,10 +182,12 @@ const parseOngoingManga = ($: CheerioStatic): MangaTile[] => {
     const panel = $('#fs-en-cours')
   
     for (const item of $('.fs-card-container.desktop .grid-item-container', panel).toArray()) {
-        let url = $('.fs-comic-title a', item).attr('href')?.split("/").pop()
-        let image = $('.fs-chap-img', item).attr('src')
+        let url = $('.fs-comic-title a', item).attr('href')?.split("/")[4]
+        let image = $('.fs-card-img', item).attr('src')
         let title = decodeHTMLEntity($('.fs-comic-title', item).text())
         let subtitle = ''
+
+
     
         if (typeof url === 'undefined' || typeof image === 'undefined') 
             continue
@@ -210,8 +212,8 @@ const parseFinishedManga = ($: CheerioStatic): MangaTile[] => {
     const panel = $('#fs-termines')
   
     for (const item of $('.fs-card-container.desktop .grid-item-container', panel).toArray()) {
-        let url = $('.fs-comic-title a', item).attr('href')?.split("/").pop()
-        let image = $('.fs-chap-img', item).attr('src')
+        let url = $('.fs-comic-title a', item).attr('href')?.split("/")[4]
+        let image = $('.fs-card-img', item).attr('src')
         let title = decodeHTMLEntity($('.fs-comic-title', item).text())
         let subtitle = ''
     
@@ -238,8 +240,8 @@ const parseStoppedManga = ($: CheerioStatic): MangaTile[] => {
     const panel = $('#fs-stoppes')
   
     for (const item of $('.fs-card-container.desktop .grid-item-container', panel).toArray()) {
-        let url = $('.fs-comic-title a', item).attr('href')?.split("/").pop()
-        let image = $('.fs-chap-img', item).attr('src')
+        let url = $('.fs-comic-title a', item).attr('href')?.split("/")[4]
+        let image = $('.fs-card-img', item).attr('src')
         let title = decodeHTMLEntity($('.fs-comic-title', item).text())
         let subtitle = ''
     
@@ -274,7 +276,7 @@ export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sec
 /////    MANGAS SECTION    /////
 ////////////////////////////////
 
-export const parseMangasSections = ($: CheerioStatic, sections: HomeSection[], sectionCallback: (section: HomeSection) => void): void => {
+export const parseMangaSectionOthers = ($: CheerioStatic, sections: HomeSection[], sectionCallback: (section: HomeSection) => void): void => {
     for (const section of sections) sectionCallback(section)
     const ongoingManga: MangaTile[] = parseOngoingManga($)
     const finishedManga: MangaTile[] = parseFinishedManga($)
@@ -305,15 +307,29 @@ export function parseDate(str: string) {
 
     switch (str.trim()) {
         case "Aujourd'hui":
-        let today = new Date()
-        return new Date(today.getFullYear(), today.getMonth(), today.getDate())
+            let today = new Date()
+            return new Date(today.getFullYear(), today.getMonth(), today.getDate())
         
         case "Hier":
-        let yesterday = new Date()
-        return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()-1)
+            let yesterday = new Date()
+            return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()-1)
+
+        case "Avant-hier":
+            let beforeyesterday = new Date()
+            return new Date(beforeyesterday.getFullYear(), beforeyesterday.getMonth(), beforeyesterday.getDate()-2)
 
         default:
-        let date = str.split("/")
-        return new Date(parseInt(date[2]), parseInt(date[1])-1, parseInt(date[0]))
+            let date = ((str.match(/(\d+)(\s)(\w+)/gm) ?? "")[0] ?? "").split(' ')
+            let date_today = new Date()
+            switch (date[1]) {
+                case "jours":
+                    return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate()-parseInt(date[0]))
+                case "mois":
+                    return new Date(date_today.getFullYear(), date_today.getMonth()-parseInt(date[0]), date_today.getDate())
+                case "an":
+                case "ans":
+                    return new Date(date_today.getFullYear()-parseInt(date[0]), date_today.getMonth(), date_today.getDate())
+            }
     }
+    return new Date()
 }

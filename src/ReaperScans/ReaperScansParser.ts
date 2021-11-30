@@ -98,7 +98,7 @@ export const parseReaperScansChapters = ($: CheerioStatic, mangaId: string): Cha
     const id: string = $('a', chapter).attr('href') ?? ''
     const name: string = $('.chapternum', chapter).text()
     const chapNum: number = Number( $('.chapternum', chapter).text().split(' ')[1] )
-    const time: Date = new Date($('.chapterdate', chapter).text())
+    const time: Date = new Date(parseDateChap($('.chapterdate', chapter).text().trim()))
 
     chapters.push(createChapter({
       id,
@@ -483,6 +483,46 @@ function decodeHTMLEntity(str: string) {
   return str.replace(/&#(\d+);/g, function (match, dec) {
       return String.fromCharCode(dec);
   })
+}
+
+
+export function parseDateChap(str: string) {
+  str = str.trim()
+  if (str.length == 0)
+  {
+    let date = new Date()
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  }
+  
+  var month = str.split(' ')[0]
+  switch (month) {
+    case "janvier":
+      return str.replace(month, "january")
+    case "février":
+      return str.replace(month, "february")
+    case "mars":
+      return str.replace(month, "march")
+    case "avril":
+      return str.replace(month, "april")
+    case "mai":
+      return str.replace(month, "may")
+    case "juin":
+      return str.replace(month, "june")
+    case "juillet":
+      return str.replace(month, "july")
+    case "août":
+      return str.replace(month, "august")
+    case "septembre":
+      return str.replace(month, "september")
+    case "octobre":
+      return str.replace(month, "october")
+    case "novembre":
+      return str.replace(month, "november")
+    case "décembre":
+      return str.replace(month, "december")
+    default:
+      return new Date()
+  }
 }
 
 export function parseDate(str: string) {

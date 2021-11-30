@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -430,7 +430,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
     /////    MANGA SHARE URL    /////
     /////////////////////////////////
     getMangaShareUrl(mangaId) {
-        return `${MANGASORIGINES_DOMAIN}/manga/${mangaId}`;
+        return `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}`;
     }
     ///////////////////////////////
     /////    MANGA DETAILS    /////
@@ -438,7 +438,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
     getMangaDetails(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${MANGASORIGINES_DOMAIN}/manga/${mangaId}`,
+                url: `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}`,
                 method,
                 headers
             });
@@ -454,7 +454,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
     getChapters(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${MANGASORIGINES_DOMAIN}/manga/${mangaId}/ajax/chapters/`,
+                url: `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}/ajax/chapters/`,
                 method: 'POST',
                 headers
             });
@@ -549,10 +549,10 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
             let param = '';
             switch (homepageSectionId) {
                 case 'popular_today':
-                    param = `manga/?m_orderby=trending&page=${page}`;
+                    param = `catalogue/?m_orderby=trending&page=${page}`;
                     break;
                 case 'latest_updated':
-                    param = `manga/?m_orderby=latest&page=${page}`;
+                    param = `catalogue/?m_orderby=latest&page=${page}`;
                     break;
             }
             const request = createRequestObject({
@@ -647,6 +647,7 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())];
     const image = (_a = $('img', panel).attr('data-src')) !== null && _a !== void 0 ? _a : "";
     const rating = Number($('.post-total-rating .score', panel).text().trim());
+    const summary = decodeHTMLEntity($('.manga-excerpt', panel).text().trim());
     const arrayTags = [];
     let status = paperback_extensions_common_1.MangaStatus.UNKNOWN;
     let author = "Unknown";
@@ -697,7 +698,6 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
         }
     }
     const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
-    let summary = decodeHTMLEntity($('.container .summary__content.show-more').text().trim());
     return createManga({
         id: mangaId,
         titles,

@@ -641,7 +641,7 @@ exports.ReaperScans = ReaperScans;
 },{"../ReaperScans/ReaperScansParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDate = exports.parseTags = exports.isLastPage = exports.parseViewMore = exports.parseHomeSections = exports.parseSearch = exports.parseReaperScansChapterDetails = exports.parseReaperScansChapters = exports.parseReaperScansDetails = void 0;
+exports.parseDate = exports.parseDateChap = exports.parseTags = exports.isLastPage = exports.parseViewMore = exports.parseHomeSections = exports.parseSearch = exports.parseReaperScansChapterDetails = exports.parseReaperScansChapters = exports.parseReaperScansDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
@@ -720,7 +720,7 @@ exports.parseReaperScansChapters = ($, mangaId) => {
         const id = (_a = $('a', chapter).attr('href')) !== null && _a !== void 0 ? _a : '';
         const name = $('.chapternum', chapter).text();
         const chapNum = Number($('.chapternum', chapter).text().split(' ')[1]);
-        const time = new Date($('.chapterdate', chapter).text());
+        const time = new Date(parseDateChap($('.chapterdate', chapter).text().trim()));
         chapters.push(createChapter({
             id,
             mangaId,
@@ -1033,6 +1033,43 @@ function decodeHTMLEntity(str) {
         return String.fromCharCode(dec);
     });
 }
+function parseDateChap(str) {
+    str = str.trim();
+    if (str.length == 0) {
+        let date = new Date();
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+    var month = str.split(' ')[0];
+    switch (month) {
+        case "janvier":
+            return str.replace(month, "january");
+        case "février":
+            return str.replace(month, "february");
+        case "mars":
+            return str.replace(month, "march");
+        case "avril":
+            return str.replace(month, "april");
+        case "mai":
+            return str.replace(month, "may");
+        case "juin":
+            return str.replace(month, "june");
+        case "juillet":
+            return str.replace(month, "july");
+        case "août":
+            return str.replace(month, "august");
+        case "septembre":
+            return str.replace(month, "september");
+        case "octobre":
+            return str.replace(month, "october");
+        case "novembre":
+            return str.replace(month, "november");
+        case "décembre":
+            return str.replace(month, "december");
+        default:
+            return new Date();
+    }
+}
+exports.parseDateChap = parseDateChap;
 function parseDate(str) {
     str = str.trim();
     if (str.length == 0) {

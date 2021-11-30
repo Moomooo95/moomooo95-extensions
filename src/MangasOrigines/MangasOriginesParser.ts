@@ -20,6 +20,7 @@ export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): M
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())]
     const image = $('img', panel).attr('data-src') ?? ""
     const rating = Number($('.post-total-rating .score', panel).text().trim())
+    const summary = decodeHTMLEntity($('.manga-excerpt', panel).text().trim())
     const arrayTags: Tag[] = []
 
     let status = MangaStatus.UNKNOWN
@@ -74,7 +75,6 @@ export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): M
     }
 
     const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
-    let summary = decodeHTMLEntity($('.container .summary__content.show-more').text().trim())
 
     return createManga({
         id: mangaId,

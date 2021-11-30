@@ -34,7 +34,7 @@ const headers = {
 }
 
 export const MangasOriginesInfo: SourceInfo = {
-  version: '1.0',
+  version: '1.1',
   name: 'MangasOrigines',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -70,7 +70,7 @@ export class MangasOrigines extends Source {
   /////////////////////////////////
 
   getMangaShareUrl(mangaId: string): string {
-    return `${MANGASORIGINES_DOMAIN}/manga/${mangaId}`
+    return `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}`
   }
 
 
@@ -80,7 +80,7 @@ export class MangasOrigines extends Source {
 
   async getMangaDetails(mangaId: string): Promise<Manga> {
     const request = createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}/manga/${mangaId}`,
+      url: `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}`,
       method,
       headers
     })
@@ -99,7 +99,7 @@ export class MangasOrigines extends Source {
 
   async getChapters(mangaId: string): Promise<Chapter[]> {
     const request = createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}/manga/${mangaId}/ajax/chapters/`,
+      url: `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}/ajax/chapters/`,
       method: 'POST',
       headers
     })
@@ -208,10 +208,10 @@ export class MangasOrigines extends Source {
     let param = ''
     switch (homepageSectionId) {
       case 'popular_today':
-        param = `manga/?m_orderby=trending&page=${page}`
+        param = `catalogue/?m_orderby=trending&page=${page}`
         break;
       case 'latest_updated':
-        param = `manga/?m_orderby=latest&page=${page}`
+        param = `catalogue/?m_orderby=latest&page=${page}`
         break;
     }
 

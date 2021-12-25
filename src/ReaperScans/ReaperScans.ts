@@ -12,7 +12,8 @@ import {
   ContentRating,
   RequestManager,
   MangaUpdates,
-  MangaTile
+  MangaTile,
+  HomeSectionType
 } from "paperback-extensions-common"
 
 import { 
@@ -181,7 +182,7 @@ export class ReaperScans extends Source {
   //////////////////////////////
 
   async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-    const section1 = createHomeSection({ id: 'hot_manga', title: 'HOT' })
+    const section1 = createHomeSection({ id: 'hot_manga', title: 'HOT', type: HomeSectionType.featured })
     const section2 = createHomeSection({ id: 'popular_today', title: 'Populaire : Aujourd\'hui' })
     const section3 = createHomeSection({ id: 'popular_week', title: 'Populaire : Semaine' })
     const section4 = createHomeSection({ id: 'popular_month', title: 'Populaire : Mois' })

@@ -12,7 +12,8 @@ import {
   TagType,
   MangaTile,
   ContentRating,
-  RequestManager
+  RequestManager,
+  HomeSectionType
 } from "paperback-extensions-common"
 
 import { 
@@ -34,7 +35,7 @@ const headers = {
 }
 
 export const MangasOriginesInfo: SourceInfo = {
-  version: '1.1',
+  version: '1.2',
   name: 'MangasOrigines',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -181,7 +182,7 @@ export class MangasOrigines extends Source {
   //////////////////////////////
 
   async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-    const section1 = createHomeSection({ id: 'hot_manga', title: '🔥 HOT 🔥' })
+    const section1 = createHomeSection({ id: 'hot_manga', title: '🔥 HOT 🔥', type: HomeSectionType.featured })
     const section2 = createHomeSection({ id: 'popular_today', title: 'TOP DU JOUR', view_more: true })
     const section3 = createHomeSection({ id: 'latest_updated', title: 'Dernières Mise à jour', view_more: true })
     const section4 = createHomeSection({ id: 'novelty', title: 'Nouveautés' })

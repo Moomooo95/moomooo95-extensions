@@ -65,17 +65,32 @@ export const parseLeCercleDuScanChapters = ($: CheerioStatic, mangaId: string): 
   for (let chapter of allChapters.toArray()) {
     const id: string = $('.title a', chapter).attr('href') ?? ''
     const name: string = $('.title a', chapter).text() ?? ''
+    const volume: number = Number($(chapter).parent().children('.title').text().trim().split(' ').pop())
     const chapNum: number = Number( id.split('/')[7] )
     const time: Date = parseDate($('.meta_r', chapter).text().split(',').pop() ?? '')
 
-    chapters.push(createChapter({
-      id,
-      mangaId,
-      name,
-      langCode: LanguageCode.FRENCH,
-      chapNum,
-      time
-    }))
+    if (isNaN(volume)) {
+      chapters.push(createChapter({
+        id,
+        mangaId,
+        name,
+        langCode: LanguageCode.FRENCH,
+        chapNum,
+        time
+      }))
+    }
+    else {
+      chapters.push(createChapter({
+        id,
+        mangaId,
+        name,
+        langCode: LanguageCode.FRENCH,
+        chapNum,
+        volume,
+        time
+      }))
+    }
+    
   }
 
   return chapters

@@ -14,37 +14,38 @@ import {
 } from "paperback-extensions-common"
 
 import {
-    parseLeCercleDuScanChapterDetails,
-    parseLeCercleDuScanChapters,
-    parseLeCercleDuScanMangaDetails,
+    parseJapscanChapterDetails,
+    parseJapscanChapters,
+    parseJapscanMangaDetails,
     parseSearch,
     parseHomeSections,
-    parseMangaSectionOthers,
     parseViewMore,
-    isLastPage,
     parseDate
-} from "./LeCercleDuScanParser";
+} from "./JapscanParser";
 
-const LECERCLEDUSCAN_DOMAIN = "https://lel.lecercleduscan.com";
-const method = 'POST'
+const JAPSCAN_DOMAIN = "https://www.japscan.ws";
+const method = 'GET'
 const headers = {
-    'Host': 'lel.lecercleduscan.com',
+    "Host": "www.japscan.ws",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
 }
+
 const headers_search = {
-    "Host": "lel.lecercleduscan.com",
+    "Host": "www.japscan.ws",
     "Content-Type": "application/x-www-form-urlencoded",
     "Content-Length": "11",
+    "X-Requested-With": "XMLHttpRequest",
 }
 
-export const LeCercleDuScanInfo: SourceInfo = {
-    version: '1.1',
-    name: 'Le Cercle du Scan',
+export const JapscanInfo: SourceInfo = {
+    version: '1.0',
+    name: 'Japscan',
     icon: 'logo.png',
     author: 'Moomooo95',
     authorWebsite: 'https://github.com/Moomooo95',
-    description: 'Source française Le Cercle du Scan',
-    contentRating: ContentRating.EVERYONE,
-    websiteBaseURL: LECERCLEDUSCAN_DOMAIN,
+    description: 'Source française Japscan',
+    contentRating: ContentRating.MATURE,
+    websiteBaseURL: JAPSCAN_DOMAIN,
     sourceTags: [
         {
             text: "Francais",
@@ -57,7 +58,7 @@ export const LeCercleDuScanInfo: SourceInfo = {
     ]
 }
 
-export class LeCercleDuScan extends Source {
+export class Japscan extends Source {
     requestManager: RequestManager = createRequestManager({
         requestsPerSecond: 3
     });
@@ -67,7 +68,7 @@ export class LeCercleDuScan extends Source {
     /////////////////////////////////
 
     getMangaShareUrl(mangaId: string): string {
-        return `${LECERCLEDUSCAN_DOMAIN}/series/${mangaId}`
+        return `${JAPSCAN_DOMAIN}/manga/${mangaId}`
     }
 
 
@@ -77,16 +78,15 @@ export class LeCercleDuScan extends Source {
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
         const request = createRequestObject({
-            url: `${LECERCLEDUSCAN_DOMAIN}/series/${mangaId}`,
+            url: `${JAPSCAN_DOMAIN}/manga/${mangaId}/`,
             method,
-            headers,
-            data: "adult=true"
+            headers
         })
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
         
-        return await parseLeCercleDuScanMangaDetails($, mangaId);
+        return await parseJapscanMangaDetails($, mangaId);
     }
 
 
@@ -96,16 +96,15 @@ export class LeCercleDuScan extends Source {
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = createRequestObject({
-            url: `${LECERCLEDUSCAN_DOMAIN}/series/${mangaId}`,
+            url: `${JAPSCAN_DOMAIN}/manga/${mangaId}/`,
             method,
-            headers,
-            data: "adult=true"
+            headers
         })
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
         
-        return await parseLeCercleDuScanChapters($, mangaId);
+        return await parseJapscanChapters($, mangaId);
     }
 
 
@@ -117,14 +116,13 @@ export class LeCercleDuScan extends Source {
         const request = createRequestObject({
             url: `${chapterId}`,
             method,
-            headers,
-            data: "adult=true"
+            headers
         })
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
         
-        return await parseLeCercleDuScanChapterDetails($, mangaId, chapterId);
+        return await parseJapscanChapterDetails($, mangaId, chapterId);
     }
 
 
@@ -133,18 +131,16 @@ export class LeCercleDuScan extends Source {
     ////////////////////////////////
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
-        const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27')
+        const search = query.title
         const request = createRequestObject({
-            url: `${LECERCLEDUSCAN_DOMAIN}/search`,
+            url: `${JAPSCAN_DOMAIN}/live-search/`,
             method : 'POST',
-            headers : headers_search,
+            headers: headers_search,
             data: `search=${search}`
         })
 
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-        
-        const manga = parseSearch($)
+        const response = await this.requestManager.schedule(request, 1)        
+        const manga = parseSearch(response.data)
 
         return createPagedResults({
             results: manga
@@ -158,28 +154,20 @@ export class LeCercleDuScan extends Source {
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernier Manga Sorti', view_more: true })
-        const section2 = createHomeSection({ id: 'all_manga', title: 'Tous les mangas', view_more: true  })
+        const section2 = createHomeSection({ id: 'top_mangas_today', title: 'TOP MANGAS 24H' })
+        const section3 = createHomeSection({ id: 'top_mangas_week', title: 'TOP MANGAS Semaine' })
+        const section4 = createHomeSection({ id: 'top_mangas_all_time', title: 'TOP MANGAS 2021' })
 
-        const request1 = createRequestObject({
-            url: `${LECERCLEDUSCAN_DOMAIN}/latest`,
-            method: 'GET',
+        const request = createRequestObject({
+            url: `${JAPSCAN_DOMAIN}/`,
+            method,
             headers
         })
 
-        const response1 = await this.requestManager.schedule(request1, 1)
-        const $1 = this.cheerio.load(response1.data)
-
-        const request2 = createRequestObject({
-            url: `${LECERCLEDUSCAN_DOMAIN}/directory`,
-            method: 'GET',
-            headers
-        })
-
-        const response2 = await this.requestManager.schedule(request2, 1)
-        const $2 = this.cheerio.load(response2.data)
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data)
         
-        parseHomeSections($1, [section1], sectionCallback)
-        parseMangaSectionOthers($2, [section2], sectionCallback)
+        parseHomeSections($, [section1, section2, section3, section4], sectionCallback)
     }
 
     /////////////////////////////////
@@ -188,19 +176,9 @@ export class LeCercleDuScan extends Source {
     
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         let page: number = metadata?.page ?? 1
-        let param = ''
-
-        switch (homepageSectionId) {
-            case 'latest_updates':
-                param = `latest/${page}`
-                break;
-            case 'all_manga':
-                param = `directory/${page}`
-                break;
-        }
-
+        
         const request = createRequestObject({
-            url: `${LECERCLEDUSCAN_DOMAIN}/${param}`,
+            url: `${JAPSCAN_DOMAIN}`,
             method,
             headers
         })
@@ -208,8 +186,8 @@ export class LeCercleDuScan extends Source {
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
 
-        const manga = parseViewMore($, homepageSectionId)
-        metadata = !isLastPage($) ? { page: page + 1 } : undefined
+        const manga = parseViewMore($, page)
+        metadata = !(page==8) ? { page: page + 1 } : undefined
 
         return createPagedResults({
             results: manga,
@@ -224,7 +202,7 @@ export class LeCercleDuScan extends Source {
 
     async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
         const request = createRequestObject({
-            url: `${LECERCLEDUSCAN_DOMAIN}`,
+            url: `${JAPSCAN_DOMAIN}`,
             method,
             headers
         })
@@ -233,17 +211,16 @@ export class LeCercleDuScan extends Source {
         const $ = this.cheerio.load(response.data)
   
         const updatedManga: string[] = []
-        for (const manga of $('.group').toArray()) {
-          let id = $('a', manga).first().attr('href')
-          let mangaDate = parseDate($('.meta_r', manga).text().split(',').pop() ?? '')
-          console.info(id +" - "+ mangaDate)
+        for (const manga of $('#tab-1 h3').toArray()) {
+            let id = "https://www.japscan.ws" + $('a', manga).attr('href')
+            let mangaDate = new Date()
 
-          if (!id) continue
-          if (mangaDate > time) {
-              if (ids.includes(id)) {
-                  updatedManga.push(id)
-              }
-          }
+            if (!id) continue
+            if (mangaDate > time) {
+                if (ids.includes(id)) {
+                    updatedManga.push(id)
+                }
+            }
         }
   
         mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))

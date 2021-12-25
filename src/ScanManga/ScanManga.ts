@@ -12,11 +12,13 @@ import {
     TagType,
     RequestManager,
     ContentRating,
-    MangaTile
+    MangaTile,
+    HomeSectionType
   } from "paperback-extensions-common"
   
   import {
     isLastPage,
+    parseDate,
     parseHomeSections,
     parseScanMangaChapterDetails,
     parseScanMangaChapters,
@@ -63,7 +65,7 @@ import {
     /////////////////////////////////
   
     getMangaShareUrl(mangaId: string): string {
-      return `${SCANMANGA_DOMAIN}/${mangaId}/`
+        return `${SCANMANGA_DOMAIN}/${mangaId}/`
     }
 
 
@@ -73,8 +75,8 @@ import {
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
         const request = createRequestObject({
-        url: `${SCANMANGA_DOMAIN}/${mangaId}/`,
-        method,
+            url: `${SCANMANGA_DOMAIN}/${mangaId}/`,
+            method,
             headers
         })
 
@@ -91,9 +93,9 @@ import {
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = createRequestObject({
-        url: `${SCANMANGA_DOMAIN}/${mangaId}/`,
-        method,
-        headers
+            url: `${SCANMANGA_DOMAIN}/${mangaId}/`,
+            method,
+            headers
         })
 
         const response = await this.requestManager.schedule(request, 1);
@@ -185,6 +187,9 @@ import {
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernier Manga Sorti' })
+        const section2 = createHomeSection({ id: 'top_discovery_bd', title: 'Top Découvertes Mangas' })
+        const section3 = createHomeSection({ id: 'top_dismissed_bd', title: 'Top Licenciées Mangas' })
+        const section4 = createHomeSection({ id: 'new_mangas', title: 'Nouveaux Mangas' })
 
         const request1 = createRequestObject({
             url: `${SCANMANGA_DOMAIN}`,
@@ -194,7 +199,39 @@ import {
         const response1 = await this.requestManager.schedule(request1, 1)
         const $1 = this.cheerio.load(response1.data)
         
-        parseHomeSections($1, [section1], sectionCallback)
+        parseHomeSections($1, [section1, section2, section3, section4], sectionCallback)
+    }
+
+
+    //////////////////////////////////////
+    /////    FILTER UPDATED MANGA    /////
+    //////////////////////////////////////
+
+    async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+        const request = createRequestObject({
+            url: `${SCANMANGA_DOMAIN}`,
+            method,
+            headers
+        })
+
+        const response = await this.requestManager.schedule(request, 1)
+        this.CloudFlareError(response.status)
+        const $ = this.cheerio.load(response.data)
+
+        const updatedManga: string[] = []
+        for (const manga of $('#content_news .listing').toArray()) {
+            let id = $('.left .nom_manga', manga).attr('href')
+            let mangaDate = parseDate($('.left .date', manga).clone().children().remove().end().text().trim())
+    
+            if (!id) continue
+            if (mangaDate > time) {
+                if (ids.includes(id)) {
+                updatedManga.push(id)
+                }
+            }
+        }
+
+        mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
     }
 
     ///////////////////////////////////

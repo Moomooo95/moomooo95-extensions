@@ -109,8 +109,6 @@ export const parseScantradChapterDetails = ($: CheerioStatic, mangaId: string, c
     for (let item of allItems) {
         let page = ($('img', item).attr('data-src')?.split('/')[0] == "https:") ? $('img', item).attr('data-src') ?? "" : "https://scan-trad.fr/" + $('img', item).attr('data-src')
         
-        console.log(page)
-
         if (typeof page === 'undefined')
             continue;
 

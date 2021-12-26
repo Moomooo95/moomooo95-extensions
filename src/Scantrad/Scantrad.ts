@@ -230,7 +230,6 @@ export class Scantrad extends Source {
         for (const manga of $('.home #home-chapter .home-manga').toArray()) {
           let id = "https://scantrad.net" + $('.hm-info .hmi-sub', manga).attr('href')
           let mangaDate = parseDate($('.hmr-date', manga).parent().clone().children().remove().end().text().trim()) ?? ''
-          console.info(id +" - "+ mangaDate)
 
           if (!id) continue
           if (mangaDate > time) {

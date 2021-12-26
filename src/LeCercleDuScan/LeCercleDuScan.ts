@@ -236,7 +236,6 @@ export class LeCercleDuScan extends Source {
         for (const manga of $('.group').toArray()) {
           let id = $('a', manga).first().attr('href')
           let mangaDate = parseDate($('.meta_r', manga).text().split(',').pop() ?? '')
-          console.info(id +" - "+ mangaDate)
 
           if (!id) continue
           if (mangaDate > time) {

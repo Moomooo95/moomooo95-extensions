@@ -33,7 +33,7 @@ import {
   }
   
   export const ScanMangaInfo: SourceInfo = {
-      version: '1.1',
+      version: '1.0',
       name: 'Scan Manga',
       icon: 'logo.png',
       author: 'Moomooo95',

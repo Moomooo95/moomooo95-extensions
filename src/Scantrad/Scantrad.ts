@@ -33,7 +33,7 @@ const headers = {
 }
 
 export const ScantradInfo: SourceInfo = {
-    version: '1.1',
+    version: '1.0',
     name: 'Scantrad',
     icon: 'logo.png',
     author: 'Moomooo95',

@@ -10,6 +10,7 @@
 | MangasOrigines    | [Site Web](https://mangas-origines.fr/) |
 | FuryoSquad        | [Site Web](https://www.furyosquad.com/) |
 | Patatescans       | [Site Web](https://patatescans.com/) |
+| Scantrad Union    | [Site Web](https://scantrad-union.com/) |
 
 ## Sources en cours de développement
 
@@ -24,6 +25,7 @@
 
 |                   |                  |
 | ---               | ---              |
-| Neo Scantrad       | [Site Web](https://neo-scantrad.xyz/) |
+| Neo Scantrad      | [Site Web](https://neo-scantrad.xyz/) |
 | Mangakawaii       | [Site Web](https://www.mangakawaii.net/) | *
-| Scantrad Union    | [Site Web](https://scantrad-union.com/) |
+| Perf Scantrad    | [Site Web](https://perf-scantrad.fr/) |
+

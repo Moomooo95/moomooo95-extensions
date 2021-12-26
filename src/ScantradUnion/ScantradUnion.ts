@@ -50,6 +50,10 @@ export const ScantradUnionInfo: SourceInfo = {
         {
             text: 'Notifications',
             type: TagType.GREEN
+        },
+        {
+            text: 'Slow',
+            type: TagType.YELLOW
         }
     ]
 }

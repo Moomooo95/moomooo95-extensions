@@ -150,7 +150,7 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
     let url = $('h5 a', item).attr('href')?.split("/")[4]
     let image = ($('img', item).attr('src') ?? '').split("/")[0] == "https:" ? $('img', item).attr('src') ?? "" : "https:" + $('img', item).attr('src') ?? ""
     let title = decodeHTMLEntity($('h5', item).text())
-    let subtitle = decodeHTMLEntity($('a', item).eq(2).text().trim())
+    let subtitle = "Chapitre " + decodeHTMLEntity($('a', item).eq(2).text().trim().replace(/#/g, ""))
     
     if (typeof url === 'undefined' || typeof image === 'undefined') 
       continue

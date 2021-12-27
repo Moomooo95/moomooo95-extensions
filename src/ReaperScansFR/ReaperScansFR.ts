@@ -20,13 +20,13 @@ import {
   isLastPage,
   parseDate,
   parseHomeSections,
-  parseReaperScansChapterDetails,
-  parseReaperScansChapters,
-  parseReaperScansDetails,
+  parseReaperScansFRChapterDetails,
+  parseReaperScansFRChapters,
+  parseReaperScansFRDetails,
   parseSearch,
   parseTags,
   parseViewMore
-} from "../ReaperScans/ReaperScansParser";
+} from "../ReaperScansFR/ReaperScansFRParser";
 
 const REAPERSCANS_DOMAIN = "https://reaperscans.fr";
 const method = 'GET'
@@ -34,13 +34,13 @@ const headers = {
   'Host': 'reaperscans.fr'
 }
 
-export const ReaperScansInfo: SourceInfo = {
+export const ReaperScansFRInfo: SourceInfo = {
   version: '1.1',
-  name: 'ReaperScans',
+  name: 'ReaperScansFR',
   icon: 'logo.png',
   author: 'Moomooo95',
   authorWebsite: 'https://github.com/Moomooo95',
-  description: 'Source française ReaperScans',
+  description: 'Source française ReaperScansFR',
   contentRating: ContentRating.MATURE,
   websiteBaseURL: REAPERSCANS_DOMAIN,
   sourceTags: [
@@ -59,7 +59,7 @@ export const ReaperScansInfo: SourceInfo = {
   ]
 }
 
-export class ReaperScans extends Source {
+export class ReaperScansFR extends Source {
 
   requestManager: RequestManager = createRequestManager({
     requestsPerSecond: 3
@@ -90,7 +90,7 @@ export class ReaperScans extends Source {
     this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
     
-    return await parseReaperScansDetails($, mangaId);
+    return await parseReaperScansFRDetails($, mangaId);
   }
 
 
@@ -109,7 +109,7 @@ export class ReaperScans extends Source {
     this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
     
-    return await parseReaperScansChapters($, mangaId);
+    return await parseReaperScansFRChapters($, mangaId);
   }
 
 
@@ -128,7 +128,7 @@ export class ReaperScans extends Source {
     this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
     
-    return await parseReaperScansChapterDetails($, mangaId, chapterId);
+    return await parseReaperScansFRChapterDetails($, mangaId, chapterId);
   }
 
 

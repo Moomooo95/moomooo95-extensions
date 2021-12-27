@@ -1,16 +1,14 @@
 {
-  "name": "extensions",
+  "name": "moomooo95-extensions",
   "version": "1.0.0",
-  "description": "Additional sources for Paperback",
+  "repositoryName": "Moomooo95's Extensions",
+  "description": "Multiple french sources for Paperback",
   "scripts": {
-    "start": "tsc && node dist/api.js",
-    "build": "tsc",
     "test": "node_modules/.bin/mocha --timeout 300000 -r ts-node/register src/**/*.test.ts",
-    "coverage": "nyc -r lcov -e .ts -x \"*.test.ts\" npm run test",
     "bundle": "paperback bundle",
     "serve": "paperback serve -p 8000"
   },
-  "author": "Paperback",
+  "author": "Moomooo95",
   "license": "MIT",
   "dependencies": {
     "chai": "^4.2.0",

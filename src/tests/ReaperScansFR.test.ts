@@ -4,14 +4,14 @@ import {
     SearchRequest,
     Source
 } from 'paperback-extensions-common'
-import { ReaperScans } from '../ReaperScans/ReaperScans'
+import { ReaperScansFR } from '../ReaperScansFR/ReaperScansFR'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 
-describe('ReaperScans Tests', () => {
+describe('ReaperScansFR Tests', () => {
 
     const wrapper: APIWrapper = new APIWrapper()
-    const source: Source = new ReaperScans(cheerio)
+    const source: Source = new ReaperScansFR(cheerio)
     const expect = chai.expect
     chai.use(chaiAsPromised)
 

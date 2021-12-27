@@ -6,7 +6,7 @@
 | ---               | ---              |
 | Le Cercle du Scan | [Site Web](https://lel.lecercleduscan.com/) |
 | FRScan            | [Site Web](https://www.frscan.cc/) |
-| ReaperScans       | [Site Web](https://reaperscans.fr/) |
+| ReaperScansFR     | [Site Web](https://reaperscans.fr/) |
 | MangasOrigines    | [Site Web](https://mangas-origines.fr/) |
 | FuryoSquad        | [Site Web](https://www.furyosquad.com/) |
 | Patatescans       | [Site Web](https://patatescans.com/) |

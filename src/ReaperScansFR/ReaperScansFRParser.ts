@@ -15,7 +15,7 @@ import {
 /////    MANGA DETAILS    /////
 ///////////////////////////////
 
-export const parseReaperScansDetails = ($: CheerioStatic, mangaId: string): Manga => {
+export const parseReaperScansFRDetails = ($: CheerioStatic, mangaId: string): Manga => {
   const titles = [decodeHTMLEntity($('.entry-title').text().trim())]
   const image = $('.info-left-margin img').attr('src') ?? ""
   let follows = Number($('.bmc').text().trim().replace(/[^\d]/g, ""))
@@ -90,7 +90,7 @@ export const parseReaperScansDetails = ($: CheerioStatic, mangaId: string): Mang
 /////    Chapters    /////
 //////////////////////////
 
-export const parseReaperScansChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
+export const parseReaperScansFRChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
   const allChapters = $('#chapterlist')
   const chapters: Chapter[] = []
   
@@ -117,7 +117,7 @@ export const parseReaperScansChapters = ($: CheerioStatic, mangaId: string): Cha
 /////    Chapters Details    /////
 //////////////////////////////////
 
-export const parseReaperScansChapterDetails = ($: CheerioStatic, mangaId: string, chapterId: string): ChapterDetails => {
+export const parseReaperScansFRChapterDetails = ($: CheerioStatic, mangaId: string, chapterId: string): ChapterDetails => {
   const pages: string[] = []
   const allItems = $($.parseHTML($('noscript').text())).children().toArray()
 

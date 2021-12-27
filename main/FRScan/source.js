@@ -530,7 +530,7 @@ class FRScan extends paperback_extensions_common_1.Source {
     //////////////////////
     /////    TAGS    /////
     //////////////////////
-    getTags() {
+    getSearchTags() {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
                 url: `${FRSCAN_DOMAIN}/manga-list`,
@@ -693,7 +693,7 @@ exports.parseSearch = ($) => {
         let url = (_a = $('h5 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
         let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : '').split("/")[0] == "https:" ? (_c = $('img', item).attr('src')) !== null && _c !== void 0 ? _c : "" : (_d = "https:" + $('img', item).attr('src')) !== null && _d !== void 0 ? _d : "";
         let title = decodeHTMLEntity($('h5', item).text());
-        let subtitle = decodeHTMLEntity($('a', item).eq(2).text().trim());
+        let subtitle = "Chapitre " + decodeHTMLEntity($('a', item).eq(2).text().trim().replace(/#/g, ""));
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
         manga.push(createMangaTile({

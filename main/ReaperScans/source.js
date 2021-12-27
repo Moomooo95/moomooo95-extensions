@@ -524,7 +524,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
     //////////////////////////////
     getHomePageSections(sectionCallback) {
         return __awaiter(this, void 0, void 0, function* () {
-            const section1 = createHomeSection({ id: 'hot_manga', title: 'HOT' });
+            const section1 = createHomeSection({ id: 'hot_manga', title: 'HOT', type: paperback_extensions_common_1.HomeSectionType.featured });
             const section2 = createHomeSection({ id: 'popular_today', title: 'Populaire : Aujourd\'hui' });
             const section3 = createHomeSection({ id: 'popular_week', title: 'Populaire : Semaine' });
             const section4 = createHomeSection({ id: 'popular_month', title: 'Populaire : Mois' });
@@ -607,7 +607,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
     //////////////////////
     /////    TAGS    /////
     //////////////////////
-    getTags() {
+    getSearchTags() {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
                 url: `${REAPERSCANS_DOMAIN}/manga`,

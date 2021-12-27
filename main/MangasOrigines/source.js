@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.1',
+    version: '1.2',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -524,7 +524,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
     //////////////////////////////
     getHomePageSections(sectionCallback) {
         return __awaiter(this, void 0, void 0, function* () {
-            const section1 = createHomeSection({ id: 'hot_manga', title: '🔥 HOT 🔥' });
+            const section1 = createHomeSection({ id: 'hot_manga', title: '🔥 HOT 🔥', type: paperback_extensions_common_1.HomeSectionType.featured });
             const section2 = createHomeSection({ id: 'popular_today', title: 'TOP DU JOUR', view_more: true });
             const section3 = createHomeSection({ id: 'latest_updated', title: 'Dernières Mise à jour', view_more: true });
             const section4 = createHomeSection({ id: 'novelty', title: 'Nouveautés' });
@@ -602,7 +602,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
     //////////////////////
     /////    TAGS    /////
     //////////////////////
-    getTags() {
+    getSearchTags() {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
                 url: `${MANGASORIGINES_DOMAIN}/?s=&post_type=wp-manga`,
@@ -645,7 +645,7 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
     var _a, _b, _c, _d;
     const panel = $('.container .tab-summary');
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())];
-    const image = (_a = $('img', panel).attr('data-src')) !== null && _a !== void 0 ? _a : "";
+    const image = (_a = $('img', panel).attr('src')) !== null && _a !== void 0 ? _a : "";
     const rating = Number($('.post-total-rating .score', panel).text().trim());
     const summary = decodeHTMLEntity($('.manga-excerpt', panel).text().trim());
     const arrayTags = [];
@@ -742,7 +742,7 @@ exports.parseMangasOriginesChapterDetails = ($, mangaId, chapterId) => {
     const pages = [];
     const allItems = $('.container .reading-content img').toArray();
     for (let item of allItems) {
-        let page = (_a = $(item).attr('data-src')) === null || _a === void 0 ? void 0 : _a.trim();
+        let page = (_a = $(item).attr('src')) === null || _a === void 0 ? void 0 : _a.trim();
         if (typeof page === 'undefined')
             continue;
         pages.push(page);
@@ -763,7 +763,7 @@ exports.parseSearch = ($) => {
     for (const item of $('.row .c-tabs-item__content').toArray()) {
         const url = (_b = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/')[4]) !== null && _b !== void 0 ? _b : '';
         const title = (_c = $('h3 a', item).text()) !== null && _c !== void 0 ? _c : '';
-        const image = (_d = $('img', item).attr("data-src")) !== null && _d !== void 0 ? _d : '';
+        const image = (_d = $('img', item).attr("src")) !== null && _d !== void 0 ? _d : '';
         const subtitle = $('.latest-chap .chapter a', item).text();
         manga.push(createMangaTile({
             id: url,
@@ -804,7 +804,7 @@ const parsePopularTodayManga = ($) => {
     const popularTodayManga = [];
     for (const item of $('.widget-content .popular-item-wrap').toArray()) {
         let url = (_a = $('h5 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = ((_b = $('img', item).attr('data-src')) !== null && _b !== void 0 ? _b : "").replace("75x106", "193x278");
+        let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").replace("-75x106", "");
         let title = $('h5 a', item).text().trim();
         let subtitle = $('.chapter-item .chapter.font-meta', item).eq(0).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -826,7 +826,7 @@ const parseLatestUpdatedManga = ($) => {
     const latestUpdatedManga = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
         let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = ((_b = $('img', item).attr('data-src')) !== null && _b !== void 0 ? _b : "").replace("110x150", "193x278");
+        let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").replace("-110x150", "");
         let title = $('h3 a', item).text().trim();
         let subtitle = $('.chapter-item .chapter.font-meta', item).eq(0).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -844,11 +844,11 @@ const parseLatestUpdatedManga = ($) => {
 /////    NOVELTY    /////
 /////////////////////////
 const parseNoveltyManga = ($) => {
-    var _a;
+    var _a, _b;
     const noveltyManga = [];
     for (const item of $('#manga-popular-slider-2 .slider__container .slider__item').toArray()) {
         let url = (_a = $('h4 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = $('img', item).attr('src');
+        let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").replace("-125x180", "");
         let title = $('h4 a', item).text().trim();
         let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -887,7 +887,7 @@ exports.parseViewMore = ($) => {
     const viewMore = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
         let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = $('.img-responsive', item).attr('data-src');
+        let image = $('.img-responsive', item).attr('src');
         let title = $('h3 a', item).text().trim();
         let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')

@@ -387,21 +387,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ReaperScans = exports.ReaperScansInfo = void 0;
+exports.ReaperScansFR = exports.ReaperScansFRInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
-const ReaperScansParser_1 = require("../ReaperScans/ReaperScansParser");
+const ReaperScansFRParser_1 = require("../ReaperScansFR/ReaperScansFRParser");
 const REAPERSCANS_DOMAIN = "https://reaperscans.fr";
 const method = 'GET';
 const headers = {
     'Host': 'reaperscans.fr'
 };
-exports.ReaperScansInfo = {
+exports.ReaperScansFRInfo = {
     version: '1.1',
-    name: 'ReaperScans',
+    name: 'ReaperScansFR',
     icon: 'logo.png',
     author: 'Moomooo95',
     authorWebsite: 'https://github.com/Moomooo95',
-    description: 'Source française ReaperScans',
+    description: 'Source française ReaperScansFR',
     contentRating: paperback_extensions_common_1.ContentRating.MATURE,
     websiteBaseURL: REAPERSCANS_DOMAIN,
     sourceTags: [
@@ -419,7 +419,7 @@ exports.ReaperScansInfo = {
         }
     ]
 };
-class ReaperScans extends paperback_extensions_common_1.Source {
+class ReaperScansFR extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
         this.requestManager = createRequestManager({
@@ -445,7 +445,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
             const response = yield this.requestManager.schedule(request, 1);
             this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
-            return yield ReaperScansParser_1.parseReaperScansDetails($, mangaId);
+            return yield ReaperScansFRParser_1.parseReaperScansFRDetails($, mangaId);
         });
     }
     //////////////////////////
@@ -461,7 +461,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
             const response = yield this.requestManager.schedule(request, 1);
             this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
-            return yield ReaperScansParser_1.parseReaperScansChapters($, mangaId);
+            return yield ReaperScansFRParser_1.parseReaperScansFRChapters($, mangaId);
         });
     }
     //////////////////////////////////
@@ -477,7 +477,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
             const response = yield this.requestManager.schedule(request, 1);
             this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
-            return yield ReaperScansParser_1.parseReaperScansChapterDetails($, mangaId, chapterId);
+            return yield ReaperScansFRParser_1.parseReaperScansFRChapterDetails($, mangaId, chapterId);
         });
     }
     ////////////////////////////////
@@ -498,8 +498,8 @@ class ReaperScans extends paperback_extensions_common_1.Source {
                 const response = yield this.requestManager.schedule(request, 1);
                 this.CloudFlareError(response.status);
                 const $ = this.cheerio.load(response.data);
-                manga = ReaperScansParser_1.parseSearch($);
-                metadata = !ReaperScansParser_1.isLastPage($, 'search_tags') ? { page: page + 1 } : undefined;
+                manga = ReaperScansFRParser_1.parseSearch($);
+                metadata = !ReaperScansFRParser_1.isLastPage($, 'search_tags') ? { page: page + 1 } : undefined;
             }
             else {
                 const request = createRequestObject({
@@ -510,8 +510,8 @@ class ReaperScans extends paperback_extensions_common_1.Source {
                 const response = yield this.requestManager.schedule(request, 1);
                 this.CloudFlareError(response.status);
                 const $ = this.cheerio.load(response.data);
-                manga = ReaperScansParser_1.parseSearch($);
-                metadata = !ReaperScansParser_1.isLastPage($, 'search') ? { page: page + 1 } : undefined;
+                manga = ReaperScansFRParser_1.parseSearch($);
+                metadata = !ReaperScansFRParser_1.isLastPage($, 'search') ? { page: page + 1 } : undefined;
             }
             return createPagedResults({
                 results: manga,
@@ -540,7 +540,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
             const response = yield this.requestManager.schedule(request, 1);
             this.CloudFlareError(response.status);
             const $1 = this.cheerio.load(response.data);
-            ReaperScansParser_1.parseHomeSections($1, [section1, section2, section3, section4, section5, section6, section7, section8], sectionCallback);
+            ReaperScansFRParser_1.parseHomeSections($1, [section1, section2, section3, section4, section5, section6, section7, section8], sectionCallback);
         });
     }
     /////////////////////////////////
@@ -567,8 +567,8 @@ class ReaperScans extends paperback_extensions_common_1.Source {
             const response = yield this.requestManager.schedule(request, 1);
             this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
-            const manga = ReaperScansParser_1.parseViewMore($);
-            metadata = !ReaperScansParser_1.isLastPage($, homepageSectionId) ? { page: page + 1 } : undefined;
+            const manga = ReaperScansFRParser_1.parseViewMore($);
+            metadata = !ReaperScansFRParser_1.isLastPage($, homepageSectionId) ? { page: page + 1 } : undefined;
             return createPagedResults({
                 results: manga,
                 metadata
@@ -592,7 +592,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
             const updatedManga = [];
             for (const manga of $('.postbody .listupd').eq(1).find('.utao.styletwo').toArray()) {
                 let id = $('a', manga).first().attr('href');
-                let mangaDate = ReaperScansParser_1.parseDate(((_a = $('.luf span', manga).text()) !== null && _a !== void 0 ? _a : '').trim().split('Il y a ')[1]);
+                let mangaDate = ReaperScansFRParser_1.parseDate(((_a = $('.luf span', manga).text()) !== null && _a !== void 0 ? _a : '').trim().split('Il y a ')[1]);
                 if (!id)
                     continue;
                 if (mangaDate > time) {
@@ -617,7 +617,7 @@ class ReaperScans extends paperback_extensions_common_1.Source {
             const response = yield this.requestManager.schedule(request, 1);
             this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
-            return ReaperScansParser_1.parseTags($);
+            return ReaperScansFRParser_1.parseTags($);
         });
     }
     ///////////////////////////////////
@@ -636,17 +636,17 @@ class ReaperScans extends paperback_extensions_common_1.Source {
         });
     }
 }
-exports.ReaperScans = ReaperScans;
+exports.ReaperScansFR = ReaperScansFR;
 
-},{"../ReaperScans/ReaperScansParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
+},{"../ReaperScansFR/ReaperScansFRParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDate = exports.parseDateChap = exports.parseTags = exports.isLastPage = exports.parseViewMore = exports.parseHomeSections = exports.parseSearch = exports.parseReaperScansChapterDetails = exports.parseReaperScansChapters = exports.parseReaperScansDetails = void 0;
+exports.parseDate = exports.parseDateChap = exports.parseTags = exports.isLastPage = exports.parseViewMore = exports.parseHomeSections = exports.parseSearch = exports.parseReaperScansFRChapterDetails = exports.parseReaperScansFRChapters = exports.parseReaperScansFRDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parseReaperScansDetails = ($, mangaId) => {
+exports.parseReaperScansFRDetails = ($, mangaId) => {
     var _a, _b, _c, _d;
     const titles = [decodeHTMLEntity($('.entry-title').text().trim())];
     const image = (_a = $('.info-left-margin img').attr('src')) !== null && _a !== void 0 ? _a : "";
@@ -712,7 +712,7 @@ exports.parseReaperScansDetails = ($, mangaId) => {
 //////////////////////////
 /////    Chapters    /////
 //////////////////////////
-exports.parseReaperScansChapters = ($, mangaId) => {
+exports.parseReaperScansFRChapters = ($, mangaId) => {
     var _a;
     const allChapters = $('#chapterlist');
     const chapters = [];
@@ -735,7 +735,7 @@ exports.parseReaperScansChapters = ($, mangaId) => {
 //////////////////////////////////
 /////    Chapters Details    /////
 //////////////////////////////////
-exports.parseReaperScansChapterDetails = ($, mangaId, chapterId) => {
+exports.parseReaperScansFRChapterDetails = ($, mangaId, chapterId) => {
     const pages = [];
     const allItems = $($.parseHTML($('noscript').text())).children().toArray();
     for (let item of allItems) {

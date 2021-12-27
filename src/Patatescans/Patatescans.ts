@@ -260,7 +260,7 @@ export class Patatescans extends Source {
     /////    TAGS    /////
     //////////////////////
 
-    async getTags(): Promise<TagSection[]> {
+    async getSearchTags(): Promise<TagSection[]> {
         const request = createRequestObject({
             url: `${PATATESCANS_DOMAIN}/manga`,
             method,

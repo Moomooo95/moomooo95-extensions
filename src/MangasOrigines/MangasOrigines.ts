@@ -272,7 +272,7 @@ export class MangasOrigines extends Source {
   /////    TAGS    /////
   //////////////////////
 
-  async getTags(): Promise<TagSection[]> {
+  async getSearchTags(): Promise<TagSection[]> {
     const request = createRequestObject({
       url: `${MANGASORIGINES_DOMAIN}/?s=&post_type=wp-manga`,
       method,

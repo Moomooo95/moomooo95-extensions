@@ -192,7 +192,7 @@ export class FRScan extends Source {
   /////    TAGS    /////
   //////////////////////
 
-  async getTags(): Promise<TagSection[]> {
+  async getSearchTags(): Promise<TagSection[]> {
     const request = createRequestObject({
       url: `${FRSCAN_DOMAIN}/manga-list`,
       method,

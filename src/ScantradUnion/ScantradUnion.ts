@@ -194,7 +194,7 @@ export class ScantradUnion extends Source {
     /////    TAGS    /////
     //////////////////////
 
-    async getTags(): Promise<TagSection[]> {
+    async getSearchTags(): Promise<TagSection[]> {
         const request = createRequestObject({
             url: `${SCANTRADUNION_DOMAIN}`,
             method,

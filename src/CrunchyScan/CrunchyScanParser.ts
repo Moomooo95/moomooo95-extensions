@@ -96,14 +96,14 @@ export const parseCrunchyScanDetails = ($: CheerioStatic, mangaId: string): Mang
 ///////////////////////////////
 
 export const parseCrunchyScanChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
-    const allChapters = $('.wp-manga-chapter')
+    const allChapters = $('option')
     const chapters: Chapter[] = []
 
-    for (let chapter of allChapters.toArray()) {
-        const id: string = $('a', chapter).first().attr('href') ?? ''
-        const name: string = $('a', chapter).first().text().trim()
-        const chapNum: number = Number( (name.match(/(\d+)(\.?)(\d*)/gm) ?? '')[0] )
-        const time: Date = parseDate($('.chapter-release-date i', chapter).text())
+    for (let chapter of allChapters.toArray().reverse()) {
+        const id = $(chapter).attr('data-redirect') ?? ''
+        const name = $(chapter).text().trim()
+        const chapNum = Number( (name.match(/(\d+)(\.?)(\d*)/gm) ?? '')[0] )
+        const time = new Date()
 
         chapters.push(createChapter({
             id,

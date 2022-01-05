@@ -81,8 +81,8 @@ export const parseJapscanChapters = ($: CheerioStatic, mangaId: string): Chapter
     for (let chapter of $('.chapters_list.text-truncate', allChapters).toArray()) {
         const id = "https://japscan.ws" + $('a', chapter).attr('href') ?? ''
         const name = "Chapitre " + decodeHTMLEntity($('a', chapter).text().replace(/\s\s+/g, '').replace(/^.* (?=\d)/g, '')) ?? ''
-        const chapNum = Number(id.split('/').slice(-2, -1)[0])
-        const volume = Number(($(chapter).parent().prev().text().trim().match(/^Volume \d{1,3}/g) ?? "")[0].split(" ").pop())
+        const chapNum = Number(($('a', chapter).attr('href') ?? '').split('/')[3].replace(/[^0-9]+/g, ''))
+        const volume = Number(($(chapter).parent().prev().text().trim().match(/^Volume \d{1,3}/g) ?? ["Nan"])[0].split(" ").pop())
         const time = new Date($('span', chapter).text() ?? '')
 
         if (isNaN(volume)) {
@@ -116,15 +116,14 @@ export const parseJapscanChapters = ($: CheerioStatic, mangaId: string): Chapter
 /////    CHAPTER DETAILS    /////
 /////////////////////////////////
 
-export const parseJapscanChapterDetails = ($: CheerioStatic, mangaId: string, chapterId: string): ChapterDetails => {
+export const parseJapscanChapterDetails = (data: any, mangaId: string, chapterId: string): ChapterDetails => {
     const pages: string[] = []
-    const allItems = $('#pages option').toArray()
 
-    for(let item of allItems) {
-        let page = "https://cdn.statically.io/img/" + $(item).attr("data-img")?.replace("https://", "")
+    for(let item of JSON.parse(data)) {
+        let page = encodeURI(item)
 
         if (typeof page === 'undefined')
-        continue;
+            continue;
 
         pages.push(page);
     }
@@ -147,8 +146,8 @@ export const parseSearch = (data: string): MangaTile[] => {
     const items = JSON.parse(data)
 
     for(let item of items) {
-        let id = `https://japscan.ws${item.url}`
-        let image = "https://www.japscan.ws/imgs/mangas/"+ id.split('/').slice(-2, -1) +".jpg"
+        let id = item.url.split('/')[2]
+        let image = `https://www.japscan.ws/imgs/mangas/${id}.jpg`
         let title = item.name
 
         manga.push(createMangaTile({

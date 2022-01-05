@@ -24,6 +24,7 @@ import {
 } from "./JapscanParser";
 
 const JAPSCAN_DOMAIN = "https://www.japscan.ws";
+const SHADOWOFBABEL_DOMAIN = "https://shadow-of-babel.herokuapp.com";
 const method = 'GET'
 const headers = {
     "Host": "www.japscan.ws",
@@ -54,13 +55,18 @@ export const JapscanInfo: SourceInfo = {
         {
             text: 'Notifications',
             type: TagType.GREEN
+        },
+        {
+            text: 'Slow',
+            type: TagType.YELLOW
         }
     ]
 }
 
 export class Japscan extends Source {
     requestManager: RequestManager = createRequestManager({
-        requestsPerSecond: 3
+        requestsPerSecond: 3,
+        requestTimeout: 100000
     });
 
     /////////////////////////////////
@@ -112,17 +118,16 @@ export class Japscan extends Source {
     /////    CHAPTERS DETAILS    /////
     //////////////////////////////////
 
-    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
+    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {    
+        
         const request = createRequestObject({
-            url: `${chapterId}`,
-            method,
-            headers
+            url: `${SHADOWOFBABEL_DOMAIN}/japscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
+            method
         })
 
         const response = await this.requestManager.schedule(request, 1);
-        const $ = this.cheerio.load(response.data);
-        
-        return await parseJapscanChapterDetails($, mangaId, chapterId);
+
+        return await parseJapscanChapterDetails(response.data, mangaId, chapterId);
     }
 
 

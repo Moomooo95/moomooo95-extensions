@@ -110,8 +110,14 @@ export class CrunchyScan extends Source {
         const request = createRequestObject({
             url: `${CRUNCHYSCAN_DOMAIN}/wp-admin/admin-ajax.php`,
             method: 'POST',
-            headers,
-            data: `action=manga_get_chapters&manga=755`
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Host": "crunchyscan.fr",
+                "Origin": "https://crunchyscan.fr",
+                "Referer": "https://crunchyscan.fr/",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            data: `action=manga_get_reading_nav&manga=1578&chapter=chapter-19&volume_id=0&style=list&type=manga`
         })
 
         const response = await this.requestManager.schedule(request, 1);
@@ -279,7 +285,7 @@ export class CrunchyScan extends Source {
     getCloudflareBypassRequest() {
         return createRequestObject({
             url: `${CRUNCHYSCAN_DOMAIN}`,
-            method: 'GET',
+            method,
             headers
         }) 
     }

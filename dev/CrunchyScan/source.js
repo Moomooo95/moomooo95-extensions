@@ -468,8 +468,14 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
             const request = createRequestObject({
                 url: `${CRUNCHYSCAN_DOMAIN}/wp-admin/admin-ajax.php`,
                 method: 'POST',
-                headers,
-                data: `action=manga_get_chapters&manga=755`
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "Host": "crunchyscan.fr",
+                    "Origin": "https://crunchyscan.fr",
+                    "Referer": "https://crunchyscan.fr/",
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                data: `action=manga_get_reading_nav&manga=1578&chapter=chapter-19&volume_id=0&style=list&type=manga`
             });
             const response = yield this.requestManager.schedule(request, 1);
             this.CloudFlareError(response.status);
@@ -609,7 +615,7 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
     getCloudflareBypassRequest() {
         return createRequestObject({
             url: `${CRUNCHYSCAN_DOMAIN}`,
-            method: 'GET',
+            method,
             headers
         });
     }
@@ -699,13 +705,13 @@ exports.parseCrunchyScanDetails = ($, mangaId) => {
 ///////////////////////////////
 exports.parseCrunchyScanChapters = ($, mangaId) => {
     var _a, _b;
-    const allChapters = $('.wp-manga-chapter');
+    const allChapters = $('option');
     const chapters = [];
-    for (let chapter of allChapters.toArray()) {
-        const id = (_a = $('a', chapter).first().attr('href')) !== null && _a !== void 0 ? _a : '';
-        const name = $('a', chapter).first().text().trim();
+    for (let chapter of allChapters.toArray().reverse()) {
+        const id = (_a = $(chapter).attr('data-redirect')) !== null && _a !== void 0 ? _a : '';
+        const name = $(chapter).text().trim();
         const chapNum = Number(((_b = name.match(/(\d+)(\.?)(\d*)/gm)) !== null && _b !== void 0 ? _b : '')[0]);
-        const time = parseDate($('.chapter-release-date i', chapter).text());
+        const time = new Date();
         chapters.push(createChapter({
             id,
             mangaId,

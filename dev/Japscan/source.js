@@ -391,6 +391,7 @@ exports.Japscan = exports.JapscanInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const JapscanParser_1 = require("./JapscanParser");
 const JAPSCAN_DOMAIN = "https://www.japscan.ws";
+const SHADOWOFBABEL_DOMAIN = "https://shadow-of-babel.herokuapp.com";
 const method = 'GET';
 const headers = {
     "Host": "www.japscan.ws",
@@ -419,6 +420,10 @@ exports.JapscanInfo = {
         {
             text: 'Notifications',
             type: paperback_extensions_common_1.TagType.GREEN
+        },
+        {
+            text: 'Slow',
+            type: paperback_extensions_common_1.TagType.YELLOW
         }
     ]
 };
@@ -426,7 +431,8 @@ class Japscan extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
         this.requestManager = createRequestManager({
-            requestsPerSecond: 3
+            requestsPerSecond: 3,
+            requestTimeout: 100000
         });
     }
     /////////////////////////////////
@@ -471,13 +477,11 @@ class Japscan extends paperback_extensions_common_1.Source {
     getChapterDetails(mangaId, chapterId) {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${chapterId}`,
-                method,
-                headers
+                url: `${SHADOWOFBABEL_DOMAIN}/japscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
+                method
             });
             const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            return yield JapscanParser_1.parseJapscanChapterDetails($, mangaId, chapterId);
+            return yield JapscanParser_1.parseJapscanChapterDetails(response.data, mangaId, chapterId);
         });
     }
     ////////////////////////////////
@@ -627,15 +631,15 @@ exports.parseJapscanMangaDetails = ($, mangaId) => {
 /////    CHAPTERS    /////
 //////////////////////////
 exports.parseJapscanChapters = ($, mangaId) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const allChapters = $('#chapters_list');
     const chapters = [];
     for (let chapter of $('.chapters_list.text-truncate', allChapters).toArray()) {
         const id = (_a = "https://japscan.ws" + $('a', chapter).attr('href')) !== null && _a !== void 0 ? _a : '';
         const name = (_b = "Chapitre " + decodeHTMLEntity($('a', chapter).text().replace(/\s\s+/g, '').replace(/^.* (?=\d)/g, ''))) !== null && _b !== void 0 ? _b : '';
-        const chapNum = Number(id.split('/').slice(-2, -1)[0]);
-        const volume = Number(((_c = $(chapter).parent().prev().text().trim().match(/^Volume \d{1,3}/g)) !== null && _c !== void 0 ? _c : "")[0].split(" ").pop());
-        const time = new Date((_d = $('span', chapter).text()) !== null && _d !== void 0 ? _d : '');
+        const chapNum = Number(((_c = $('a', chapter).attr('href')) !== null && _c !== void 0 ? _c : '').split('/')[3].replace(/[^0-9]+/g, ''));
+        const volume = Number(((_d = $(chapter).parent().prev().text().trim().match(/^Volume \d{1,3}/g)) !== null && _d !== void 0 ? _d : ["Nan"])[0].split(" ").pop());
+        const time = new Date((_e = $('span', chapter).text()) !== null && _e !== void 0 ? _e : '');
         if (isNaN(volume)) {
             chapters.push(createChapter({
                 id,
@@ -663,12 +667,10 @@ exports.parseJapscanChapters = ($, mangaId) => {
 /////////////////////////////////
 /////    CHAPTER DETAILS    /////
 /////////////////////////////////
-exports.parseJapscanChapterDetails = ($, mangaId, chapterId) => {
-    var _a;
+exports.parseJapscanChapterDetails = (data, mangaId, chapterId) => {
     const pages = [];
-    const allItems = $('#pages option').toArray();
-    for (let item of allItems) {
-        let page = "https://cdn.statically.io/img/" + ((_a = $(item).attr("data-img")) === null || _a === void 0 ? void 0 : _a.replace("https://", ""));
+    for (let item of JSON.parse(data)) {
+        let page = encodeURI(item);
         if (typeof page === 'undefined')
             continue;
         pages.push(page);
@@ -687,8 +689,8 @@ exports.parseSearch = (data) => {
     const manga = [];
     const items = JSON.parse(data);
     for (let item of items) {
-        let id = `https://japscan.ws${item.url}`;
-        let image = "https://www.japscan.ws/imgs/mangas/" + id.split('/').slice(-2, -1) + ".jpg";
+        let id = item.url.split('/')[2];
+        let image = `https://www.japscan.ws/imgs/mangas/${id}.jpg`;
         let title = item.name;
         manga.push(createMangaTile({
             id: id,

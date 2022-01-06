@@ -122,7 +122,7 @@ export const parseFRScanChapterDetails = ($: CheerioStatic, mangaId: string, cha
   const allItems = $('img', '.viewer-cnt #all').toArray()
 
   for(let item of allItems) {
-    let page = $(item).attr('data-src')?.trim().split("/")[0] == "https:" ? $(item).attr('data-src')?.trim() : 'http:' + $(item).attr('data-src')?.trim()
+    let page = $(item).attr('data-src')?.trim().split("/")[0] == "" ? 'https:' + $(item).attr('data-src')?.trim() : $(item).attr('data-src')?.trim()
 
     if (typeof page === 'undefined')
       continue;

@@ -671,7 +671,7 @@ exports.parseFRScanChapterDetails = ($, mangaId, chapterId) => {
     const pages = [];
     const allItems = $('img', '.viewer-cnt #all').toArray();
     for (let item of allItems) {
-        let page = ((_a = $(item).attr('data-src')) === null || _a === void 0 ? void 0 : _a.trim().split("/")[0]) == "https:" ? (_b = $(item).attr('data-src')) === null || _b === void 0 ? void 0 : _b.trim() : 'http:' + ((_c = $(item).attr('data-src')) === null || _c === void 0 ? void 0 : _c.trim());
+        let page = ((_a = $(item).attr('data-src')) === null || _a === void 0 ? void 0 : _a.trim().split("/")[0]) == "" ? 'https:' + ((_b = $(item).attr('data-src')) === null || _b === void 0 ? void 0 : _b.trim()) : (_c = $(item).attr('data-src')) === null || _c === void 0 ? void 0 : _c.trim();
         if (typeof page === 'undefined')
             continue;
         pages.push(page);

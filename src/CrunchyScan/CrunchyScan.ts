@@ -27,6 +27,7 @@ import {
 } from "./CrunchyScanParser";
 
 const CRUNCHYSCAN_DOMAIN = "https://crunchyscan.fr";
+const SHADOWOFBABEL_DOMAIN = "https://shadow-of-babel.herokuapp.com";
 const method = 'GET'
 const headers = {
     'Host': 'crunchyscan.fr',
@@ -37,7 +38,8 @@ const headers_search = {
     "accept-encoding": "gzip, deflate, br",
     "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-    "Content-Length": "275"}
+    "Content-Length": "275"
+}
 
 export const CrunchyScanInfo: SourceInfo = {
     version: '1.0',
@@ -70,7 +72,8 @@ export const CrunchyScanInfo: SourceInfo = {
 
 export class CrunchyScan extends Source {
     requestManager: RequestManager = createRequestManager({
-        requestsPerSecond: 3
+        requestsPerSecond: 3,
+        requestTimeout: 50000
     });
 
 
@@ -108,7 +111,7 @@ export class CrunchyScan extends Source {
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = createRequestObject({
-            url: `${CRUNCHYSCAN_DOMAIN}/wp-admin/admin-ajax.php`,
+            url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/${mangaId}/ajax/chapters/`,
             method: 'POST',
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -117,7 +120,6 @@ export class CrunchyScan extends Source {
                 "Referer": "https://crunchyscan.fr/",
                 "X-Requested-With": "XMLHttpRequest"
             },
-            data: `action=manga_get_reading_nav&manga=1578&chapter=chapter-19&volume_id=0&style=list&type=manga`
         })
 
         const response = await this.requestManager.schedule(request, 1);
@@ -134,17 +136,13 @@ export class CrunchyScan extends Source {
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const request = createRequestObject({
-            url: `${chapterId}?__cf_chl_jschl_tk__=pmd_RjulsQxQw8Lg7KuOG5TORQFjiUeH3Uds6QbHfoGU.8g-1635883784-0-gqNtZGzNAlCjcnBszQjR`,
-            method: "POST",
-            headers: headers_search,
-            data: "g-recaptcha-response=6Leq4dAbAAAAAKRQ_iVFOVrk7pRp1eZ2mqd6ZBaI&submitpost=Valider"
+            url: `${SHADOWOFBABEL_DOMAIN}/crunchyscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
+            method
         })
 
         const response = await this.requestManager.schedule(request, 1);
-        this.CloudFlareError(response.status)
-        const $ = this.cheerio.load(response.data);
         
-        return await parseCrunchyScanChapterDetails($, mangaId, chapterId);
+        return await parseCrunchyScanChapterDetails(response.data, mangaId, chapterId);
     }
 
 
@@ -284,9 +282,16 @@ export class CrunchyScan extends Source {
     
     getCloudflareBypassRequest() {
         return createRequestObject({
-            url: `${CRUNCHYSCAN_DOMAIN}`,
-            method,
-            headers
+            url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/les-techniques-celestes-du-dieu-guerrier/chapitre-19/`,
+            method : "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Host": "crunchyscan.fr",
+                "Origin": "https://crunchyscan.fr",
+                "Referer": "https://crunchyscan.fr/",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            data: "g-recaptcha-response=03AGdBq271pcGFYFPqGn9sl29SDdx-i3YVeTOxUUdehMrYQaxE2kX4MYQz6KmmjwClAhgKDXIg17gi_4Pf0UR_kA8H_Ogc1Pjo5hIConU-NnkyNRKQN9v-O9euApCd0xVANXsY0c6Ca9LklrxCOi5ExqqN2I9ZwPR5XzRnSk6J79xK81AHiZo48KTx3dONWnuPHQa5wOKBCVMvkUST7ts9lBW_oIEDFha1XTr7WzLvlcYiSVyzoL590S8vqgRq_UKbkCHXzZnl-MBur3__CuaFhYERS_fJMeasPlkUJU2hgOJ5rBmuB_TeDHb5k-Z94a1fOlvjJyL2fyKMzY6JZZPRyokupaF9upCNbXr7ddSKC0jeLklIR6M6uIfzyyWVBHWk6UI-cB23z7dwKz40hvfxQR3R_vOSljaEUiPNEMPc92wYfTeA8sc8HJYB11DwnAnWjy0SgqFk5aIhhY7HYaySjGR18N_YRYDMO8Y3MLuKmMCig2f3yxE14UsLXx4X8LpTa32fKXTBQTPxqkgqiERQ-pbm_yQu0X731A&submitpost=Valider"
         }) 
     }
 }

@@ -20,7 +20,7 @@ describe('CrunchyScan Tests', () => {
      * Try to choose a manga which is updated frequently, so that the historical checking test can 
      * return proper results, as it is limited to searching 30 days back due to extremely long processing times otherwise.
      */
-    const mangaId = ''
+    const mangaId = 'les-techniques-celestes-du-dieu-guerrier'
 
     it('Retrieve Manga Details', async () => {
         const details = await wrapper.getMangaDetails(source, mangaId)

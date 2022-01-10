@@ -678,11 +678,11 @@ exports.parseScantradUnionChapters = ($, mangaId) => {
 /////    CHAPTERS DETAILS    /////
 //////////////////////////////////
 exports.parseScantradUnionChapterDetails = ($, mangaId, chapterId) => {
-    var _a;
+    var _a, _b;
     const pages = [];
     const allItems = $('.manga-image-link img').toArray();
     for (let item of allItems) {
-        let page = encodeURI((_a = $(item).attr('src')) !== null && _a !== void 0 ? _a : '');
+        let page = encodeURI($(item).attr('data-src') == undefined ? (_a = $(item).attr('src')) !== null && _a !== void 0 ? _a : '' : (_b = $(item).attr('data-src')) !== null && _b !== void 0 ? _b : '');
         if (typeof page === 'undefined')
             continue;
         pages.push(page);

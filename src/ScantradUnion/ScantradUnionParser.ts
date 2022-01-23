@@ -126,7 +126,7 @@ export const parseScantradUnionChapterDetails = ($: CheerioStatic, mangaId: stri
     const allItems = $('.manga-image-link img').toArray()
 
     for (let item of allItems) {
-        let page = encodeURI($(item).attr('src') ?? '')
+        let page = encodeURI($(item).attr('data-src') == undefined ? $(item).attr('src') ?? '' : $(item).attr('data-src') ?? '')
 
         if (typeof page === 'undefined')
             continue;

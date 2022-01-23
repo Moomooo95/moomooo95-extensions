@@ -13,6 +13,7 @@
 | Scantrad Union    | [Site Web](https://scantrad-union.com/) |
 | Scantrad          | [Site Web](https://scantrad.net/) |
 | Perf Scantrad     | [Site Web](https://perf-scantrad.fr/) |
+| Japanread         | [Site Web](https://www.japanread.cc/) |
 
 ## Sources en cours de développement
 

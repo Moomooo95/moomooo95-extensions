@@ -175,9 +175,6 @@ const parseAllManga = ($: CheerioStatic): MangaTile[] => {
         const title = item.title
         const image = item.cover_art.source
 
-
-        console.log('"'+image+'"')
-
         allManga.push(createMangaTile({
             id: url,
             image: image,

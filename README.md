@@ -1,20 +1,5 @@
 # Extensions Française pour Paperback 
 
-## Sources Disponibles
-
-|                   |                  |
-| ---               | ---              |
-| Le Cercle du Scan | [Site Web](https://lel.lecercleduscan.com/) |
-| FRScan            | [Site Web](https://www.frscan.cc/) |
-| ReaperScansFR     | [Site Web](https://reaperscans.fr/) |
-| MangasOrigines    | [Site Web](https://mangas-origines.fr/) |
-| FuryoSquad        | [Site Web](https://www.furyosquad.com/) |
-| Patatescans       | [Site Web](https://patatescans.com/) |
-| Scantrad Union    | [Site Web](https://scantrad-union.com/) |
-| Scantrad          | [Site Web](https://scantrad.net/) |
-| Perf Scantrad     | [Site Web](https://perf-scantrad.fr/) |
-| Japanread         | [Site Web](https://www.japanread.cc/) |
-
 ## Sources en cours de développement
 
 |                   |                  |
@@ -27,6 +12,11 @@
 
 |                   |                  |
 | ---               | ---              |
-| Neo Scantrad      | [Site Web](https://neo-scantrad.xyz/) |
+| LegacyScans       | [Site Web](https://legacy-scans.com/) |
+| BananaScan        | [Site Web](https://banana-scan.com/) |
 | Mangakawaii       | [Site Web](https://www.mangakawaii.net/) | *
+| Neo Scantrad      | [Site Web](https://neo-scantrad.xyz/) |
+
+
+
 

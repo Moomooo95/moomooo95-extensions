@@ -396,7 +396,7 @@ const headers = {
     'Host': 'www.japanread.cc',
 };
 exports.JapanreadInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'Japanread',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -462,7 +462,7 @@ class Japanread extends paperback_extensions_common_1.Source {
             if (page_max == 0) {
                 for (let chapter of $('#chapters div[data-row=chapter]').toArray()) {
                     const id = `https://www.japanread.cc${(_a = $('a', chapter).eq(0).attr('href')) !== null && _a !== void 0 ? _a : ''}`;
-                    const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() : undefined;
+                    const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? JapanreadParser_1.decodeHTMLEntity($('a', chapter).eq(0).children().text().replace(/^ -/, '').trim()) : undefined;
                     const chapNum = Number(((_c = ((_b = $('a', chapter).eq(0).attr('href')) !== null && _b !== void 0 ? _b : '').split('/').pop()) !== null && _c !== void 0 ? _c : '').replace(/-/g, '.'));
                     const volume = !isNaN(Number(((_d = $('a', chapter).eq(0).text().match(/^Vol.(\d) /gm)) !== null && _d !== void 0 ? _d : '.')[0].split('.')[1])) ? Number(((_e = $('a', chapter).eq(0).text().match(/^Vol.(\d) /gm)) !== null && _e !== void 0 ? _e : '.')[0].split('.')[1]) : undefined;
                     const time = JapanreadParser_1.parseDate($('a', chapter).eq(0).parent().next().next().clone().children().remove().end().text().trim().replace(/-/g, '.'));
@@ -488,7 +488,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                     let $ = this.cheerio.load(response.data);
                     for (let chapter of $('#chapters div[data-row=chapter]').toArray()) {
                         const id = `https://www.japanread.cc${(_f = $('a', chapter).eq(0).attr('href')) !== null && _f !== void 0 ? _f : ''}`;
-                        const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() : undefined;
+                        const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? JapanreadParser_1.decodeHTMLEntity($('a', chapter).eq(0).children().text().replace(/^ -/, '').trim()) : undefined;
                         const chapNum = Number(((_h = ((_g = $('a', chapter).eq(0).attr('href')) !== null && _g !== void 0 ? _g : '').split('/').pop()) !== null && _h !== void 0 ? _h : '').replace(/-/g, '.'));
                         const volume = !isNaN(Number(((_j = $('a', chapter).eq(0).text().match(/^Vol.(\d) /gm)) !== null && _j !== void 0 ? _j : '.')[0].split('.')[1])) ? Number(((_k = $('a', chapter).eq(0).text().match(/^Vol.(\d) /gm)) !== null && _k !== void 0 ? _k : '.')[0].split('.')[1]) : undefined;
                         const time = JapanreadParser_1.parseDate($('a', chapter).eq(0).parent().next().next().clone().children().remove().end().text().trim().replace(/-/g, '.'));
@@ -636,28 +636,27 @@ class Japanread extends paperback_extensions_common_1.Source {
     /////    FILTER UPDATED MANGA    /////
     //////////////////////////////////////
     filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${JAPANREAD_DOMAIN}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            const updatedManga = [];
-            for (const manga of $('.table-responsive tbody .manga').toArray()) {
-                let id = `${JAPANREAD_DOMAIN}${$(manga).next().children('td').eq(1).children('.text-truncate').attr('href')}`;
-                let mangaDate = new Date(((_a = $(manga).next().children('td').last().find('time').attr('datetime')) !== null && _a !== void 0 ? _a : '').replace(/ CET/g, ''));
-                if (!id)
-                    continue;
-                if (mangaDate > time) {
-                    if (ids.includes(id)) {
-                        updatedManga.push(id);
-                    }
+            let page = 1;
+            let updatedManga = {
+                ids: [],
+                loadMore: true
+            };
+            while (updatedManga.loadMore) {
+                const request = createRequestObject({
+                    url: `${JAPANREAD_DOMAIN}/?page=${page++}`,
+                    method,
+                    headers
+                });
+                const response = yield this.requestManager.schedule(request, 1);
+                const $ = this.cheerio.load(response.data);
+                updatedManga = JapanreadParser_1.parseUpdatedManga($, time, ids);
+                if (updatedManga.ids.length > 0) {
+                    mangaUpdatesFoundCallback(createMangaUpdates({
+                        ids: updatedManga.ids
+                    }));
                 }
             }
-            mangaUpdatesFoundCallback(createMangaUpdates({ ids: updatedManga }));
         });
     }
 }
@@ -666,7 +665,7 @@ exports.Japanread = Japanread;
 },{"./JapanreadParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDate = exports.isLastPage = exports.parseTags = exports.parseHomeSections = exports.parseLatestUpdatedManga = exports.parseSearch = exports.parseJapanreadChapterDetails = exports.parseJapanreadMangaDetails = void 0;
+exports.parseDate = exports.decodeHTMLEntity = exports.parseUpdatedManga = exports.isLastPage = exports.parseTags = exports.parseHomeSections = exports.parseLatestUpdatedManga = exports.parseSearch = exports.parseJapanreadChapterDetails = exports.parseJapanreadMangaDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const JAPANREAD_DOMAIN = "https://www.japanread.cc";
 ///////////////////////////////
@@ -690,7 +689,7 @@ exports.parseJapanreadMangaDetails = ($, mangaId) => {
     const arrayTags = [];
     const tags = $('div.font-weight-bold:contains("Catégories :")', panel).next().find('span').toArray();
     for (const tag of tags) {
-        var label = $(tag).text();
+        var label = capitalizeFirstLetter(decodeHTMLEntity($(tag).text()));
         var id = (_e = (_d = $(tag).parent().attr('href')) === null || _d === void 0 ? void 0 : _d.split("=").pop()) !== null && _e !== void 0 ? _e : label;
         if (['Hentai'].includes(label) || ['Adulte'].includes(label)) {
             hentai = true;
@@ -750,7 +749,7 @@ exports.parseSearch = ($) => {
     for (const item of $('#manga-container div.col-lg-6').toArray()) {
         let url = ((_a = $('.text-truncate a', item).attr('href')) !== null && _a !== void 0 ? _a : '').split('/').pop();
         let image = (_b = $('.large_logo img', item).attr('src')) !== null && _b !== void 0 ? _b : '';
-        let title = $('.text-truncate a', item).text().trim();
+        let title = decodeHTMLEntity($('.text-truncate a', item).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
         manga.push(createMangaTile({
@@ -770,8 +769,8 @@ exports.parseLatestUpdatedManga = ($) => {
     for (const item of $('.table-responsive tbody .manga').toArray()) {
         let url = (_a = $('.ellipsis a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").pop();
         let image = (_b = $('.img-fluid', item).attr('src')) !== null && _b !== void 0 ? _b : '';
-        let title = $('.ellipsis a', item).text().trim();
-        let subtitle = $(item).next().children('td').eq(1).children('.text-truncate').text().trim();
+        let title = decodeHTMLEntity($('.ellipsis a', item).text().trim());
+        let subtitle = decodeHTMLEntity($(item).next().children('td').eq(1).children('.text-truncate').text().trim().replace(/\n/gm, ' '));
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
         latestUpdatedManga.push(createMangaTile({
@@ -792,7 +791,7 @@ const parseMostViewedManga = ($) => {
     for (const item of $('#nav-home li').toArray()) {
         let url = (_a = $('.text-truncate .font-weight-bold', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").pop();
         let image = ((_b = $('.tiny_logo img', item).attr('src')) !== null && _b !== void 0 ? _b : '').replace(/manga_small/g, 'manga_large');
-        let title = $('.text-truncate .font-weight-bold', item).text().trim();
+        let title = decodeHTMLEntity($('.text-truncate .font-weight-bold', item).text().trim());
         let subtitle = "👀 " + $('.text-truncate .float-left', item).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
@@ -814,7 +813,7 @@ const parseTopRatedManga = ($) => {
     for (const item of $('#nav-profile li').toArray()) {
         let url = (_a = $('.text-truncate .font-weight-bold', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").pop();
         let image = ((_b = $('.tiny_logo img', item).attr('src')) !== null && _b !== void 0 ? _b : '').replace(/manga_small/g, 'manga_large');
-        let title = $('.text-truncate .font-weight-bold', item).text().trim();
+        let title = decodeHTMLEntity($('.text-truncate .font-weight-bold', item).text().trim());
         let subtitle = "👀 " + $('.text-truncate .float-left', item).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
@@ -836,8 +835,8 @@ const parseNoveltyManga = ($) => {
     for (const item of $('.tab-content').eq(1).find('li').toArray()) {
         let url = (_a = $('.text-truncate .font-weight-bold', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").pop();
         let image = ((_b = $('.tiny_logo img', item).attr('src')) !== null && _b !== void 0 ? _b : '').replace(/manga_small/g, 'manga_large');
-        let title = $('.text-truncate .font-weight-bold', item).text().trim();
-        let subtitle = $('.text-truncate .float-left', item).text().trim();
+        let title = decodeHTMLEntity($('.text-truncate .font-weight-bold', item).text().trim());
+        let subtitle = decodeHTMLEntity($('.text-truncate .float-left', item).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
         noveltyManga.push(createMangaTile({
@@ -874,7 +873,7 @@ exports.parseTags = ($) => {
     const arrayTags = [];
     for (let item of $('.category_item').toArray()) {
         let id = (_a = $(item).attr('value')) !== null && _a !== void 0 ? _a : '';
-        let label = capitalizeFirstLetter((_b = $(item).attr('id')) !== null && _b !== void 0 ? _b : '');
+        let label = capitalizeFirstLetter(decodeHTMLEntity((_b = $(item).attr('id')) !== null && _b !== void 0 ? _b : ''));
         arrayTags.push({ id: id, label: label });
     }
     const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
@@ -886,6 +885,24 @@ exports.parseTags = ($) => {
 exports.isLastPage = ($) => {
     return $('.pagination').length == 0 ? true : $('.pagination li').last().hasClass('disabled');
 };
+exports.parseUpdatedManga = ($, time, ids) => {
+    var _a, _b, _c;
+    const manga = [];
+    let loadMore = true;
+    for (const item of $('.table-responsive tbody .manga').toArray()) {
+        let id = (_b = ((_a = $(item).next().children('td').eq(1).children('.text-truncate').attr('href')) !== null && _a !== void 0 ? _a : '').split('/').pop()) !== null && _b !== void 0 ? _b : '';
+        let mangaTime = new Date(((_c = $(item).next().children('td').last().find('time').attr('datetime')) !== null && _c !== void 0 ? _c : '').replace(/ CET/g, ''));
+        if (mangaTime > time)
+            if (ids.includes(id))
+                manga.push(id);
+            else
+                loadMore = false;
+    }
+    return {
+        ids: manga,
+        loadMore,
+    };
+};
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
@@ -894,6 +911,7 @@ function decodeHTMLEntity(str) {
         return String.fromCharCode(dec);
     });
 }
+exports.decodeHTMLEntity = decodeHTMLEntity;
 function parseDate(str) {
     if (str.length == 0) {
         return undefined;
@@ -906,15 +924,15 @@ function parseDate(str) {
         case "mi":
             return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes() - parseInt(date[0]));
         case "he":
-            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours() - parseInt(date[0]));
+            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours() - parseInt(date[0]), date_today.getMinutes());
         case "jo":
-            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - parseInt(date[0]));
+            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - parseInt(date[0]), date_today.getHours(), date_today.getMinutes());
         case "se":
-            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - (parseInt(date[0]) * 7));
+            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - (parseInt(date[0]) * 7), date_today.getHours(), date_today.getMinutes());
         case "mo":
-            return new Date(date_today.getFullYear(), date_today.getMonth() - parseInt(date[0]), date_today.getDate());
+            return new Date(date_today.getFullYear(), date_today.getMonth() - parseInt(date[0]), date_today.getDate(), date_today.getHours(), date_today.getMinutes());
         case "an":
-            return new Date(date_today.getFullYear() - parseInt(date[0]), date_today.getMonth(), date_today.getDate());
+            return new Date(date_today.getFullYear() - parseInt(date[0]), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes());
     }
     return date_today;
 }

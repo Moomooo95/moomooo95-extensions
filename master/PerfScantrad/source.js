@@ -397,7 +397,7 @@ const headers = {
     'Referer': 'https://perf-scantrad.fr'
 };
 exports.PerfScantradInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'Perf Scantrad',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -490,7 +490,10 @@ class PerfScantrad extends paperback_extensions_common_1.Source {
     ////////////////////////////////
     getSearchResults(query, metadata) {
         return __awaiter(this, void 0, void 0, function* () {
-            throw new Error("Search not available on Perf Scantrad website");
+            return createPagedResults({
+                results: [],
+                metadata
+            });
         });
     }
     //////////////////////////////
@@ -516,26 +519,25 @@ class PerfScantrad extends paperback_extensions_common_1.Source {
     //////////////////////////////////////
     filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
         return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${PERFSCANTRAD_DOMAIN}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            const updatedManga = [];
-            for (const manga of $('.css-17kk5km.e1eqdyam4').toArray()) {
-                let id = PERFSCANTRAD_DOMAIN + $(manga).attr('href');
-                let mangaDate = new Date();
-                if (!id)
-                    continue;
-                if (mangaDate > time) {
-                    if (ids.includes(id)) {
-                        updatedManga.push(id);
-                    }
+            let updatedManga = {
+                ids: [],
+                loadMore: true
+            };
+            while (updatedManga.loadMore) {
+                const request = createRequestObject({
+                    url: `${PERFSCANTRAD_DOMAIN}`,
+                    method,
+                    headers
+                });
+                const response = yield this.requestManager.schedule(request, 1);
+                const $ = this.cheerio.load(response.data);
+                updatedManga = PerfScantradParser_1.parseUpdatedManga($, time, ids);
+                if (updatedManga.ids.length > 0) {
+                    mangaUpdatesFoundCallback(createMangaUpdates({
+                        ids: updatedManga.ids
+                    }));
                 }
             }
-            mangaUpdatesFoundCallback(createMangaUpdates({ ids: updatedManga }));
         });
     }
 }
@@ -544,7 +546,7 @@ exports.PerfScantrad = PerfScantrad;
 },{"./PerfScantradParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseHomeSections = exports.parsePerfScantradChapterDetails = exports.parsePerfScantradChapters = exports.parsePerfScantradMangaDetails = void 0;
+exports.parseUpdatedManga = exports.parseHomeSections = exports.parsePerfScantradChapterDetails = exports.parsePerfScantradChapters = exports.parsePerfScantradMangaDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
@@ -572,7 +574,7 @@ exports.parsePerfScantradMangaDetails = ($, mangaId) => {
     const genres = $('.css-1cls7c6.eibv1gc1', panel).toArray();
     if (genres.length > 0) {
         for (const genre of genres) {
-            const label = $('p', genre).text().trim();
+            const label = capitalizeFirstLetter(decodeHTMLEntity($('p', genre).text().trim()));
             const id = label;
             arrayTags.push({ id: id, label: label });
         }
@@ -585,7 +587,6 @@ exports.parsePerfScantradMangaDetails = ($, mangaId) => {
         image,
         author,
         artist,
-        rating: Number(undefined),
         status,
         tags: tagSections,
         desc,
@@ -596,13 +597,12 @@ exports.parsePerfScantradMangaDetails = ($, mangaId) => {
 /////    CHAPTERS    /////
 //////////////////////////
 exports.parsePerfScantradChapters = ($, mangaId) => {
-    var _a, _b;
-    const allChapters = $('.css-1pfv033.e1ba5g7u0');
+    var _a, _b, _c, _d;
     const chapters = [];
-    for (let chapter of allChapters.toArray()) {
+    for (let chapter of $('.css-1pfv033.e1ba5g7u0').toArray()) {
         const id = (_a = $(chapter).attr('href')) !== null && _a !== void 0 ? _a : '';
-        const name = (_b = $('.css-1lrrmqm.e1ba5g7u2', chapter).text().trim()) !== null && _b !== void 0 ? _b : '';
-        const chapNum = Number(name.trim().split(' ')[1]);
+        const name = decodeHTMLEntity((_b = $('.css-1lrrmqm.e1ba5g7u2', chapter).text().trim()) !== null && _b !== void 0 ? _b : '') != '' ? decodeHTMLEntity((_c = $('.css-1lrrmqm.e1ba5g7u2', chapter).text().trim()) !== null && _c !== void 0 ? _c : '') : undefined;
+        const chapNum = Number(decodeHTMLEntity((_d = $('.css-1lrrmqm.e1ba5g7u2', chapter).text().trim()) !== null && _d !== void 0 ? _d : '').trim().split(' ')[1]);
         chapters.push(createChapter({
             id,
             mangaId,
@@ -633,8 +633,7 @@ exports.parsePerfScantradChapterDetails = ($, mangaId, chapterId) => {
 const parseRecommendedManga = ($) => {
     var _a;
     const recommendedManga = [];
-    const allItems = JSON.parse(((_a = $('#__NEXT_DATA__').html()) !== null && _a !== void 0 ? _a : '').replace(/"\s+/g, '"').replace(/\s+"/g, '"')).props.pageProps.featured;
-    for (const item of allItems) {
+    for (const item of JSON.parse(((_a = $('#__NEXT_DATA__').html()) !== null && _a !== void 0 ? _a : '').replace(/"\s+/g, '"').replace(/\s+"/g, '"')).props.pageProps.featured) {
         const url = item.series_id;
         const title = item.title;
         const image = item.cover_art.source;
@@ -654,8 +653,7 @@ const parseRecommendedManga = ($) => {
 const parseLatestManga = ($) => {
     var _a;
     const latestManga = [];
-    const allItems = JSON.parse(((_a = $('#__NEXT_DATA__').html()) !== null && _a !== void 0 ? _a : '').replace(/"\s+/g, '"').replace(/\s+"/g, '"')).props.pageProps.latests;
-    for (const item of allItems) {
+    for (const item of JSON.parse(((_a = $('#__NEXT_DATA__').html()) !== null && _a !== void 0 ? _a : '').replace(/"\s+/g, '"').replace(/\s+"/g, '"')).props.pageProps.latests) {
         const url = item['0'].series_id;
         const title = item['0'].title;
         const image = item['0'].cover_art.source;
@@ -677,8 +675,7 @@ const parseLatestManga = ($) => {
 const parseAllManga = ($) => {
     var _a;
     const allManga = [];
-    const allItems = JSON.parse(((_a = $('#__NEXT_DATA__').html()) !== null && _a !== void 0 ? _a : '').replace(/"\s+/g, '"').replace(/\s+"/g, '"')).props.pageProps.series;
-    for (const item of allItems) {
+    for (const item of JSON.parse(((_a = $('#__NEXT_DATA__').html()) !== null && _a !== void 0 ? _a : '').replace(/"\s+/g, '"').replace(/\s+"/g, '"')).props.pageProps.series) {
         const url = item.series_id;
         const title = item.title;
         const image = item.cover_art.source;
@@ -705,6 +702,24 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseUpdatedManga = ($, time, ids) => {
+    var _a;
+    const manga = [];
+    let loadMore = true;
+    for (const item of $('.css-17kk5km.e1eqdyam4').toArray()) {
+        let id = ((_a = $(item).attr('href')) !== null && _a !== void 0 ? _a : '').split('/')[2];
+        let mangaTime = new Date();
+        if (mangaTime > time)
+            if (ids.includes(id))
+                manga.push(id);
+            else
+                loadMore = false;
+    }
+    return {
+        ids: manga,
+        loadMore,
+    };
+};
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
@@ -712,6 +727,9 @@ function decodeHTMLEntity(str) {
     return str.replace(/&#(\d+);/g, function (match, dec) {
         return String.fromCharCode(dec);
     });
+}
+function capitalizeFirstLetter(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
 },{"paperback-extensions-common":5}]},{},[48])(48)

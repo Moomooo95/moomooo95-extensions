@@ -396,7 +396,7 @@ const headers = {
     'Host': 'www.furyosquad.com',
 };
 exports.FuryoSquadInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'FuryoSquad',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -527,28 +527,26 @@ class FuryoSquad extends paperback_extensions_common_1.Source {
     /////    FILTER UPDATED MANGA    /////
     //////////////////////////////////////
     filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${FURYOSQUAD_DOMAIN}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            const updatedManga = [];
-            for (const manga of $('table tr').toArray()) {
-                let id = $('.fs-comic-title a', manga).attr('href');
-                let mangaDate = FuryoSquadParser_1.parseDate((_a = $('.fs-table-chap-date .fs-chap-date', manga).text().trim()) !== null && _a !== void 0 ? _a : '');
-                if (!id)
-                    continue;
-                if (mangaDate > time) {
-                    if (ids.includes(id)) {
-                        updatedManga.push(id);
-                    }
+            let updatedManga = {
+                ids: [],
+                loadMore: true
+            };
+            while (updatedManga.loadMore) {
+                const request = createRequestObject({
+                    url: `${FURYOSQUAD_DOMAIN}`,
+                    method,
+                    headers
+                });
+                const response = yield this.requestManager.schedule(request, 1);
+                const $ = this.cheerio.load(response.data);
+                updatedManga = FuryoSquadParser_1.parseUpdatedManga($, time, ids);
+                if (updatedManga.ids.length > 0) {
+                    mangaUpdatesFoundCallback(createMangaUpdates({
+                        ids: updatedManga.ids
+                    }));
                 }
             }
-            mangaUpdatesFoundCallback(createMangaUpdates({ ids: updatedManga }));
         });
     }
 }
@@ -557,7 +555,7 @@ exports.FuryoSquad = FuryoSquad;
 },{"./FuryoSquadParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDate = exports.parseMangaSectionOthers = exports.parseHomeSections = exports.parseSearch = exports.parseFuryoSquadChapterDetails = exports.parseFuryoSquadChapters = exports.parseFuryoSquadMangaDetails = void 0;
+exports.parseUpdatedManga = exports.parseMangaSectionOthers = exports.parseHomeSections = exports.parseSearch = exports.parseFuryoSquadChapterDetails = exports.parseFuryoSquadChapters = exports.parseFuryoSquadMangaDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
@@ -605,20 +603,21 @@ exports.parseFuryoSquadMangaDetails = ($, mangaId) => {
 /////    CHAPTERS    /////
 //////////////////////////
 exports.parseFuryoSquadChapters = ($, mangaId) => {
-    var _a, _b, _c, _d;
-    const allChapters = $('.fs-chapter-list');
+    var _a, _b;
     const chapters = [];
-    for (let chapter of $('.element.desktop', allChapters).toArray()) {
+    for (let chapter of $('.fs-chapter-list .element.desktop').toArray()) {
         const id = (_a = $('a', chapter).eq(1).attr('href')) !== null && _a !== void 0 ? _a : '';
-        const name = (_c = (_b = $('.title', chapter).text()) !== null && _b !== void 0 ? _b : '' + " : " + $('.name', chapter).text()) !== null && _c !== void 0 ? _c : '';
-        const chapNum = Number(name.split(' ').pop());
-        const time = parseDate((_d = $('.meta_r', chapter).text()) !== null && _d !== void 0 ? _d : "");
+        const name = decodeHTMLEntity($('.name', chapter).text()) != '' ? decodeHTMLEntity($('.name', chapter).text()) : undefined;
+        const chapNum = Number($('.title', chapter).text().split(' ').pop());
+        const volume = !isNaN(Number($(chapter).parent().children('.title').text().trim().split(' ')[1])) ? Number($(chapter).parent().children('.title').text().trim().split(' ')[1]) : undefined;
+        const time = parseDate((_b = $('.meta_r', chapter).text()) !== null && _b !== void 0 ? _b : "");
         chapters.push(createChapter({
             id,
             mangaId,
             name,
             langCode: paperback_extensions_common_1.LanguageCode.FRENCH,
             chapNum,
+            volume,
             time
         }));
     }
@@ -630,8 +629,7 @@ exports.parseFuryoSquadChapters = ($, mangaId) => {
 exports.parseFuryoSquadChapterDetails = ($, mangaId, chapterId) => {
     var _a;
     const pages = [];
-    const allItems = $('img', '.fs-reader-page').toArray();
-    for (let item of allItems) {
+    for (let item of $('img', '.fs-reader-page').toArray()) {
         let page = encodeURI((_a = $(item).attr('src')) !== null && _a !== void 0 ? _a : "");
         if (typeof page === 'undefined')
             continue;
@@ -653,7 +651,7 @@ exports.parseSearch = ($) => {
     for (const item of $('.group').toArray()) {
         let url = (_a = $('.title a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
         let image = "";
-        let title = decodeHTMLEntity($('.title', item).text());
+        let title = decodeHTMLEntity($('.title a', item).eq(0).text().trim());
         let subtitle = decodeHTMLEntity($('.element .title a', item).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
@@ -676,7 +674,7 @@ const parseLatestManga = ($) => {
         let url = (_a = $('.fs-comic-title a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
         let image = $('.fs-chap-img', item).attr('src');
         let title = decodeHTMLEntity($('.fs-comic-title', item).text());
-        let subtitle = $('.fs-chapter', item).text() + " : " + $('.fs-chap-name', item).text();
+        let subtitle = decodeHTMLEntity($('.fs-chapter', item).text() + " : " + $('.fs-chap-name', item).text());
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
         latestManga.push(createMangaTile({
@@ -694,19 +692,16 @@ const parseLatestManga = ($) => {
 const parseOngoingManga = ($) => {
     var _a;
     const ongoingManga = [];
-    const panel = $('#fs-en-cours');
-    for (const item of $('.fs-card-container.desktop .grid-item-container', panel).toArray()) {
+    for (const item of $('#fs-en-cours .fs-card-container.desktop .grid-item-container').toArray()) {
         let url = (_a = $('.fs-comic-title a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
         let image = $('.fs-card-img', item).attr('src');
         let title = decodeHTMLEntity($('.fs-comic-title', item).text());
-        let subtitle = '';
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
         ongoingManga.push(createMangaTile({
             id: url,
             image: image,
-            title: createIconText({ text: title }),
-            subtitleText: createIconText({ text: subtitle }),
+            title: createIconText({ text: title })
         }));
     }
     return ongoingManga;
@@ -717,19 +712,16 @@ const parseOngoingManga = ($) => {
 const parseFinishedManga = ($) => {
     var _a;
     const finishedManga = [];
-    const panel = $('#fs-termines');
-    for (const item of $('.fs-card-container.desktop .grid-item-container', panel).toArray()) {
+    for (const item of $('#fs-termines .fs-card-container.desktop .grid-item-container').toArray()) {
         let url = (_a = $('.fs-comic-title a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
         let image = $('.fs-card-img', item).attr('src');
         let title = decodeHTMLEntity($('.fs-comic-title', item).text());
-        let subtitle = '';
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
         finishedManga.push(createMangaTile({
             id: url,
             image: image,
-            title: createIconText({ text: title }),
-            subtitleText: createIconText({ text: subtitle }),
+            title: createIconText({ text: title })
         }));
     }
     return finishedManga;
@@ -740,19 +732,16 @@ const parseFinishedManga = ($) => {
 const parseStoppedManga = ($) => {
     var _a;
     const stoppedManga = [];
-    const panel = $('#fs-stoppes');
-    for (const item of $('.fs-card-container.desktop .grid-item-container', panel).toArray()) {
+    for (const item of $('#fs-stoppes .fs-card-container.desktop .grid-item-container').toArray()) {
         let url = (_a = $('.fs-comic-title a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
         let image = $('.fs-card-img', item).attr('src');
         let title = decodeHTMLEntity($('.fs-comic-title', item).text());
-        let subtitle = '';
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
         stoppedManga.push(createMangaTile({
             id: url,
             image: image,
-            title: createIconText({ text: title }),
-            subtitleText: createIconText({ text: subtitle }),
+            title: createIconText({ text: title })
         }));
     }
     return stoppedManga;
@@ -783,6 +772,24 @@ exports.parseMangaSectionOthers = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseUpdatedManga = ($, time, ids) => {
+    var _a, _b, _c;
+    const manga = [];
+    let loadMore = true;
+    for (const item of $('table tr').toArray()) {
+        let id = (_b = ((_a = $('.fs-comic-title a', item).attr('href')) !== null && _a !== void 0 ? _a : '').split('/').slice(-2, -1)[0]) !== null && _b !== void 0 ? _b : '';
+        let mangaTime = parseDate((_c = $('.fs-table-chap-date .fs-chap-date', item).text().trim()) !== null && _c !== void 0 ? _c : '');
+        if (mangaTime > time)
+            if (ids.includes(id))
+                manga.push(id);
+            else
+                loadMore = false;
+    }
+    return {
+        ids: manga,
+        loadMore,
+    };
+};
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
@@ -812,17 +819,16 @@ function parseDate(str) {
             let date_today = new Date();
             switch (date[1]) {
                 case "jours":
-                    return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - parseInt(date[0]));
+                    return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - parseInt(date[0]), date_today.getHours(), date_today.getMinutes());
                 case "mois":
-                    return new Date(date_today.getFullYear(), date_today.getMonth() - parseInt(date[0]), date_today.getDate());
+                    return new Date(date_today.getFullYear(), date_today.getMonth() - parseInt(date[0]), date_today.getDate(), date_today.getHours(), date_today.getMinutes());
                 case "an":
                 case "ans":
-                    return new Date(date_today.getFullYear() - parseInt(date[0]), date_today.getMonth(), date_today.getDate());
+                    return new Date(date_today.getFullYear() - parseInt(date[0]), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes());
             }
     }
     return new Date();
 }
-exports.parseDate = parseDate;
 
 },{"paperback-extensions-common":5}]},{},[48])(48)
 });

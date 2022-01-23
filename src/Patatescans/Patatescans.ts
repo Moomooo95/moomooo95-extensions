@@ -18,14 +18,15 @@ import {
 
 import {
     isLastPage,
-    parseDate,
     parseHomeSections,
     parsePatatescansChapterDetails,
     parsePatatescansChapters,
     parsePatatescansDetails,
     parseSearch,
     parseTags,
-    parseViewMore
+    parseUpdatedManga,
+    parseViewMore,
+    UpdatedManga
 } from "../Patatescans/PatatescansParser";
 
 const PATATESCANS_DOMAIN = "https://patatescans.com";
@@ -35,7 +36,7 @@ const headers = {
 }
 
 export const PatatescansInfo: SourceInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'Patatescans',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -174,8 +175,8 @@ export class Patatescans extends Source {
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const section1 = createHomeSection({ id: 'hot_manga', title: 'HOT', type: HomeSectionType.featured })
-        const section2 = createHomeSection({ id: 'popular_manga', title: 'Populaire' })
-        const section3 = createHomeSection({ id: 'latest_updated', title: 'Dernières Sorties', view_more: true })
+        const section2 = createHomeSection({ id: 'latest_updated', title: 'Dernières Sorties', view_more: true })
+        const section3 = createHomeSection({ id: 'popular_manga', title: 'Populaire' })
 
         const request = createRequestObject({
             url: `${PATATESCANS_DOMAIN}`,
@@ -199,9 +200,6 @@ export class Patatescans extends Source {
         let param = ''
 
         switch (homepageSectionId) {
-            case 'latest_projects':
-                param = `projets/page/${page}`
-                break;
             case 'latest_updated':
                 param = `manga/?page=${page}&order=update`
                 break;
@@ -231,29 +229,29 @@ export class Patatescans extends Source {
     //////////////////////////////////////
 
     async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-        const request = createRequestObject({
-            url: `${PATATESCANS_DOMAIN}`,
-            method,
-            headers
-        })
-
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-
-        const updatedManga: string[] = []
-        for (const manga of $('.postbody .listupd').eq(1).find('.utao.styletwo').toArray()) {
-            let id = $('a', manga).first().attr('href')
-            let mangaDate = parseDate(($('.luf span', manga).text() ?? '').trim().split('Il y a ')[1])
-
-            if (!id) continue
-            if (mangaDate > time) {
-                if (ids.includes(id)) {
-                    updatedManga.push(id)
-                }
-            }
+        let page = 1
+        let updatedManga: UpdatedManga = {
+            ids: [],
+            loadMore: true
         }
 
-        mangaUpdatesFoundCallback(createMangaUpdates({ ids: updatedManga }))
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${PATATESCANS_DOMAIN}/page/${page++}`,
+                method,
+                headers
+            })
+
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data)
+
+            updatedManga = parseUpdatedManga($, time, ids)
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
     }
 
     //////////////////////

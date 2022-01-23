@@ -16,7 +16,7 @@ import {
   HomeSectionType
 } from "paperback-extensions-common"
 
-import { 
+import {
   parseHomeSections,
   parseMangasOriginesDetails,
   parseMangasOriginesChapters,
@@ -25,7 +25,8 @@ import {
   isLastPage,
   parseTags,
   parseSearch,
-  parseDate
+  UpdatedManga,
+  parseUpdatedManga
 } from "./MangasOriginesParser";
 
 const MANGASORIGINES_DOMAIN = "https://mangas-origines.fr";
@@ -35,7 +36,7 @@ const headers = {
 }
 
 export const MangasOriginesInfo: SourceInfo = {
-  version: '1.2',
+  version: '1.3',
   name: 'MangasOrigines',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -49,12 +50,8 @@ export const MangasOriginesInfo: SourceInfo = {
       type: TagType.GREY
     },
     {
-        text: 'Notifications',
-        type: TagType.GREEN
-    },
-    {
-      text: 'Cloudflare',
-      type: TagType.RED
+      text: 'Notifications',
+      type: TagType.GREEN
     }
   ]
 }
@@ -62,10 +59,10 @@ export const MangasOriginesInfo: SourceInfo = {
 export class MangasOrigines extends Source {
 
   requestManager: RequestManager = createRequestManager({
-      requestsPerSecond: 3
+    requestsPerSecond: 3
   });
 
-  
+
   /////////////////////////////////
   /////    MANGA SHARE URL    /////
   /////////////////////////////////
@@ -87,9 +84,8 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1);
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
-    
+
     return await parseMangasOriginesDetails($, mangaId);
   }
 
@@ -106,9 +102,8 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1);
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
-    
+
     return await parseMangasOriginesChapters($, mangaId);
   }
 
@@ -121,13 +116,12 @@ export class MangasOrigines extends Source {
     const request = createRequestObject({
       url: `${chapterId}`,
       method,
-      headers 
+      headers
     })
 
     const response = await this.requestManager.schedule(request, 1);
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
-    
+
     return await parseMangasOriginesChapterDetails($, mangaId, chapterId);
   }
 
@@ -144,35 +138,33 @@ export class MangasOrigines extends Source {
     if (query.includedTags && query.includedTags?.length != 0) {
       const request = createRequestObject({
         url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga&genre%5B0%5D=${query.includedTags[0].id}&paged=${page}`,
-        method : 'GET',
+        method: 'GET',
         headers
       })
-  
+
       const response = await this.requestManager.schedule(request, 1)
-      this.CloudFlareError(response.status)
       const $ = this.cheerio.load(response.data)
-      
+
       manga = parseSearch($)
       metadata = !isLastPage($) ? { page: page + 1 } : undefined
     }
     else {
       const request = createRequestObject({
         url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga&paged=${page}`,
-        method : 'GET',
+        method: 'GET',
         headers
       })
-  
+
       const response = await this.requestManager.schedule(request, 1)
-      this.CloudFlareError(response.status)
       const $ = this.cheerio.load(response.data)
-      
+
       manga = parseSearch($)
       metadata = !isLastPage($) ? { page: page + 1 } : undefined
     }
 
     return createPagedResults({
-        results: manga,
-        metadata
+      results: manga,
+      metadata
     })
   }
 
@@ -183,9 +175,10 @@ export class MangasOrigines extends Source {
 
   async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
     const section1 = createHomeSection({ id: 'hot_manga', title: '🔥 HOT 🔥', type: HomeSectionType.featured })
-    const section2 = createHomeSection({ id: 'popular_today', title: 'TOP DU JOUR', view_more: true })
-    const section3 = createHomeSection({ id: 'latest_updated', title: 'Dernières Mise à jour', view_more: true })
-    const section4 = createHomeSection({ id: 'novelty', title: 'Nouveautés' })
+    const section2 = createHomeSection({ id: 'latest_updated', title: 'Dernières Mise à jour', view_more: true })
+    const section3 = createHomeSection({ id: 'origins_exclusives', title: 'Exclusivités Origines' })
+    const section4 = createHomeSection({ id: 'popular_today', title: 'TOP DU JOUR', view_more: true })
+    const section5 = createHomeSection({ id: 'novelty', title: 'Nouveautés' })
 
     const request = createRequestObject({
       url: `${MANGASORIGINES_DOMAIN}`,
@@ -194,10 +187,9 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
-    
-    parseHomeSections($, [section1, section2, section3, section4], sectionCallback)
+
+    parseHomeSections($, [section1, section2, section3, section4, section5], sectionCallback)
   }
 
   /////////////////////////////////
@@ -223,7 +215,6 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
 
     const manga = parseViewMore($)
@@ -241,33 +232,32 @@ export class MangasOrigines extends Source {
   //////////////////////////////////////
 
   async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-    const request = createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}`,
-      method,
-      headers
-    })
-
-    const response = await this.requestManager.schedule(request, 1)
-    this.CloudFlareError(response.status)
-    const $ = this.cheerio.load(response.data)
-
-    const updatedManga: string[] = []
-    for (const manga of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
-      let id = $('h3 a', manga).attr('href')
-      let mangaDate = parseDate($('.post-on.font-meta', manga).eq(0).text().trim())
-  
-      if (!id) continue
-      if (mangaDate > time) {
-        if (ids.includes(id)) {
-          updatedManga.push(id)
-        }
-      }
+    let page = 1
+    let updatedManga: UpdatedManga = {
+      ids: [],
+      loadMore: true
     }
 
-    mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
+    while (updatedManga.loadMore) {
+      const request = createRequestObject({
+        url: `${MANGASORIGINES_DOMAIN}/catalogue/?m_orderby=latest&page=${page++}`,
+        method,
+        headers
+      })
+
+      const response = await this.requestManager.schedule(request, 1)
+      const $ = this.cheerio.load(response.data)
+
+      updatedManga = parseUpdatedManga($, time, ids)
+      if (updatedManga.ids.length > 0) {
+        mangaUpdatesFoundCallback(createMangaUpdates({
+          ids: updatedManga.ids
+        }));
+      }
+    }
   }
 
-  
+
   //////////////////////
   /////    TAGS    /////
   //////////////////////
@@ -280,28 +270,8 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
-    
+
     return parseTags($)
-  }
-
-
-  ///////////////////////////////////
-  /////    CLOUDFLARE BYPASS    /////
-  ///////////////////////////////////
-
-  CloudFlareError(status: any) {
-    if(status == 503) {
-      throw new Error('CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass')
-    }
-  }
-  
-  getCloudflareBypassRequest() {
-    return createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}`,
-      method: 'GET',
-      headers
-    }) 
   }
 }

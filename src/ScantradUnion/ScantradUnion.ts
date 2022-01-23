@@ -22,9 +22,10 @@ import {
     parseScantradUnionMangaDetails,
     parseSearch,
     parseHomeSections,
-    parseDate,
     parseTags,
-    isLastPage
+    isLastPage,
+    UpdatedManga,
+    parseUpdatedManga
 } from "./ScantradUnionParser";
 
 const SCANTRADUNION_DOMAIN = "https://scantrad-union.com";
@@ -34,7 +35,7 @@ const headers = {
 }
 
 export const ScantradUnionInfo: SourceInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'Scantrad Union',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -212,28 +213,27 @@ export class ScantradUnion extends Source {
     //////////////////////////////////////
 
     async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-        const request = createRequestObject({
+        let updatedManga: UpdatedManga = {
+          ids: [],
+          loadMore: true
+        }
+    
+        while (updatedManga.loadMore) {
+          const request = createRequestObject({
             url: `${SCANTRADUNION_DOMAIN}`,
             method,
             headers
-        })
-
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-
-        const updatedManga: string[] = []
-        for (const manga of $('#dernierschapitres.dernieresmaj .colonne').toArray()) {
-            let id = $('.carteinfos a', manga).eq(1).attr('href')
-            let mangaDate = parseDate($('.carteinfos .datechapitre', manga).text().trim().split(' ').slice(-2).join(' ')) ?? ''
-
-            if (!id) continue
-            if (mangaDate > time) {
-                if (ids.includes(id)) {
-                    updatedManga.push(id)
-                }
-            }
+          })
+    
+          const response = await this.requestManager.schedule(request, 1)
+          const $ = this.cheerio.load(response.data)
+    
+          updatedManga = parseUpdatedManga($, time, ids)
+          if (updatedManga.ids.length > 0) {
+            mangaUpdatesFoundCallback(createMangaUpdates({
+              ids: updatedManga.ids
+            }));
+          }
         }
-
-        mangaUpdatesFoundCallback(createMangaUpdates({ ids: updatedManga }))
-    }
+      }
 }

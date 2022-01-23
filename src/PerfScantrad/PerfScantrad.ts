@@ -20,7 +20,9 @@ import {
     parsePerfScantradChapterDetails,
     parsePerfScantradChapters,
     parsePerfScantradMangaDetails,
-    parseHomeSections
+    parseHomeSections,
+    UpdatedManga,
+    parseUpdatedManga
 } from "./PerfScantradParser";
 
 const PERFSCANTRAD_DOMAIN = "https://perf-scantrad.fr";
@@ -31,7 +33,7 @@ const headers = {
 }
 
 export const PerfScantradInfo: SourceInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'Perf Scantrad',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -58,8 +60,8 @@ export class PerfScantrad extends Source {
         interceptor: {
             interceptRequest: async (request: Request): Promise<Request> => {
                 request.headers = {
-                    'Referer': 'https://perf-scantrad.fr'          
-                }                
+                    'Referer': 'https://perf-scantrad.fr'
+                }
                 return request
             },
             interceptResponse: async (response: Response): Promise<Response> => {
@@ -90,7 +92,7 @@ export class PerfScantrad extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parsePerfScantradMangaDetails($, mangaId);
     }
 
@@ -108,7 +110,7 @@ export class PerfScantrad extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parsePerfScantradChapters($, mangaId);
     }
 
@@ -126,7 +128,7 @@ export class PerfScantrad extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parsePerfScantradChapterDetails($, mangaId, chapterId);
     }
 
@@ -136,7 +138,10 @@ export class PerfScantrad extends Source {
     ////////////////////////////////
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
-        throw new Error("Search not available on Perf Scantrad website");   
+        return createPagedResults({
+            results: [],
+            metadata
+        })
     }
 
     //////////////////////////////
@@ -144,7 +149,7 @@ export class PerfScantrad extends Source {
     //////////////////////////////
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const section1 = createHomeSection({ id: 'recommended_mangas', title: 'Recommandé', type : HomeSectionType.featured})
+        const section1 = createHomeSection({ id: 'recommended_mangas', title: 'Recommandé', type: HomeSectionType.featured })
         const section2 = createHomeSection({ id: 'latest_updates', title: 'Dernier Mangas Sorti' })
         const section3 = createHomeSection({ id: 'all_manga', title: 'Tous les mangas' })
 
@@ -156,7 +161,7 @@ export class PerfScantrad extends Source {
 
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
-        
+
         parseHomeSections($, [section1, section2, section3], sectionCallback)
     }
 
@@ -166,28 +171,27 @@ export class PerfScantrad extends Source {
     //////////////////////////////////////
 
     async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-        const request = createRequestObject({
-            url: `${PERFSCANTRAD_DOMAIN}`,
-            method,
-            headers
-        })
-  
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-  
-        const updatedManga: string[] = []
-        for (const manga of $('.css-17kk5km.e1eqdyam4').toArray()) {
-          let id = PERFSCANTRAD_DOMAIN + $(manga).attr('href')
-          let mangaDate = new Date()
-
-          if (!id) continue
-          if (mangaDate > time) {
-              if (ids.includes(id)) {
-                  updatedManga.push(id)
-              }
-          }
+        let updatedManga: UpdatedManga = {
+            ids: [],
+            loadMore: true
         }
-  
-        mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
+
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${PERFSCANTRAD_DOMAIN}`,
+                method,
+                headers
+            })
+
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data)
+
+            updatedManga = parseUpdatedManga($, time, ids)
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
     }
 }

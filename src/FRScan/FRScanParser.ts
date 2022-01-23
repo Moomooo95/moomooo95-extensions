@@ -3,11 +3,11 @@ import {
   ChapterDetails,
   HomeSection,
   LanguageCode,
-  Manga, 
+  Manga,
   MangaStatus,
   MangaTile,
   Tag,
-  TagSection 
+  TagSection
 } from "paperback-extensions-common";
 
 
@@ -32,27 +32,25 @@ export const parseFRScanMangaDetails = ($: CheerioStatic, mangaId: string): Mang
   }
 
   let othersTitles = $('dt:contains("Autres noms")', panel).next().text().trim().split(',')
-  for (let title of othersTitles) {   
-      titles.push(decodeHTMLEntity(title.trim()))
+  for (let title of othersTitles) {
+    titles.push(decodeHTMLEntity(title.trim()))
   }
   const author = $('dt:contains("Auteur(s)")', panel).next().text().trim() != "" ? $('dt:contains("Auteur(s)")', panel).next().text().trim() : "Unknown"
   const artist = $('dt:contains("Artist(s)")', panel).next().text().trim() != "" ? $('dt:contains("Artist(s)")', panel).next().text().trim() : "Unknown"
 
   const arrayTags: Tag[] = []
   // Categories
-  if ($('dt:contains("Catégories")', panel).length > 0)
-  {
+  if ($('dt:contains("Catégories")', panel).length > 0) {
     const categories = $('dt:contains("Catégories")', panel).next().text().trim().split(',') ?? ""
     for (const category of categories) {
-      const label = category.trim()
+      const label = capitalizeFirstLetter(decodeHTMLEntity(category.trim()))
       const id = category.replace(" ", "-").toLowerCase().trim() ?? label
 
       arrayTags.push({ id: id, label: label })
     }
   }
   // Tags
-  if ($('dt:contains("Tags")', panel).length > 0)
-  {
+  if ($('dt:contains("Tags")', panel).length > 0) {
     const tags = $('dt:contains("Tags")', panel).next().text().trim().split('\n') ?? ""
     for (const tag of tags) {
       const label = tag.trim()
@@ -66,7 +64,7 @@ export const parseFRScanMangaDetails = ($: CheerioStatic, mangaId: string): Mang
   const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
 
   const views = Number($('dt:contains("Vues")', panel).next().text().trim())
-  const rating = Number($('dt:contains("Note")', panel).next().children().text().trim().substr(11,3)) ?? ''  
+  const rating = Number($('dt:contains("Note")', panel).next().children().text().trim().substr(11, 3)) ?? ''
   const desc = decodeHTMLEntity($('.well').children('p').text().trim())
 
   return createManga({
@@ -90,14 +88,13 @@ export const parseFRScanMangaDetails = ($: CheerioStatic, mangaId: string): Mang
 //////////////////////////
 
 export const parseFRScanChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
-  const allChapters = $('.chapters')
   const chapters: Chapter[] = []
-  
-  for (let chapter of $('li:not(.volume)', allChapters).toArray()) {
-    const id: string = $('a', chapter).attr('href') ?? ''
-    const name: string = "Chapitre " + $('a', chapter).text().split(" ").pop() ?? ''
-    const chapNum: number = Number( id.split('/').pop() )
-    const time: Date = new Date($('.date-chapter-title-rtl', chapter).text() ?? '')
+
+  for (let chapter of $('.chapters li:not(.volume)').toArray()) {
+    const id = $('a', chapter).attr('href') ?? ''
+    const name = "Chapitre " + decodeHTMLEntity($('a', chapter).text().split(" ").pop() ?? '')
+    const chapNum = Number(id.split('/').pop())
+    const time = new Date($('.date-chapter-title-rtl', chapter).text() ?? '')
 
     chapters.push(createChapter({
       id,
@@ -119,9 +116,8 @@ export const parseFRScanChapters = ($: CheerioStatic, mangaId: string): Chapter[
 
 export const parseFRScanChapterDetails = ($: CheerioStatic, mangaId: string, chapterId: string): ChapterDetails => {
   const pages: string[] = []
-  const allItems = $('img', '.viewer-cnt #all').toArray()
 
-  for(let item of allItems) {
+  for (let item of $('img', '.viewer-cnt #all').toArray()) {
     let page = $(item).attr('data-src')?.trim().split("/")[0] == "" ? 'https:' + $(item).attr('data-src')?.trim() : $(item).attr('data-src')?.trim()
 
     if (typeof page === 'undefined')
@@ -151,8 +147,8 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
     let image = ($('img', item).attr('src') ?? '').split("/")[0] == "https:" ? $('img', item).attr('src') ?? "" : "https:" + $('img', item).attr('src') ?? ""
     let title = decodeHTMLEntity($('h5', item).text())
     let subtitle = "Chapitre " + decodeHTMLEntity($('a', item).eq(2).text().trim().replace(/#/g, ""))
-    
-    if (typeof url === 'undefined' || typeof image === 'undefined') 
+
+    if (typeof url === 'undefined' || typeof image === 'undefined')
       continue
 
     manga.push(createMangaTile({
@@ -178,9 +174,9 @@ const parseLatestManga = ($: CheerioStatic): MangaTile[] => {
     let url = $('a', item).first().attr('href')?.split("/").pop()
     let image = "https://frscan.cc/uploads/manga/" + url + "/cover/cover_250x350.jpg"
     let title = decodeHTMLEntity($('a', item).first().text())
-    let subtitle = "Chapitre " + ($('a', item).eq(1).text().trim().match(/(\d)+[.]?(\d)*/gm) ?? "")[0]
+    let subtitle = "Chapitre " + decodeHTMLEntity(($('a', item).eq(1).text().trim().match(/(\d)+[.]?(\d)*/gm) ?? "")[0])
 
-    if (typeof url === 'undefined' || typeof image === 'undefined') 
+    if (typeof url === 'undefined' || typeof image === 'undefined')
       continue
 
     latestManga.push(createMangaTile({
@@ -205,9 +201,9 @@ const parseLatestPopularMangaUpdated = ($: CheerioStatic): MangaTile[] => {
     let url = $('a', item).first().attr('href')?.split("/")[4]
     let image = "https:" + $('img', item).attr('src')
     let title = decodeHTMLEntity($('a', item).first().text())
-    let subtitle = "Chapitre " + $('p', item).text().split(' ').reverse()[1]
+    let subtitle = "Chapitre " + decodeHTMLEntity($('p', item).text().split(' ').reverse()[1])
 
-    if (typeof url === 'undefined' || typeof image === 'undefined') 
+    if (typeof url === 'undefined' || typeof image === 'undefined')
       continue
 
     popularManga.push(createMangaTile({
@@ -234,7 +230,7 @@ const parseTopManga = ($: CheerioStatic): MangaTile[] => {
     let title = decodeHTMLEntity($('strong', item).text())
     let subtitle = "👀 " + $('.media-body', item).text().split('\n')[2].trim().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 
-    if (typeof url === 'undefined' || typeof image === 'undefined') 
+    if (typeof url === 'undefined' || typeof image === 'undefined')
       continue
 
     topManga.push(createMangaTile({
@@ -275,8 +271,8 @@ export const parseTags = ($: CheerioStatic): TagSection[] => {
 
   for (let item of $('.tag-links a').toArray()) {
     let id = ($(item).attr('href') ?? '').split('/').pop() ?? ''
-    let label = $(item).text()
-    
+    let label = capitalizeFirstLetter(decodeHTMLEntity($(item).text()))
+
     arrayTags.push({ id: id, label: label })
   }
   const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })]
@@ -293,17 +289,47 @@ export const isLastPage = ($: CheerioStatic): boolean => {
 }
 
 
+///////////////////////////////
+/////    UPDATED MANGA    /////
+///////////////////////////////
+
+export interface UpdatedManga {
+  ids: string[];
+  loadMore: boolean;
+}
+
+export const parseUpdatedManga = ($: CheerioStatic, time: Date, ids: string[]): UpdatedManga => {
+  const manga: string[] = []
+  let loadMore = true
+
+  for (const item of $('.mangalist .manga-item').toArray()) {
+    let id = ($('a', item).first().attr('href') ?? '').split('/').pop() ?? ''
+    let mangaTime = parseDate($('.pull-right', item).text().trim() ?? '')
+
+    if (mangaTime > time)
+      if (ids.includes(id))
+        manga.push(id)
+      else loadMore = false
+  }
+
+  return {
+    ids: manga,
+    loadMore,
+  }
+}
+
+
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
 
 function decodeHTMLEntity(str: string) {
   return str.replace(/&#(\d+);/g, function (match, dec) {
-      return String.fromCharCode(dec);
+    return String.fromCharCode(dec);
   })
 }
 
-export function parseDate(str: string) {
+function parseDate(str: string) {
   if (str.length == 0) {
     let date = new Date()
     return new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -312,14 +338,18 @@ export function parseDate(str: string) {
   switch (str.trim()) {
     case "Aujourd'hui":
       let today = new Date()
-      return new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    
+      return new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours(), today.getMinutes())
+
     case "Hier":
       let yesterday = new Date()
-      return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()-1)
+      return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate() - 1, yesterday.getHours(), yesterday.getMinutes())
 
     default:
       let date = str.split("/")
-      return new Date(parseInt(date[2]), parseInt(date[1])-1, parseInt(date[0]))
+      return new Date(parseInt(date[2]), parseInt(date[1]) - 1, parseInt(date[0]))
   }
+}
+
+function capitalizeFirstLetter(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }

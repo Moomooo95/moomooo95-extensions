@@ -24,7 +24,10 @@ import {
     parseSearch,
     parseLatestUpdatedManga,
     parseTags,
-    parseDate
+    parseDate,
+    decodeHTMLEntity,
+    UpdatedManga,
+    parseUpdatedManga
 } from "./JapanreadParser";
 
 const JAPANREAD_DOMAIN = "https://www.japanread.cc";
@@ -34,7 +37,7 @@ const headers = {
 }
 
 export const JapanreadInfo: SourceInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'Japanread',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -105,13 +108,13 @@ export class Japanread extends Source {
         let $ = this.cheerio.load(response.data);
 
         const page_max = Number($('.pagination .page-item .page-link').slice(-2, -1).text())
-        
+
         const chapters: Chapter[] = []
-        
+
         if (page_max == 0) {
             for (let chapter of $('#chapters div[data-row=chapter]').toArray()) {
                 const id = `https://www.japanread.cc${$('a', chapter).eq(0).attr('href') ?? ''}`
-                const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() : undefined
+                const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? decodeHTMLEntity($('a', chapter).eq(0).children().text().replace(/^ -/, '').trim()) : undefined
                 const chapNum = Number((($('a', chapter).eq(0).attr('href') ?? '').split('/').pop() ?? '').replace(/-/g, '.'))
                 const volume = !isNaN(Number(($('a', chapter).eq(0).text().match(/^Vol.(\d) /gm) ?? '.')[0].split('.')[1])) ? Number(($('a', chapter).eq(0).text().match(/^Vol.(\d) /gm) ?? '.')[0].split('.')[1]) : undefined
                 const time = parseDate($('a', chapter).eq(0).parent().next().next().clone().children().remove().end().text().trim().replace(/-/g, '.'))
@@ -134,17 +137,17 @@ export class Japanread extends Source {
                     method,
                     headers
                 })
-        
+
                 let response = await this.requestManager.schedule(request, 1);
                 let $ = this.cheerio.load(response.data);
-                
+
                 for (let chapter of $('#chapters div[data-row=chapter]').toArray()) {
                     const id = `https://www.japanread.cc${$('a', chapter).eq(0).attr('href') ?? ''}`
-                    const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() : undefined
+                    const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? decodeHTMLEntity($('a', chapter).eq(0).children().text().replace(/^ -/, '').trim()) : undefined
                     const chapNum = Number((($('a', chapter).eq(0).attr('href') ?? '').split('/').pop() ?? '').replace(/-/g, '.'))
                     const volume = !isNaN(Number(($('a', chapter).eq(0).text().match(/^Vol.(\d) /gm) ?? '.')[0].split('.')[1])) ? Number(($('a', chapter).eq(0).text().match(/^Vol.(\d) /gm) ?? '.')[0].split('.')[1]) : undefined
                     const time = parseDate($('a', chapter).eq(0).parent().next().next().clone().children().remove().end().text().trim().replace(/-/g, '.'))
-    
+
                     chapters.push(createChapter({
                         id,
                         mangaId,
@@ -166,7 +169,7 @@ export class Japanread extends Source {
     /////    CHAPTERS DETAILS    /////
     //////////////////////////////////
 
-    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {       
+    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const request0 = createRequestObject({
             url: `${chapterId}`,
             method,
@@ -177,7 +180,7 @@ export class Japanread extends Source {
         const $0 = this.cheerio.load(response0.data);
 
         const id = $0("meta[data-chapter-id]").attr("data-chapter-id") ?? ''
-        
+
         const request = createRequestObject({
             url: `${JAPANREAD_DOMAIN}/api/?id=${id}&type=chapter`,
             method,
@@ -315,28 +318,28 @@ export class Japanread extends Source {
     //////////////////////////////////////
 
     async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-        const request = createRequestObject({
-            url: `${JAPANREAD_DOMAIN}`,
-            method,
-            headers
-        })
-
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-
-        const updatedManga: string[] = []
-        for (const manga of $('.table-responsive tbody .manga').toArray()) {
-            let id = `${JAPANREAD_DOMAIN}${$(manga).next().children('td').eq(1).children('.text-truncate').attr('href')}`
-            let mangaDate = new Date(($(manga).next().children('td').last().find('time').attr('datetime') ?? '').replace(/ CET/g, ''))
-
-            if (!id) continue
-            if (mangaDate > time) {
-                if (ids.includes(id)) {
-                    updatedManga.push(id)
-                }
-            }
+        let page = 1
+        let updatedManga: UpdatedManga = {
+            ids: [],
+            loadMore: true
         }
 
-        mangaUpdatesFoundCallback(createMangaUpdates({ ids: updatedManga }))
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${JAPANREAD_DOMAIN}/?page=${page++}`,
+                method,
+                headers
+            })
+
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data)
+
+            updatedManga = parseUpdatedManga($, time, ids)
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
     }
 }

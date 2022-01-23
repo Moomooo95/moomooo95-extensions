@@ -25,7 +25,8 @@ import {
     parseMangaSectionOthers,
     parseViewMore,
     isLastPage,
-    parseDate
+    UpdatedManga,
+    parseUpdatedManga
 } from "./ScantradParser";
 
 const SCANTRAD_DOMAIN = "https://scantrad.net";
@@ -35,7 +36,7 @@ const headers = {
 }
 
 export const ScantradInfo: SourceInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'Scantrad',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -61,8 +62,8 @@ export class Scantrad extends Source {
         interceptor: {
             interceptRequest: async (request: Request): Promise<Request> => {
                 request.headers = {
-                    'Referer': 'https://scantrad.net/'          
-                }                
+                    'Referer': 'https://scantrad.net/'
+                }
                 return request
             },
             interceptResponse: async (response: Response): Promise<Response> => {
@@ -93,7 +94,7 @@ export class Scantrad extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseScantradMangaDetails($, mangaId);
     }
 
@@ -111,7 +112,7 @@ export class Scantrad extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseScantradChapters($, mangaId);
     }
 
@@ -129,7 +130,7 @@ export class Scantrad extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseScantradChapterDetails($, mangaId, chapterId);
     }
 
@@ -142,19 +143,19 @@ export class Scantrad extends Source {
         const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27')
         const request = createRequestObject({
             url: `${SCANTRAD_DOMAIN}`,
-            method : 'POST',
+            method: 'POST',
             headers,
             data: `q=${search}`
         })
 
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
-        
+
         const manga = parseSearch($)
 
         return createPagedResults({
             results: manga
-        })    
+        })
     }
 
 
@@ -163,10 +164,10 @@ export class Scantrad extends Source {
     //////////////////////////////
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const section1 = createHomeSection({ id: 'top_discover', title: 'A découvrir', type : HomeSectionType.featured})
+        const section1 = createHomeSection({ id: 'top_discover', title: 'A découvrir', type: HomeSectionType.featured })
         const section2 = createHomeSection({ id: 'latest_updates', title: 'Dernier Mangas Sorti', view_more: true })
-        const section3 = createHomeSection({ id: 'upcoming_releases', title: 'Sorties à venir prochainement' })
-        const section4 = createHomeSection({ id: 'all_manga', title: 'Tous les mangas' })
+        const section3 = createHomeSection({ id: 'all_manga', title: 'Tous les mangas' })
+        //const section4 = createHomeSection({ id: 'upcoming_releases', title: 'Sorties à venir prochainement' })
 
         // Section 1 and 2
         const request1 = createRequestObject({
@@ -187,7 +188,7 @@ export class Scantrad extends Source {
 
         const response2 = await this.requestManager.schedule(request2, 1)
         const $2 = this.cheerio.load(response2.data)
-        
+
         parseHomeSections($1, [section1, section2], sectionCallback)
         parseMangaSectionOthers($2, [section3], sectionCallback)
     }
@@ -195,7 +196,7 @@ export class Scantrad extends Source {
     /////////////////////////////////
     /////    VIEW MORE ITEMS    /////
     /////////////////////////////////
-    
+
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         let page: number = metadata?.page ?? 1
         let param = ''
@@ -230,28 +231,28 @@ export class Scantrad extends Source {
     //////////////////////////////////////
 
     async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-        const request = createRequestObject({
-            url: `${SCANTRAD_DOMAIN}`,
-            method,
-            headers
-        })
-  
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-  
-        const updatedManga: string[] = []
-        for (const manga of $('.home #home-chapter .home-manga').toArray()) {
-          let id = "https://scantrad.net" + $('.hm-info .hmi-sub', manga).attr('href')
-          let mangaDate = parseDate($('.hmr-date', manga).parent().clone().children().remove().end().text().trim()) ?? ''
-
-          if (!id) continue
-          if (mangaDate > time) {
-              if (ids.includes(id)) {
-                  updatedManga.push(id)
-              }
-          }
+        let page = 1
+        let updatedManga: UpdatedManga = {
+            ids: [],
+            loadMore: true
         }
-  
-        mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
+
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${SCANTRAD_DOMAIN}/?page=${page++}`,
+                method,
+                headers
+            })
+
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data)
+
+            updatedManga = parseUpdatedManga($, time, ids)
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
     }
 }

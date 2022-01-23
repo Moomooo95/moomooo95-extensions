@@ -17,13 +17,14 @@ import {
 
 import {
   isLastPage,
-  parseDate,
   parseHomeSections,
   parseFRScanChapterDetails,
   parseFRScanChapters,
   parseFRScanMangaDetails,
   parseSearch,
-  parseTags
+  parseTags,
+  UpdatedManga,
+  parseUpdatedManga
 } from "./FRScanParser";
 
 const FRSCAN_DOMAIN = "https://www.frscan.cc/";
@@ -33,30 +34,30 @@ const headers = {
 }
 
 export const FRScanInfo: SourceInfo = {
-    version: '1.1',
-    name: 'FRScan',
-    icon: 'logo.png',
-    author: 'Moomooo95',
-    authorWebsite: 'https://github.com/Moomooo95',
-    description: 'Source française FRScan (anciennement appelée LelScanVF)',
-    contentRating: ContentRating.MATURE,
-    websiteBaseURL: FRSCAN_DOMAIN,
-    sourceTags: [
-      {
-        text: "Francais",
-        type: TagType.GREY
-      },
-      {
-          text: 'Notifications',
-          type: TagType.GREEN
-      }
-    ]
+  version: '1.2',
+  name: 'FRScan',
+  icon: 'logo.png',
+  author: 'Moomooo95',
+  authorWebsite: 'https://github.com/Moomooo95',
+  description: 'Source française FRScan (anciennement appelée LelScanVF)',
+  contentRating: ContentRating.MATURE,
+  websiteBaseURL: FRSCAN_DOMAIN,
+  sourceTags: [
+    {
+      text: "Francais",
+      type: TagType.GREY
+    },
+    {
+      text: 'Notifications',
+      type: TagType.GREEN
+    }
+  ]
 }
 
 export class FRScan extends Source {
 
   requestManager: RequestManager = createRequestManager({
-      requestsPerSecond: 3
+    requestsPerSecond: 3
   });
 
 
@@ -77,12 +78,12 @@ export class FRScan extends Source {
     const request = createRequestObject({
       url: `${FRSCAN_DOMAIN}/manga/${mangaId}`,
       method,
-        headers
+      headers
     })
 
     const response = await this.requestManager.schedule(request, 1);
     const $ = this.cheerio.load(response.data);
-    
+
     return await parseFRScanMangaDetails($, mangaId);
   }
 
@@ -100,10 +101,10 @@ export class FRScan extends Source {
 
     const response = await this.requestManager.schedule(request, 1);
     const $ = this.cheerio.load(response.data);
-    
+
     return await parseFRScanChapters($, mangaId);
   }
-  
+
 
   //////////////////////////////////
   /////    CHAPTERS DETAILS    /////
@@ -113,12 +114,12 @@ export class FRScan extends Source {
     const request = createRequestObject({
       url: `${chapterId}`,
       method,
-      headers 
+      headers
     })
 
     const response = await this.requestManager.schedule(request, 1);
     const $ = this.cheerio.load(response.data);
-    
+
     return await parseFRScanChapterDetails($, mangaId, chapterId);
   }
 
@@ -139,7 +140,7 @@ export class FRScan extends Source {
         method,
         headers
       })
-  
+
       const response = await this.requestManager.schedule(request, 1)
       const $ = this.cheerio.load(response.data)
 
@@ -152,10 +153,10 @@ export class FRScan extends Source {
         method,
         headers
       })
-  
+
       const response = await this.requestManager.schedule(request, 1)
       const $ = this.cheerio.load(response.data)
-      
+
       manga = parseSearch($)
       metadata = !isLastPage($) ? { page: page + 1 } : undefined
     }
@@ -163,7 +164,7 @@ export class FRScan extends Source {
     return createPagedResults({
       results: manga,
       metadata
-    })    
+    })
   }
 
 
@@ -183,7 +184,7 @@ export class FRScan extends Source {
 
     const response1 = await this.requestManager.schedule(request1, 1)
     const $1 = this.cheerio.load(response1.data)
-    
+
     parseHomeSections($1, [section1, section2, section3], sectionCallback)
   }
 
@@ -201,7 +202,7 @@ export class FRScan extends Source {
 
     const response = await this.requestManager.schedule(request, 1)
     const $ = this.cheerio.load(response.data)
-    
+
     return parseTags($)
   }
 
@@ -211,28 +212,27 @@ export class FRScan extends Source {
   //////////////////////////////////////
 
   async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-    const request = createRequestObject({
+    let updatedManga: UpdatedManga = {
+      ids: [],
+      loadMore: true
+    }
+
+    while (updatedManga.loadMore) {
+      const request = createRequestObject({
         url: `${FRSCAN_DOMAIN}`,
         method,
         headers
-    })
+      })
 
-    const response = await this.requestManager.schedule(request, 1)
-    const $ = this.cheerio.load(response.data)
+      const response = await this.requestManager.schedule(request, 1)
+      const $ = this.cheerio.load(response.data)
 
-    const updatedManga: string[] = []
-    for (const manga of $('.mangalist .manga-item').toArray()) {
-      let id = $('a', manga).first().attr('href')
-      let mangaDate = parseDate($('.pull-right', manga).text().trim() ?? '')
-
-      if (!id) continue
-      if (mangaDate > time) {
-          if (ids.includes(id)) {
-              updatedManga.push(id)
-          }
+      updatedManga = parseUpdatedManga($, time, ids)
+      if (updatedManga.ids.length > 0) {
+        mangaUpdatesFoundCallback(createMangaUpdates({
+          ids: updatedManga.ids
+        }));
       }
     }
-
-    mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
   }
 }

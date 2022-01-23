@@ -19,12 +19,12 @@ export const parseScantradMangaDetails = ($: CheerioStatic, mangaId: string): Ma
     const panel = $('.ct-top')
 
     const titles = [
-        decodeHTMLEntity($('.titre', panel).parent().clone().children().remove().end().text().trim()),
+        decodeHTMLEntity($('.titre', panel).clone().children().remove().end().text().trim()),
         decodeHTMLEntity($('.info .sub-i:contains("Nom alternatif :")', panel).text())
     ]
     const image = $('.ctt-img img', panel).attr('src') ?? ''
-    const author = $('.titre .titre-sub', panel).text().trim().split(/ (.+)/)[1].split(",")[0] ?? "Unknown"
-    const artist = $('.titre .titre-sub', panel).text().trim().split(/ (.+)/)[1].split(",")[1] ?? "Unknown"
+    const author = ($('.titre .titre-sub', '.ct-top').text().trim().split(/ (.+)/)[1] ?? '').split(",")[0] ?? "Unknown"
+    const artist = ($('.titre .titre-sub', '.ct-top').text().trim().split(/ (.+)/)[1] ?? '').split(",")[1] ?? "Unknown"
     const rating = Number($('.mrtb-view', panel).text().trim())
 
     let status = MangaStatus.UNKNOWN
@@ -45,7 +45,7 @@ export const parseScantradMangaDetails = ($: CheerioStatic, mangaId: string): Ma
     const genres = $('.info .sub-i:contains("Genre :") span', panel).toArray()
     if (genres.length > 0) {
         for (const genre of genres) {
-            const label = $(genre).text().trim()
+            const label = capitalizeFirstLetter(decodeHTMLEntity($(genre).text().trim()))
             const id = label
 
             arrayTags.push({ id: id, label: label })
@@ -75,14 +75,13 @@ export const parseScantradMangaDetails = ($: CheerioStatic, mangaId: string): Ma
 //////////////////////////
 
 export const parseScantradChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
-    const allChapters = $('#chapitres .chapitre')
     const chapters: Chapter[] = []
 
-    for (let chapter of allChapters.toArray()) {
+    for (let chapter of $('#chapitres .chapitre').toArray()) {
         const id = ($('.hm-link', chapter).attr('href')?.split('/')[0] == "https:") ? $('.hm-link', chapter).attr('href') ?? '' : "https://scantrad.net" + $('.hm-link', chapter).attr('href') ?? ''
-        const name = $('.chl-titre', chapter).text().trim() ?? ''
-        const chapNum = Number(name.trim().split(' ')[1])
-        const time = parseDate($('.chl-date', chapter).text().trim() ?? '')
+        const name = decodeHTMLEntity($('.chl-titre', chapter).text().trim()) != '' ? decodeHTMLEntity($('.chl-titre', chapter).text().trim()) : undefined
+        const chapNum = Number(decodeHTMLEntity($('.chl-titre', chapter).text().trim()).split(' ')[1])
+        const time = parseDate($('.chl-date', chapter).text().trim())
 
         chapters.push(createChapter({
             id,
@@ -104,11 +103,10 @@ export const parseScantradChapters = ($: CheerioStatic, mangaId: string): Chapte
 
 export const parseScantradChapterDetails = ($: CheerioStatic, mangaId: string, chapterId: string): ChapterDetails => {
     const pages: string[] = []
-    const allItems = $('.main .main_img .sc-lel').toArray()
 
-    for (let item of allItems) {
+    for (let item of $('.main .main_img .sc-lel').toArray()) {
         let page = ($('img', item).attr('data-src')?.split('/')[0] == "https:") ? $('img', item).attr('data-src') ?? "" : "https://scan-trad.fr/" + $('img', item).attr('data-src')
-        
+
         if (typeof page === 'undefined')
             continue;
 
@@ -133,9 +131,9 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
 
     for (const item of $('a').toArray()) {
         const url = $(item).attr('href')?.split('/')[1] ?? ''
-        const title = $('.rgr-titre', item).text().trim()
+        const title = decodeHTMLEntity($('.rgr-titre', item).text().trim())
         const image = $('img', item).attr('src') ?? ''
-        const subtitle = $('.rgr-lastChap', item).text().split(':')[1].trim()
+        const subtitle = decodeHTMLEntity($('.rgr-lastChap', item).text().split(':')[1].trim())
 
         manga.push(createMangaTile({
             id: url,
@@ -158,8 +156,8 @@ const parseTopDiscoverManga = ($: CheerioStatic): MangaTile[] => {
 
     for (const item of $('.pp-main .sc-lel').toArray()) {
         const url = $('.ppo-left a', item).attr('href')?.split('/')[1] ?? ''
-        const title = $('.pp-sub', item).text().trim()
-        const image = $('.main_img #'+ $(item).attr('id') +' img').attr('data-src') ?? ''
+        const title = decodeHTMLEntity($('.pp-sub', item).text().trim())
+        const image = $('.main_img #' + $(item).attr('id') + ' img').attr('data-src') ?? ''
 
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue
@@ -167,7 +165,7 @@ const parseTopDiscoverManga = ($: CheerioStatic): MangaTile[] => {
         topDiscoverManga.push(createMangaTile({
             id: url,
             image,
-            title: createIconText({ text: title }),
+            title: createIconText({ text: title })
         }))
     }
 
@@ -183,9 +181,9 @@ const parseLatestManga = ($: CheerioStatic): MangaTile[] => {
 
     for (const item of $('.home #home-chapter .home-manga').toArray()) {
         const url = $('.hmi-titre', item).attr('href')
-        const title = $('.hmi-titre', item).text().trim()
+        const title = decodeHTMLEntity($('.hmi-titre', item).text().trim())
         const image = $('.hm-image img', item).attr('data-src') ?? ''
-        const subtitle = $('.hmi-sub', item).text().trim()
+        const subtitle = decodeHTMLEntity($('.hmi-sub', item).text().trim())
 
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue
@@ -210,9 +208,9 @@ const parseAllManga = ($: CheerioStatic): MangaTile[] => {
 
     for (const item of $('.new-manga .manga').toArray()) {
         const url = $('.manga_img a', item).attr('href')?.split('/')[1] ?? ''
-        const title = $('.manga_right .mr-info .mri-top', item).text().trim()
+        const title = decodeHTMLEntity($('.manga_right .mr-info .mri-top', item).text().trim())
         const image = $('.manga_img img', item).attr('data-src') ?? ''
-        const subtitle = $('.manga_right .mr-info .mri-bot', item).text()
+        const subtitle = "Chapitre " + decodeHTMLEntity($('.manga_right .mr-info .mri-bot', item).text().replace(/^Dernier chapitre :/gm, '').trim())
 
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue
@@ -278,6 +276,36 @@ export const isLastPage = ($: CheerioStatic): boolean => {
 }
 
 
+///////////////////////////////
+/////    UPDATED MANGA    /////
+///////////////////////////////
+
+export interface UpdatedManga {
+    ids: string[];
+    loadMore: boolean;
+}
+
+export const parseUpdatedManga = ($: CheerioStatic, time: Date, ids: string[]): UpdatedManga => {
+    const manga: string[] = []
+    let loadMore = true
+
+    for (const item of $('.home #home-chapter .home-manga').toArray()) {
+        let id = ($('.hm-info .hmi-sub', item).attr('href') ?? '').split('/').slice(-2, -1)[0]
+        let mangaTime = parseDate($('.hmr-date', item).clone().children().remove().end().text().trim())
+
+        if (mangaTime > time)
+            if (ids.includes(id))
+                manga.push(id)
+            else loadMore = false
+    }
+
+    return {
+        ids: manga,
+        loadMore,
+    }
+}
+
+
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
@@ -288,23 +316,34 @@ function decodeHTMLEntity(str: string) {
     })
 }
 
-export function parseDate(str: string) {
+function parseDate(str: string) {
+    str = str.trim()
     if (str.length == 0) {
         let date = new Date()
         return new Date(date.getFullYear(), date.getMonth(), date.getDate())
     }
 
-    let date = str.trim().split(' ')
+    let date = str.split(' ')
     let date_today = new Date()
-    switch (date[1]) {
-        case "jour":
-        case "jours":
-            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate()-parseInt(date[0]))
-        case "mois":
-            return new Date(date_today.getFullYear(), date_today.getMonth()-parseInt(date[0]), date_today.getDate())
-        case "année":
-        case "années":
-            return new Date(date_today.getFullYear()-parseInt(date[0]), date_today.getMonth(), date_today.getDate())
+    switch (date[1].slice(0, 2)) {
+        case "s":
+            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes(), date_today.getSeconds() - parseInt(date[0]))
+        case "mi":
+            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes() - parseInt(date[0]))
+        case "he":
+            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours() - parseInt(date[0]), date_today.getMinutes())
+        case "jo":
+            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - parseInt(date[0]), date_today.getHours(), date_today.getMinutes())
+        case "se":
+            return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - (parseInt(date[0]) * 7), date_today.getHours(), date_today.getMinutes())
+        case "mo":
+            return new Date(date_today.getFullYear(), date_today.getMonth() - parseInt(date[0]), date_today.getDate(), date_today.getHours(), date_today.getMinutes())
+        case "an":
+            return new Date(date_today.getFullYear() - parseInt(date[0]), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes())
     }
     return date_today
+}
+
+function capitalizeFirstLetter(str: string) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }

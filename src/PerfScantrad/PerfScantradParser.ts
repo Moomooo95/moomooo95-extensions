@@ -40,7 +40,7 @@ export const parsePerfScantradMangaDetails = ($: CheerioStatic, mangaId: string)
     const genres = $('.css-1cls7c6.eibv1gc1', panel).toArray()
     if (genres.length > 0) {
         for (const genre of genres) {
-            const label = $('p', genre).text().trim()
+            const label = capitalizeFirstLetter(decodeHTMLEntity($('p', genre).text().trim()))
             const id = label
 
             arrayTags.push({ id: id, label: label })
@@ -56,7 +56,6 @@ export const parsePerfScantradMangaDetails = ($: CheerioStatic, mangaId: string)
         image,
         author,
         artist,
-        rating: Number(undefined),
         status,
         tags: tagSections,
         desc,
@@ -70,13 +69,12 @@ export const parsePerfScantradMangaDetails = ($: CheerioStatic, mangaId: string)
 //////////////////////////
 
 export const parsePerfScantradChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
-    const allChapters = $('.css-1pfv033.e1ba5g7u0')
     const chapters: Chapter[] = []
 
-    for (let chapter of allChapters.toArray()) {
+    for (let chapter of $('.css-1pfv033.e1ba5g7u0').toArray()) {
         const id = $(chapter).attr('href') ?? ''
-        const name = $('.css-1lrrmqm.e1ba5g7u2', chapter).text().trim() ?? ''
-        const chapNum = Number(name.trim().split(' ')[1])
+        const name = decodeHTMLEntity($('.css-1lrrmqm.e1ba5g7u2', chapter).text().trim() ?? '') != '' ? decodeHTMLEntity($('.css-1lrrmqm.e1ba5g7u2', chapter).text().trim() ?? '') : undefined
+        const chapNum = Number(decodeHTMLEntity($('.css-1lrrmqm.e1ba5g7u2', chapter).text().trim() ?? '').trim().split(' ')[1])
 
         chapters.push(createChapter({
             id,
@@ -113,9 +111,8 @@ export const parsePerfScantradChapterDetails = ($: CheerioStatic, mangaId: strin
 
 const parseRecommendedManga = ($: CheerioStatic): MangaTile[] => {
     const recommendedManga: MangaTile[] = []
-    const allItems = JSON.parse(($('#__NEXT_DATA__').html() ?? '').replace(/"\s+/g,'"').replace(/\s+"/g,'"')).props.pageProps.featured
 
-    for (const item of allItems) {
+    for (const item of JSON.parse(($('#__NEXT_DATA__').html() ?? '').replace(/"\s+/g, '"').replace(/\s+"/g, '"')).props.pageProps.featured) {
         const url = item.series_id
         const title = item.title
         const image = item.cover_art.source
@@ -139,9 +136,8 @@ const parseRecommendedManga = ($: CheerioStatic): MangaTile[] => {
 
 const parseLatestManga = ($: CheerioStatic): MangaTile[] => {
     const latestManga: MangaTile[] = []
-    const allItems = JSON.parse(($('#__NEXT_DATA__').html() ?? '').replace(/"\s+/g,'"').replace(/\s+"/g,'"')).props.pageProps.latests
 
-    for (const item of allItems) {
+    for (const item of JSON.parse(($('#__NEXT_DATA__').html() ?? '').replace(/"\s+/g, '"').replace(/\s+"/g, '"')).props.pageProps.latests) {
         const url = item['0'].series_id
         const title = item['0'].title
         const image = item['0'].cover_art.source
@@ -168,9 +164,8 @@ const parseLatestManga = ($: CheerioStatic): MangaTile[] => {
 
 const parseAllManga = ($: CheerioStatic): MangaTile[] => {
     const allManga: MangaTile[] = []
-    const allItems = JSON.parse(($('#__NEXT_DATA__').html() ?? '').replace(/"\s+/g,'"').replace(/\s+"/g,'"')).props.pageProps.series
 
-    for (const item of allItems) {
+    for (const item of JSON.parse(($('#__NEXT_DATA__').html() ?? '').replace(/"\s+/g, '"').replace(/\s+"/g, '"')).props.pageProps.series) {
         const url = item.series_id
         const title = item.title
         const image = item.cover_art.source
@@ -203,6 +198,37 @@ export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sec
 }
 
 
+///////////////////////////////
+/////    UPDATED MANGA    /////
+///////////////////////////////
+
+export interface UpdatedManga {
+    ids: string[];
+    loadMore: boolean;
+}
+
+export const parseUpdatedManga = ($: CheerioStatic, time: Date, ids: string[]): UpdatedManga => {
+    const manga: string[] = []
+    let loadMore = true
+
+    for (const item of $('.css-17kk5km.e1eqdyam4').toArray()) {
+        let id = ($(item).attr('href') ?? '').split('/')[2]
+        let mangaTime = new Date()
+
+        if (mangaTime > time)
+            if (ids.includes(id))
+                manga.push(id)
+            else loadMore = false
+    }
+
+    return {
+        ids: manga,
+        loadMore,
+    }
+}
+
+
+
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
@@ -211,4 +237,8 @@ function decodeHTMLEntity(str: string) {
     return str.replace(/&#(\d+);/g, function (match, dec) {
         return String.fromCharCode(dec);
     })
+}
+
+function capitalizeFirstLetter(str: string) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }

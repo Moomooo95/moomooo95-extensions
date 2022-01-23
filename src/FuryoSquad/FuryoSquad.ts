@@ -21,7 +21,8 @@ import {
     parseSearch,
     parseHomeSections,
     parseMangaSectionOthers,
-    parseDate
+    UpdatedManga,
+    parseUpdatedManga
 } from "./FuryoSquadParser";
 
 const FURYOSQUAD_DOMAIN = "https://www.furyosquad.com";
@@ -31,7 +32,7 @@ const headers = {
 }
 
 export const FuryoSquadInfo: SourceInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'FuryoSquad',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -40,30 +41,30 @@ export const FuryoSquadInfo: SourceInfo = {
     contentRating: ContentRating.MATURE,
     websiteBaseURL: FURYOSQUAD_DOMAIN,
     sourceTags: [
-    {
-        text: "Francais",
-        type: TagType.GREY
-    },
-    {
-        text: 'Notifications',
-        type: TagType.GREEN
-    }
+        {
+            text: "Francais",
+            type: TagType.GREY
+        },
+        {
+            text: 'Notifications',
+            type: TagType.GREEN
+        }
     ]
 }
 
 export class FuryoSquad extends Source {
-  
+
     requestManager: RequestManager = createRequestManager({
         requestsPerSecond: 3
     });
-  
-  
+
+
     /////////////////////////////////
     /////    MANGA SHARE URL    /////
     /////////////////////////////////
-  
+
     getMangaShareUrl(mangaId: string): string {
-      return `${FURYOSQUAD_DOMAIN}/series/${mangaId}`
+        return `${FURYOSQUAD_DOMAIN}/series/${mangaId}`
     }
 
 
@@ -80,7 +81,7 @@ export class FuryoSquad extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseFuryoSquadMangaDetails($, mangaId);
     }
 
@@ -98,10 +99,10 @@ export class FuryoSquad extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseFuryoSquadChapters($, mangaId);
     }
-    
+
 
     //////////////////////////////////
     /////    CHAPTERS DETAILS    /////
@@ -111,12 +112,12 @@ export class FuryoSquad extends Source {
         const request = createRequestObject({
             url: `${chapterId}`,
             method,
-            headers 
+            headers
         })
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseFuryoSquadChapterDetails($, mangaId, chapterId);
     }
 
@@ -135,16 +136,16 @@ export class FuryoSquad extends Source {
             headers,
             data: `search=${search}`
         })
-    
+
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
-        
+
         manga = parseSearch($)
 
         return createPagedResults({
             results: manga,
             metadata: undefined
-        })    
+        })
     }
 
 
@@ -175,7 +176,7 @@ export class FuryoSquad extends Source {
 
         const response2 = await this.requestManager.schedule(request2, 1)
         const $2 = this.cheerio.load(response2.data)
-        
+
         parseHomeSections($1, [section1], sectionCallback)
         parseMangaSectionOthers($2, [section2, section3, section4], sectionCallback)
     }
@@ -186,29 +187,28 @@ export class FuryoSquad extends Source {
     //////////////////////////////////////
 
     async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-        const request = createRequestObject({
-            url: `${FURYOSQUAD_DOMAIN}`,
-            method,
-            headers
-        })
-
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-
-        const updatedManga: string[] = []
-        for (const manga of $('table tr').toArray()) {
-            let id = $('.fs-comic-title a', manga).attr('href')
-            let mangaDate = parseDate($('.fs-table-chap-date .fs-chap-date', manga).text().trim() ?? '')
-
-            if (!id) continue
-            if (mangaDate > time) {
-                if (ids.includes(id)) {
-                    updatedManga.push(id)
-                }
-            }
+        let updatedManga: UpdatedManga = {
+            ids: [],
+            loadMore: true
         }
 
-        mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${FURYOSQUAD_DOMAIN}`,
+                method,
+                headers
+            })
+
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data)
+
+            updatedManga = parseUpdatedManga($, time, ids)
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
     }
 
 }

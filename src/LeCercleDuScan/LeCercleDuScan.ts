@@ -22,7 +22,8 @@ import {
     parseMangaSectionOthers,
     parseViewMore,
     isLastPage,
-    parseDate
+    UpdatedManga,
+    parseUpdatedManga
 } from "./LeCercleDuScanParser";
 
 const LECERCLEDUSCAN_DOMAIN = "https://lel.lecercleduscan.com";
@@ -37,7 +38,7 @@ const headers_search = {
 }
 
 export const LeCercleDuScanInfo: SourceInfo = {
-    version: '1.1',
+    version: '1.2',
     name: 'Le Cercle du Scan',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -85,7 +86,7 @@ export class LeCercleDuScan extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseLeCercleDuScanMangaDetails($, mangaId);
     }
 
@@ -104,7 +105,7 @@ export class LeCercleDuScan extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseLeCercleDuScanChapters($, mangaId);
     }
 
@@ -123,7 +124,7 @@ export class LeCercleDuScan extends Source {
 
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseLeCercleDuScanChapterDetails($, mangaId, chapterId);
     }
 
@@ -136,19 +137,19 @@ export class LeCercleDuScan extends Source {
         const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27')
         const request = createRequestObject({
             url: `${LECERCLEDUSCAN_DOMAIN}/search`,
-            method : 'POST',
-            headers : headers_search,
+            method: 'POST',
+            headers: headers_search,
             data: `search=${search}`
         })
 
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
-        
+
         const manga = parseSearch($)
 
         return createPagedResults({
             results: manga
-        })    
+        })
     }
 
 
@@ -158,7 +159,7 @@ export class LeCercleDuScan extends Source {
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernier Manga Sorti', view_more: true })
-        const section2 = createHomeSection({ id: 'all_manga', title: 'Tous les mangas', view_more: true  })
+        const section2 = createHomeSection({ id: 'all_manga', title: 'Tous les mangas', view_more: true })
 
         const request1 = createRequestObject({
             url: `${LECERCLEDUSCAN_DOMAIN}/latest`,
@@ -177,7 +178,7 @@ export class LeCercleDuScan extends Source {
 
         const response2 = await this.requestManager.schedule(request2, 1)
         const $2 = this.cheerio.load(response2.data)
-        
+
         parseHomeSections($1, [section1], sectionCallback)
         parseMangaSectionOthers($2, [section2], sectionCallback)
     }
@@ -185,7 +186,7 @@ export class LeCercleDuScan extends Source {
     /////////////////////////////////
     /////    VIEW MORE ITEMS    /////
     /////////////////////////////////
-    
+
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         let page: number = metadata?.page ?? 1
         let param = ''
@@ -223,28 +224,28 @@ export class LeCercleDuScan extends Source {
     //////////////////////////////////////
 
     async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-        const request = createRequestObject({
-            url: `${LECERCLEDUSCAN_DOMAIN}`,
-            method,
-            headers
-        })
-  
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-  
-        const updatedManga: string[] = []
-        for (const manga of $('.group').toArray()) {
-          let id = $('a', manga).first().attr('href')
-          let mangaDate = parseDate($('.meta_r', manga).text().split(',').pop() ?? '')
-
-          if (!id) continue
-          if (mangaDate > time) {
-              if (ids.includes(id)) {
-                  updatedManga.push(id)
-              }
-          }
+        let page = 1
+        let updatedManga: UpdatedManga = {
+            ids: [],
+            loadMore: true
         }
-  
-        mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
+
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${LECERCLEDUSCAN_DOMAIN}/latest/${page++}`,
+                method,
+                headers
+            })
+
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data)
+
+            updatedManga = parseUpdatedManga($, time, ids)
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
     }
 }

@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.3',
+    version: '1.4',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -618,7 +618,7 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
     var _a, _b, _c, _d;
     const panel = $('.container .tab-summary');
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())];
-    const image = (_a = $('img', panel).attr('src')) !== null && _a !== void 0 ? _a : "";
+    const image = (_a = $('img', panel).attr('data-src')) !== null && _a !== void 0 ? _a : "";
     const rating = Number($('.post-total-rating .score', panel).text().trim());
     const desc = decodeHTMLEntity($('.manga-excerpt', panel).text().trim());
     const arrayTags = [];
@@ -713,7 +713,7 @@ exports.parseMangasOriginesChapterDetails = ($, mangaId, chapterId) => {
     var _a;
     const pages = [];
     for (let item of $('.container .reading-content img').toArray()) {
-        let page = (_a = $(item).attr('src')) === null || _a === void 0 ? void 0 : _a.trim();
+        let page = (_a = $(item).attr('data-src')) === null || _a === void 0 ? void 0 : _a.trim();
         if (typeof page === 'undefined')
             continue;
         pages.push(page);
@@ -734,7 +734,7 @@ exports.parseSearch = ($) => {
     for (const item of $('.row .c-tabs-item__content').toArray()) {
         const url = (_b = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/')[4]) !== null && _b !== void 0 ? _b : '';
         const title = (_c = $('h3 a', item).text()) !== null && _c !== void 0 ? _c : '';
-        const image = decodeHTMLEntity((_d = $('img', item).attr("src")) !== null && _d !== void 0 ? _d : '');
+        const image = decodeHTMLEntity((_d = $('img', item).attr("data-src")) !== null && _d !== void 0 ? _d : '');
         const subtitle = decodeHTMLEntity($('.latest-chap .chapter a', item).text());
         manga.push(createMangaTile({
             id: url,
@@ -773,7 +773,7 @@ const parseLatestUpdatedManga = ($) => {
     const latestUpdatedManga = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
         let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").replace("-110x150", "");
+        let image = ((_b = $('img', item).attr('data-src')) !== null && _b !== void 0 ? _b : "").replace("-110x150", "");
         let title = decodeHTMLEntity($('h3 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -793,9 +793,9 @@ const parseLatestUpdatedManga = ($) => {
 const parseOriginsExclusivesManga = ($) => {
     var _a, _b;
     const popularOriginsExclusives = [];
-    for (const item of $('#custom_html-9 .item').toArray()) {
+    for (const item of $('#custom_html-5 .item').toArray()) {
         let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").replace("-193x278", "");
+        let image = ((_b = $('img', item).attr('data-src')) !== null && _b !== void 0 ? _b : "").replace("-193x278", "");
         let title = $('h3 a', item).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
@@ -815,7 +815,7 @@ const parsePopularTodayManga = ($) => {
     const popularTodayManga = [];
     for (const item of $('.widget-content .popular-item-wrap').toArray()) {
         let url = (_a = $('h5 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").replace("-75x106", "");
+        let image = ((_b = $('img', item).attr('data-src')) !== null && _b !== void 0 ? _b : "").replace("-75x106", "");
         let title = decodeHTMLEntity($('h5 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -837,7 +837,7 @@ const parseNoveltyManga = ($) => {
     const noveltyManga = [];
     for (const item of $('#manga-popular-slider-3 .slider__container .slider__item').toArray()) {
         let url = (_a = $('h4 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").replace("-125x180", "");
+        let image = ((_b = $('img', item).attr('data-src')) !== null && _b !== void 0 ? _b : "").replace("-125x180", "");
         let title = decodeHTMLEntity($('h4 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter', item).eq(0).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -878,7 +878,7 @@ exports.parseViewMore = ($) => {
     const viewMore = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
         let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = $('.img-responsive', item).attr('src');
+        let image = $('.img-responsive', item).attr('data-src');
         let title = decodeHTMLEntity($('h3 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter', item).eq(0).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')

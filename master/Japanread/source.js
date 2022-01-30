@@ -396,7 +396,7 @@ const headers = {
     'Host': 'www.japanread.cc',
 };
 exports.JapanreadInfo = {
-    version: '1.1',
+    version: '1.2',
     name: 'Japanread',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -923,9 +923,9 @@ function parseDate(str) {
             return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes(), date_today.getSeconds() - parseInt(date[0]));
         case "mi":
             return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes() - parseInt(date[0]));
-        case "he":
+        case "h":
             return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours() - parseInt(date[0]), date_today.getMinutes());
-        case "jo":
+        case "j":
             return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - parseInt(date[0]), date_today.getHours(), date_today.getMinutes());
         case "se":
             return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - (parseInt(date[0]) * 7), date_today.getHours(), date_today.getMinutes());

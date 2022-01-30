@@ -37,7 +37,7 @@ const headers = {
 }
 
 export const JapanreadInfo: SourceInfo = {
-    version: '1.1',
+    version: '1.2',
     name: 'Japanread',
     icon: 'logo.png',
     author: 'Moomooo95',

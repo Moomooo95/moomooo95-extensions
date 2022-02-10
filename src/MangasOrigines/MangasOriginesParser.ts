@@ -125,7 +125,7 @@ export const parseMangasOriginesChapterDetails = ($: CheerioStatic, mangaId: str
   const pages: string[] = []
 
   for (let item of $('.container .reading-content img').toArray()) {
-    let page = $(item).attr('data-src')?.trim()
+    let page = encodeURI($(item).attr('src')!.trim())
 
     if (typeof page === 'undefined')
       continue;
@@ -152,7 +152,7 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
   for (const item of $('.row .c-tabs-item__content').toArray()) {
     const url = $('h3 a', item).attr('href')?.split('/')[4] ?? ''
     const title = $('h3 a', item).text() ?? ''
-    const image = decodeHTMLEntity($('img', item).attr("data-src") ?? '')
+    const image = encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
     const subtitle = decodeHTMLEntity($('.latest-chap .chapter a', item).text())
 
     manga.push(createMangaTile({
@@ -176,7 +176,7 @@ const parseHotManga = ($: CheerioStatic): MangaTile[] => {
 
   for (const item of $('.container .manga-slider .slider__container .slider__item').toArray()) {
     let url = $('h4 a', item).attr('href')?.split("/")[4]
-    let image = $('img', item).attr('src')
+    let image = encodeURI(($('img', item).attr('src') ?? "").trim())
     let title = decodeHTMLEntity($('h4', item).text().trim())
 
     if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -201,7 +201,7 @@ const parseLatestUpdatedManga = ($: CheerioStatic): MangaTile[] => {
 
   for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
     let url = $('h3 a', item).attr('href')?.split("/")[4]
-    let image = ($('img', item).attr('data-src') ?? "").replace("-110x150", "")
+    let image = encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
     let title = decodeHTMLEntity($('h3 a', item).text().trim())
     let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim())
 
@@ -228,7 +228,7 @@ const parseOriginsExclusivesManga = ($: CheerioStatic): MangaTile[] => {
 
   for (const item of $('#custom_html-5 .item').toArray()) {
     let url = $('h3 a', item).attr('href')?.split("/")[4]
-    let image = ($('img', item).attr('data-src') ?? "").replace("-193x278", "")
+    let image = encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
     let title = $('h3 a', item).text().trim()
 
     if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -253,7 +253,7 @@ const parsePopularTodayManga = ($: CheerioStatic): MangaTile[] => {
 
   for (const item of $('.widget-content .popular-item-wrap').toArray()) {
     let url = $('h5 a', item).attr('href')?.split("/")[4]
-    let image = ($('img', item).attr('data-src') ?? "").replace("-75x106", "")
+    let image = encodeURI(($('img', item).attr('src') ?? "").trim().replace(/-[75]+x(\w)+/gm, ''))
     let title = decodeHTMLEntity($('h5 a', item).text().trim())
     let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim())
 
@@ -280,7 +280,7 @@ const parseNoveltyManga = ($: CheerioStatic): MangaTile[] => {
 
   for (const item of $('#manga-popular-slider-3 .slider__container .slider__item').toArray()) {
     let url = $('h4 a', item).attr('href')?.split("/")[4]
-    let image = ($('img', item).attr('data-src') ?? "").replace("-125x180", "")
+    let image = encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
     let title = decodeHTMLEntity($('h4 a', item).text().trim())
     let subtitle = decodeHTMLEntity($('.chapter-item .chapter', item).eq(0).text().trim())
 
@@ -421,7 +421,7 @@ function parseDate(str: string) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate())
   }
 
-  if (/^(\d){1,2} (\w)+ (\d){4}$/.test(str)) {
+  if (/^(\d){1,2} (\D)+ (\d){4}$/.test(str)) {
     let date = str.split(' ')
     let year = date[2]
     let months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]

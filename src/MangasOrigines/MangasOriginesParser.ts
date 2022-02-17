@@ -18,7 +18,7 @@ import {
 export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): Manga => {
   const panel = $('.container .tab-summary')
   const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())]
-  const image = $('img', panel).attr('data-src') ?? ""
+  const image =  encodeURI((($('img', panel).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,2,3](\w)+x(\w)+/gm, ''))
   const rating = Number($('.post-total-rating .score', panel).text().trim())
   const desc = decodeHTMLEntity($('.manga-excerpt', panel).text().trim())
   const arrayTags: Tag[] = []
@@ -328,7 +328,7 @@ export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
 
   for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
     let url = $('h3 a', item).attr('href')?.split("/")[4]
-    let image = $('.img-responsive', item).attr('data-src')
+    let image = encodeURI((($('.img-responsive', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
     let title = decodeHTMLEntity($('h3 a', item).text().trim())
     let subtitle = decodeHTMLEntity($('.chapter-item .chapter', item).eq(0).text().trim())
 

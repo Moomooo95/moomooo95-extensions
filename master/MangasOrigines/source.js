@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.5',
+    version: '1.6',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -615,10 +615,10 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 /////    MANGA DETAILS    /////
 ///////////////////////////////
 exports.parseMangasOriginesDetails = ($, mangaId) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const panel = $('.container .tab-summary');
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())];
-    const image = (_a = $('img', panel).attr('data-src')) !== null && _a !== void 0 ? _a : "";
+    const image = encodeURI(((_b = ((_a = $('img', panel).attr('srcset')) !== null && _a !== void 0 ? _a : "").split(',').pop()) !== null && _b !== void 0 ? _b : "").trim().split(' ')[0].replace(/-[1,2,3](\w)+x(\w)+/gm, ''));
     const rating = Number($('.post-total-rating .score', panel).text().trim());
     const desc = decodeHTMLEntity($('.manga-excerpt', panel).text().trim());
     const arrayTags = [];
@@ -632,7 +632,7 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
         let val = $('.summary-content', info).text().trim();
         switch (item) {
             case "Rang":
-                let nb_views = ((_b = val.match(/(\d+\.?\d*\w?) /gm)) !== null && _b !== void 0 ? _b : "")[0].trim();
+                let nb_views = ((_c = val.match(/(\d+\.?\d*\w?) /gm)) !== null && _c !== void 0 ? _c : "")[0].trim();
                 const views = convertNbViews(nb_views);
                 break;
             case "Alternatif":
@@ -651,7 +651,7 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
                 const tags = $('.summary-content .genres-content a', info).toArray();
                 for (const tag of tags) {
                     const label = capitalizeFirstLetter(decodeHTMLEntity($(tag).text()));
-                    const id = (_d = (_c = $(tag).attr('href')) === null || _c === void 0 ? void 0 : _c.split("/")[4]) !== null && _d !== void 0 ? _d : label;
+                    const id = (_e = (_d = $(tag).attr('href')) === null || _d === void 0 ? void 0 : _d.split("/")[4]) !== null && _e !== void 0 ? _e : label;
                     if (['Adulte'].includes(label) || ['Hentai'].includes(label) || ['Sexe'].includes(label) || ['Uncensored'].includes(label)) {
                         hentai = true;
                     }
@@ -873,11 +873,11 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
 /////    VIEW MORE    /////
 ///////////////////////////
 exports.parseViewMore = ($) => {
-    var _a;
+    var _a, _b, _c;
     const viewMore = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
         let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = $('.img-responsive', item).attr('data-src');
+        let image = encodeURI(((_c = ((_b = $('.img-responsive', item).attr('srcset')) !== null && _b !== void 0 ? _b : "").split(',').pop()) !== null && _c !== void 0 ? _c : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
         let title = decodeHTMLEntity($('h3 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter', item).eq(0).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')

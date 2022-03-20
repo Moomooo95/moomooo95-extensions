@@ -13,9 +13,11 @@
 |                   |                  |
 | ---               | ---              |
 | LegacyScans       | [Site Web](https://legacy-scans.com/) |
+| Manga Scantrad      | [Site Web](https://www.mangascantrad.fr/) |
 | BananaScan        | [Site Web](https://banana-scan.com/) |
 | Mangakawaii       | [Site Web](https://www.mangakawaii.net/) | *
 | Neo Scantrad      | [Site Web](https://neo-scantrad.xyz/) |
+
 
 
 

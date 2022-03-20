@@ -100,7 +100,7 @@ import {
   export const parseLegacyScansChapterDetails = ($: CheerioStatic, mangaId: string, chapterId: string): ChapterDetails => {
     const pages: string[] = []
   
-    for (let page of JSON.parse($('.wrapper > script:nth-child(4)').text().slice(14, -2)).sources[0].images) {
+    for (let page of JSON.parse($('.wrapper script').eq(0).html()!.slice(14, -2)).sources[0].images) {
   
       if (typeof page === 'undefined')
         continue;
@@ -124,20 +124,20 @@ import {
   export const parseSearch = ($: CheerioStatic): MangaTile[] => {
     const manga: MangaTile[] = []
   
-    for (const item of $('.listupd .bsx').toArray()) {
-      let url = $('a', item).attr('href')?.split("/").slice(-2, -1)[0]
-      let image = $('img', item).attr('src')?.replace(/-(\d){2,}x(\d){2,}/gm, '')
-      let title = decodeHTMLEntity($('.bigor .tt', item).text().trim())
-      let subtitle = decodeHTMLEntity($('.bigor .adds .epxs', item).text().trim())
+    for (const item of $('.listupd .bs').toArray()) {
+      const id = $('a', item).attr('href')?.split('/')[4] ?? ''
+      const title = decodeHTMLEntity($('a', item).attr('title') ?? '')
+      const image = $('img', item).attr("src") ?? ''
+      const subtitle = decodeHTMLEntity($('.epxs', item).text())
   
-      if (typeof url === 'undefined' || typeof image === 'undefined')
-          continue
+      if (typeof id === 'undefined' || typeof image === 'undefined')
+        continue
   
       manga.push(createMangaTile({
-          id: url,
-          image: image,
-          title: createIconText({ text: title }),
-          subtitleText: createIconText({ text: subtitle }),
+        id,
+        image,
+        title: createIconText({ text: title }),
+        subtitleText: createIconText({ text: subtitle })
       }))
     }
   
@@ -296,7 +296,34 @@ import {
     for (const section of sections) sectionCallback(section)
   }
   
-  
+  ///////////////////////////
+  /////    VIEW MORE    /////
+  ///////////////////////////
+
+  export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
+    const viewMore: MangaTile[] = []
+
+    for (const item of $('.bixbox .listupd .utao.styletwo .uta').toArray()) {
+      let url = $('a', item).attr('href')?.split("/").slice(-2, -1)[0]
+      let image = $('img', item).attr('src')?.replace(/-(\d){2,}x(\d){2,}/gm, '')
+      let title = decodeHTMLEntity($('.luf h4', item).text())
+      let subtitle = decodeHTMLEntity($('.luf ul li', item).first().find("a").text())
+
+      if (typeof url === 'undefined' || typeof image === 'undefined')
+        continue
+
+      viewMore.push(createMangaTile({
+        id: url,
+        image: image,
+        title: createIconText({ text: title }),
+        subtitleText: createIconText({ text: subtitle })
+      }))
+    }
+
+    return viewMore
+  }
+
+
   //////////////////////
   /////    TAGS    /////
   //////////////////////
@@ -319,8 +346,17 @@ import {
   /////    CHECK LAST PAGE    /////
   /////////////////////////////////
   
-  export const isLastPage = ($: CheerioStatic): boolean => {
-    return $('.hpage .r').length == 0
+  export const isLastPage = ($: CheerioStatic, section: String): boolean => {
+    switch (section) {
+      case 'latest_updates':
+        return $('.hpage .r').length == 0
+      case 'search':
+        return $('.next.page-numbers').length == 0
+      case 'search_tags':
+        return $('.hpage .r').length == 0
+      default:
+        return false
+    }
   }
   
   

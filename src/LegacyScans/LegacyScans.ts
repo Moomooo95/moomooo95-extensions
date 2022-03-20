@@ -24,13 +24,14 @@ import {
     parseSearch,
     parseTags,
     UpdatedManga,
-    parseUpdatedManga
+    parseUpdatedManga,
+    parseViewMore
   } from "./LegacyScansParser";
   
   const LEGACYSCANS_DOMAIN = "https://legacy-scans.com";
   const method = 'GET'
   const headers = {
-    'Host': 'www.legacy-scans.com',
+    'Host': 'legacy-scans.com',
   }
   
   export const LegacyScansInfo: SourceInfo = {
@@ -133,17 +134,32 @@ import {
       const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? ""
       let manga: MangaTile[] = []
   
-      const request = createRequestObject({
-        url: `${LEGACYSCANS_DOMAIN}/?s=${search}`,
-        method,
-        headers
-      })
-
-      const response = await this.requestManager.schedule(request, 1)
-      const $ = this.cheerio.load(response.data)
-
-      manga = parseSearch($)
-      metadata = !isLastPage($) ? { page: page + 1 } : undefined
+      if (query.includedTags && query.includedTags?.length != 0) {
+        const request = createRequestObject({
+          url: `${LEGACYSCANS_DOMAIN}/manga/?page=${page}&genre%5B%5D=${query.includedTags[0].id}`,
+          method: 'GET',
+          headers
+        })
+  
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data)
+  
+        manga = parseSearch($)
+        metadata = !isLastPage($, 'search_tags') ? { page: page + 1 } : undefined
+      }
+      else {
+        const request = createRequestObject({
+          url: `${LEGACYSCANS_DOMAIN}/page/${page}/?s=${search}`,
+          method: 'GET',
+          headers
+        })
+  
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data)
+  
+        manga = parseSearch($)
+        metadata = !isLastPage($, 'search') ? { page: page + 1 } : undefined
+      }
   
       return createPagedResults({
         results: manga,
@@ -157,7 +173,7 @@ import {
     //////////////////////////////
   
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-      const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernières sorties' })
+      const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernières sorties', view_more: true })
       const section2 = createHomeSection({ id: 'popular_today', title: 'Populaires aujourd\'hui' })
       const section3 = createHomeSection({ id: 'popular_week', title: 'Populaires Semaine' })
       const section4 = createHomeSection({ id: 'popular_months', title: 'Populaires Mois' })
@@ -173,6 +189,38 @@ import {
       const $1 = this.cheerio.load(response1.data)
   
       parseHomeSections($1, [section1, section2, section3, section4, section5], sectionCallback)
+    }
+
+    /////////////////////////////////
+    /////    VIEW MORE ITEMS    /////
+    /////////////////////////////////
+
+    async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
+      let page: number = metadata?.page ?? 1
+      let param = ''
+
+      switch (homepageSectionId) {
+        case 'latest_updates':
+          param = `page/${page}`
+          break;
+      }
+
+      const request = createRequestObject({
+        url: `${LEGACYSCANS_DOMAIN}/${param}`,
+        method,
+        headers
+      })
+
+      const response = await this.requestManager.schedule(request, 1)
+      const $ = this.cheerio.load(response.data)
+
+      const manga = parseViewMore($)
+      metadata = !isLastPage($, homepageSectionId) ? { page: page + 1 } : undefined
+
+      return createPagedResults({
+        results: manga,
+        metadata
+      })
     }
   
   

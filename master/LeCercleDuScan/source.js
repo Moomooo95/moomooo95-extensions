@@ -401,7 +401,7 @@ const headers_search = {
     "Content-Length": "11",
 };
 exports.LeCercleDuScanInfo = {
-    version: '1.2',
+    version: '1.3',
     name: 'Le Cercle du Scan',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -600,26 +600,9 @@ exports.parseLeCercleDuScanMangaDetails = ($, mangaId) => {
     var _a;
     const titles = [decodeHTMLEntity($('.large.comic .title').text().trim())];
     const image = (_a = $('.thumbnail img').attr('src')) !== null && _a !== void 0 ? _a : "";
-    let author = "Unknown";
-    let artist = undefined;
-    let desc = undefined;
-    const multipleInfo = $('.large.comic .info').text().trim().split(/  +/g);
-    for (let info of multipleInfo) {
-        let item = info.split(":");
-        switch (item[0]) {
-            case "Author":
-                author = item[1];
-                break;
-            case "Artist":
-                artist = item[1];
-                break;
-            case "Synopsis":
-                desc = decodeHTMLEntity(item[1]);
-                break;
-            default:
-                break;
-        }
-    }
+    const author = $('.large.comic .info b:contains("Author")').text() != '' ? $($('.large.comic .info b:contains("Author")')[0].nextSibling).text().slice(2) : "Unknown";
+    const artist = $('.large.comic .info b:contains("Artist")').text() != '' ? $($('.large.comic .info b:contains("Artist")')[0].nextSibling).text().slice(2) : "Unknown";
+    const desc = $('.large.comic .info b:contains("Synopsis")').text() != '' ? $($('.large.comic .info b:contains("Synopsis")')[0].nextSibling).text().slice(2) : "Unknown";
     return createManga({
         id: mangaId,
         titles,
@@ -635,14 +618,14 @@ exports.parseLeCercleDuScanMangaDetails = ($, mangaId) => {
 /////    CHAPTERS    /////
 //////////////////////////
 exports.parseLeCercleDuScanChapters = ($, mangaId) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
     const chapters = [];
     for (let chapter of $('.list .element').toArray()) {
         const id = (_a = $('.title a', chapter).attr('href')) !== null && _a !== void 0 ? _a : '';
-        const name = decodeHTMLEntity((_b = $('.title a', chapter).text()) !== null && _b !== void 0 ? _b : '') != '' ? decodeHTMLEntity((_c = $('.title a', chapter).text()) !== null && _c !== void 0 ? _c : '') : undefined;
+        const name = $('.title a', chapter).text().split(':')[1] != undefined ? decodeHTMLEntity($('.title a', chapter).text().split(':')[1].trim()) : undefined;
         const volume = !isNaN(Number($(chapter).parent().children('.title').text().trim().split(' ').pop())) ? Number($(chapter).parent().children('.title').text().trim().split(' ').pop()) : undefined;
-        const chapNum = Number(id.split('/')[7]);
-        const time = parseDate((_d = $('.meta_r', chapter).text().split(',').pop()) !== null && _d !== void 0 ? _d : '');
+        const chapNum = Number((_b = $('.title a', chapter).text().split(':')[0].match(/(\d)+[.]?(\d)?/gm)) !== null && _b !== void 0 ? _b : [0]);
+        const time = parseDate((_c = $('.meta_r', chapter).text().split(',').pop()) !== null && _c !== void 0 ? _c : '');
         chapters.push(createChapter({
             id,
             mangaId,

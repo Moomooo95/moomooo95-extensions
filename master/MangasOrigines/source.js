@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.6',
+    version: '1.7',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -615,62 +615,40 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 /////    MANGA DETAILS    /////
 ///////////////////////////////
 exports.parseMangasOriginesDetails = ($, mangaId) => {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const panel = $('.container .tab-summary');
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())];
-    const image = encodeURI(((_b = ((_a = $('img', panel).attr('srcset')) !== null && _a !== void 0 ? _a : "").split(',').pop()) !== null && _b !== void 0 ? _b : "").trim().split(' ')[0].replace(/-[1,2,3](\w)+x(\w)+/gm, ''));
+    const image = $('img', panel).attr('data-src') == undefined ? encodeURI(((_a = $('img', panel).attr('src')) !== null && _a !== void 0 ? _a : "").trim().replace(/-[75]+x(\w)+/gm, '')) : encodeURI(((_b = $('img', panel).attr('data-src')) !== null && _b !== void 0 ? _b : "").trim().replace(/-[75]+x(\w)+/gm, ''));
+    const author = (_c = $('.post-content_item .summary-heading:contains("Auteur(s)")', panel).next().text().trim()) !== null && _c !== void 0 ? _c : "Unknown";
+    const artist = (_d = $('.post-content_item .summary-heading:contains("Artiste(s)")', panel).next().text().trim()) !== null && _d !== void 0 ? _d : "Unknown";
     const rating = Number($('.post-total-rating .score', panel).text().trim());
-    const desc = decodeHTMLEntity($('.manga-excerpt', panel).text().trim());
-    const arrayTags = [];
-    let status = paperback_extensions_common_1.MangaStatus.UNKNOWN;
-    let author = "Unknown";
-    let artist = undefined;
+    const views = (_f = convertNbViews(((_e = $('.post-content_item .summary-heading:contains("Rang")', panel).next().text().trim().match(/(\d+\.?\d*\w?) /gm)) !== null && _e !== void 0 ? _e : '')[0].trim())) !== null && _f !== void 0 ? _f : undefined;
     let hentai = false;
-    const infoContent = $('.post-content_item', panel).toArray();
-    for (let info of infoContent) {
-        let item = $('.summary-heading', info).text().trim().split(' ')[1];
-        let val = $('.summary-content', info).text().trim();
-        switch (item) {
-            case "Rang":
-                let nb_views = ((_c = val.match(/(\d+\.?\d*\w?) /gm)) !== null && _c !== void 0 ? _c : "")[0].trim();
-                const views = convertNbViews(nb_views);
-                break;
-            case "Alternatif":
-                let otherTitles = val.split(',');
-                for (let title of otherTitles) {
-                    titles.push(decodeHTMLEntity(title.trim()));
-                }
-                break;
-            case "Auteur(s)":
-                author = val;
-                break;
-            case "Artiste(s)":
-                artist = val;
-                break;
-            case "Genre(s)":
-                const tags = $('.summary-content .genres-content a', info).toArray();
-                for (const tag of tags) {
-                    const label = capitalizeFirstLetter(decodeHTMLEntity($(tag).text()));
-                    const id = (_e = (_d = $(tag).attr('href')) === null || _d === void 0 ? void 0 : _d.split("/")[4]) !== null && _e !== void 0 ? _e : label;
-                    if (['Adulte'].includes(label) || ['Hentai'].includes(label) || ['Sexe'].includes(label) || ['Uncensored'].includes(label)) {
-                        hentai = true;
-                    }
-                    arrayTags.push({ id: id, label: label });
-                }
-                break;
-            case "STATUS":
-                switch (val.split(" ")[0].trim()) {
-                    case "Terminé":
-                        status = paperback_extensions_common_1.MangaStatus.COMPLETED;
-                        break;
-                    case "En cours":
-                        status = paperback_extensions_common_1.MangaStatus.ONGOING;
-                        break;
-                }
-                break;
+    let otherTitles = $('.post-content_item .summary-heading:contains("Alternatif")', panel).next().text().trim().split(',');
+    for (let title of otherTitles) {
+        titles.push(decodeHTMLEntity(title.trim()));
+    }
+    const arrayTags = [];
+    const tags = $('.post-content_item .summary-heading:contains("Genre(s)")', panel).next().find('a').toArray();
+    for (const tag of tags) {
+        const label = capitalizeFirstLetter(decodeHTMLEntity($(tag).text()));
+        const id = (_h = (_g = $(tag).attr('href')) === null || _g === void 0 ? void 0 : _g.split("/")[4]) !== null && _h !== void 0 ? _h : label;
+        if (['Adulte'].includes(label) || ['Hentai'].includes(label) || ['Sexe'].includes(label) || ['Uncensored'].includes(label)) {
+            hentai = true;
         }
+        arrayTags.push({ id: id, label: label });
     }
     const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
+    let status = paperback_extensions_common_1.MangaStatus.UNKNOWN;
+    switch ($('.post-content_item .summary-heading:contains("STATUS")', panel).next().text().trim().slice(0, -2).trim()) {
+        case "Terminé":
+            status = paperback_extensions_common_1.MangaStatus.COMPLETED;
+            break;
+        case "En cours":
+            status = paperback_extensions_common_1.MangaStatus.ONGOING;
+            break;
+    }
+    const desc = decodeHTMLEntity($('.manga-excerpt', panel).text().trim());
     return createManga({
         id: mangaId,
         titles,
@@ -680,6 +658,7 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
         rating,
         status,
         tags: tagSections,
+        views,
         desc,
         hentai
     });
@@ -692,7 +671,7 @@ exports.parseMangasOriginesChapters = ($, mangaId) => {
     const chapters = [];
     for (let chapter of $('.wp-manga-chapter').toArray()) {
         const id = (_a = $('a', chapter).first().attr('href') + "?style=list") !== null && _a !== void 0 ? _a : '';
-        const name = decodeHTMLEntity($('a', chapter).first().text().trim()) != '' ? decodeHTMLEntity($('a', chapter).first().text().trim()) : undefined;
+        const name = undefined;
         const chapNum = Number(((_b = $('a', chapter).first().text().trim().match(/(\d+)(\.?)(\d*)/gm)) !== null && _b !== void 0 ? _b : '')[0]);
         const time = parseDate($('.chapter-release-date i', chapter).text());
         chapters.push(createChapter({
@@ -712,7 +691,7 @@ exports.parseMangasOriginesChapters = ($, mangaId) => {
 exports.parseMangasOriginesChapterDetails = ($, mangaId, chapterId) => {
     const pages = [];
     for (let item of $('.container .reading-content img').toArray()) {
-        let page = encodeURI($(item).attr('src').trim());
+        let page = $(item).attr('src') == undefined ? encodeURI($(item).attr('data-src').trim()) : encodeURI($(item).attr('src').trim());
         if (typeof page === 'undefined')
             continue;
         pages.push(page);
@@ -725,15 +704,15 @@ exports.parseMangasOriginesChapterDetails = ($, mangaId, chapterId) => {
     });
 };
 ////////////////////////
-/////    Search    /////
+/////    SEARCH    /////
 ////////////////////////
 exports.parseSearch = ($) => {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g;
     const manga = [];
     for (const item of $('.row .c-tabs-item__content').toArray()) {
         const url = (_b = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/')[4]) !== null && _b !== void 0 ? _b : '';
         const title = (_c = $('h3 a', item).text()) !== null && _c !== void 0 ? _c : '';
-        const image = encodeURI(((_e = ((_d = $('img', item).attr('srcset')) !== null && _d !== void 0 ? _d : "").split(',').pop()) !== null && _e !== void 0 ? _e : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
+        const image = $('img', item).attr('srcset') == undefined ? encodeURI(((_e = ((_d = $('img', item).attr('data-srcset')) !== null && _d !== void 0 ? _d : "").split(',').pop()) !== null && _e !== void 0 ? _e : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI(((_g = ((_f = $('img', item).attr('srcset')) !== null && _f !== void 0 ? _f : "").split(',').pop()) !== null && _g !== void 0 ? _g : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
         const subtitle = decodeHTMLEntity($('.latest-chap .chapter a', item).text());
         manga.push(createMangaTile({
             id: url,
@@ -768,11 +747,11 @@ const parseHotManga = ($) => {
 /////    LATEST UPDATED    /////
 ////////////////////////////////
 const parseLatestUpdatedManga = ($) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     const latestUpdatedManga = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
         let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = encodeURI(((_c = ((_b = $('img', item).attr('srcset')) !== null && _b !== void 0 ? _b : "").split(',').pop()) !== null && _c !== void 0 ? _c : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
+        let image = $('img', item).attr('srcset') == undefined ? encodeURI(((_c = ((_b = $('img', item).attr('data-srcset')) !== null && _b !== void 0 ? _b : "").split(',').pop()) !== null && _c !== void 0 ? _c : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI(((_e = ((_d = $('img', item).attr('srcset')) !== null && _d !== void 0 ? _d : "").split(',').pop()) !== null && _e !== void 0 ? _e : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
         let title = decodeHTMLEntity($('h3 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -790,11 +769,11 @@ const parseLatestUpdatedManga = ($) => {
 /////    ORIGINS EXCLUSIVES    /////
 ////////////////////////////////////
 const parseOriginsExclusivesManga = ($) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     const popularOriginsExclusives = [];
     for (const item of $('#custom_html-5 .item').toArray()) {
         let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = encodeURI(((_c = ((_b = $('img', item).attr('srcset')) !== null && _b !== void 0 ? _b : "").split(',').pop()) !== null && _c !== void 0 ? _c : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
+        let image = $('img', item).attr('srcset') == undefined ? encodeURI(((_c = ((_b = $('img', item).attr('data-srcset')) !== null && _b !== void 0 ? _b : "").split(',').pop()) !== null && _c !== void 0 ? _c : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI(((_e = ((_d = $('img', item).attr('srcset')) !== null && _d !== void 0 ? _d : "").split(',').pop()) !== null && _e !== void 0 ? _e : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
         let title = $('h3 a', item).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
@@ -810,11 +789,11 @@ const parseOriginsExclusivesManga = ($) => {
 /////    POPULAR TODAY    /////
 ///////////////////////////////
 const parsePopularTodayManga = ($) => {
-    var _a, _b;
+    var _a, _b, _c;
     const popularTodayManga = [];
     for (const item of $('.widget-content .popular-item-wrap').toArray()) {
         let url = (_a = $('h5 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = encodeURI(((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").trim().replace(/-[75]+x(\w)+/gm, ''));
+        let image = $('img', item).attr('data-src') == undefined ? encodeURI(((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").trim().replace(/-[75]+x(\w)+/gm, '')) : encodeURI(((_c = $('img', item).attr('data-src')) !== null && _c !== void 0 ? _c : "").trim().replace(/-[75]+x(\w)+/gm, ''));
         let title = decodeHTMLEntity($('h5 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -832,11 +811,11 @@ const parsePopularTodayManga = ($) => {
 /////    NOVELTY    /////
 /////////////////////////
 const parseNoveltyManga = ($) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     const noveltyManga = [];
     for (const item of $('#manga-popular-slider-3 .slider__container .slider__item').toArray()) {
         let url = (_a = $('h4 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = encodeURI(((_c = ((_b = $('img', item).attr('srcset')) !== null && _b !== void 0 ? _b : "").split(',').pop()) !== null && _c !== void 0 ? _c : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
+        let image = $('img', item).attr('srcset') == undefined ? encodeURI(((_c = ((_b = $('img', item).attr('data-srcset')) !== null && _b !== void 0 ? _b : "").split(',').pop()) !== null && _c !== void 0 ? _c : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI(((_e = ((_d = $('img', item).attr('srcset')) !== null && _d !== void 0 ? _d : "").split(',').pop()) !== null && _e !== void 0 ? _e : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
         let title = decodeHTMLEntity($('h4 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter', item).eq(0).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -873,11 +852,11 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
 /////    VIEW MORE    /////
 ///////////////////////////
 exports.parseViewMore = ($) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     const viewMore = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
         let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = encodeURI(((_c = ((_b = $('.img-responsive', item).attr('srcset')) !== null && _b !== void 0 ? _b : "").split(',').pop()) !== null && _c !== void 0 ? _c : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
+        let image = $('img', item).attr('srcset') == undefined ? encodeURI(((_c = ((_b = $('img', item).attr('data-srcset')) !== null && _b !== void 0 ? _b : "").split(',').pop()) !== null && _c !== void 0 ? _c : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI(((_e = ((_d = $('img', item).attr('srcset')) !== null && _d !== void 0 ? _d : "").split(',').pop()) !== null && _e !== void 0 ? _e : "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''));
         let title = decodeHTMLEntity($('h3 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter', item).eq(0).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')

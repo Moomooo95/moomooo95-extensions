@@ -17,27 +17,9 @@ export const parseLeCercleDuScanMangaDetails = ($: CheerioStatic, mangaId: strin
   const titles = [decodeHTMLEntity($('.large.comic .title').text().trim())]
   const image = $('.thumbnail img').attr('src') ?? ""
 
-  let author = "Unknown"
-  let artist = undefined
-  let desc = undefined
-
-  const multipleInfo = $('.large.comic .info').text().trim().split(/  +/g)
-  for (let info of multipleInfo) {
-    let item = info.split(":")
-    switch (item[0]) {
-      case "Author":
-        author = item[1]
-        break;
-      case "Artist":
-        artist = item[1]
-        break;
-      case "Synopsis":
-        desc = decodeHTMLEntity(item[1])
-        break;
-      default:
-        break;
-    }
-  }
+  const author = $('.large.comic .info b:contains("Author")').text() != '' ? $($('.large.comic .info b:contains("Author")')[0].nextSibling).text().slice(2) : "Unknown"
+  const artist = $('.large.comic .info b:contains("Artist")').text() != '' ? $($('.large.comic .info b:contains("Artist")')[0].nextSibling).text().slice(2) : "Unknown"
+  const desc = $('.large.comic .info b:contains("Synopsis")').text() != '' ? $($('.large.comic .info b:contains("Synopsis")')[0].nextSibling).text().slice(2) : "Unknown"
 
   return createManga({
     id: mangaId,
@@ -61,9 +43,9 @@ export const parseLeCercleDuScanChapters = ($: CheerioStatic, mangaId: string): 
 
   for (let chapter of $('.list .element').toArray()) {
     const id = $('.title a', chapter).attr('href') ?? ''
-    const name = decodeHTMLEntity($('.title a', chapter).text() ?? '') != '' ? decodeHTMLEntity($('.title a', chapter).text() ?? '') : undefined
+    const name = $('.title a', chapter).text().split(':')[1] != undefined ? decodeHTMLEntity($('.title a', chapter).text().split(':')[1].trim()) : undefined
     const volume = !isNaN(Number($(chapter).parent().children('.title').text().trim().split(' ').pop())) ? Number($(chapter).parent().children('.title').text().trim().split(' ').pop()) : undefined
-    const chapNum = Number(id.split('/')[7])
+    const chapNum = Number($('.title a', chapter).text().split(':')[0].match(/(\d)+[.]?(\d)?/gm)??[0])
     const time = parseDate($('.meta_r', chapter).text().split(',').pop() ?? '')
 
     chapters.push(createChapter({

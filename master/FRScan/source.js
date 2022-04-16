@@ -390,10 +390,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FRScan = exports.FRScanInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const FRScanParser_1 = require("./FRScanParser");
-const FRSCAN_DOMAIN = "https://www.frscan.cc/";
+const FRSCAN_DOMAIN = "https://frscan.ws/";
 const method = 'GET';
 const headers = {
-    'Host': 'www.frscan.cc',
+    'Host': 'frscan.ws',
 };
 exports.FRScanInfo = {
     version: '1.2',

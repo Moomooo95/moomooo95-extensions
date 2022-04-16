@@ -27,10 +27,10 @@ import {
   parseUpdatedManga
 } from "./FRScanParser";
 
-const FRSCAN_DOMAIN = "https://www.frscan.cc/";
+const FRSCAN_DOMAIN = "https://frscan.ws/";
 const method = 'GET'
 const headers = {
-  'Host': 'www.frscan.cc',
+  'Host': 'frscan.ws',
 }
 
 export const FRScanInfo: SourceInfo = {

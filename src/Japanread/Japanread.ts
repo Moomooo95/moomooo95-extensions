@@ -13,7 +13,9 @@ import {
     RequestManager,
     ContentRating,
     MangaTile,
-    LanguageCode
+    LanguageCode,
+    Request,
+    Response
 } from "paperback-extensions-common"
 
 import {
@@ -53,6 +55,10 @@ export const JapanreadInfo: SourceInfo = {
         {
             text: 'Notifications',
             type: TagType.GREEN
+        },
+        {
+          text: 'Cloudflare',
+          type: TagType.RED
         }
     ]
 }
@@ -61,7 +67,18 @@ export class Japanread extends Source {
 
     requestManager: RequestManager = createRequestManager({
         requestsPerSecond: 3,
-        requestTimeout: 100000
+        requestTimeout: 100000,
+        interceptor: {
+            interceptRequest: async (request: Request): Promise<Request> => {
+                request.headers = {
+                    'Referer': 'https://www.japanread.cc/'
+                }
+                return request
+            },
+            interceptResponse: async (response: Response): Promise<Response> => {
+                return response
+            }
+        }
     });
 
 
@@ -86,6 +103,7 @@ export class Japanread extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data);
 
         return await parseJapanreadMangaDetails($, mangaId);
@@ -105,6 +123,7 @@ export class Japanread extends Source {
         })
 
         let response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
         let $ = this.cheerio.load(response.data);
 
         const page_max = Number($('.pagination .page-item .page-link').slice(-2, -1).text())
@@ -177,6 +196,7 @@ export class Japanread extends Source {
         })
 
         const response0 = await this.requestManager.schedule(request0, 1);
+        this.CloudFlareError(response0.status)
         const $0 = this.cheerio.load(response0.data);
 
         const id = $0("meta[data-chapter-id]").attr("data-chapter-id") ?? ''
@@ -192,6 +212,7 @@ export class Japanread extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
 
         return await parseJapanreadChapterDetails(response.data, mangaId, chapterId, id);
     }
@@ -215,6 +236,7 @@ export class Japanread extends Source {
             })
 
             const response = await this.requestManager.schedule(request, 1)
+            this.CloudFlareError(response.status)
             const $ = this.cheerio.load(response.data)
 
             manga = parseSearch($)
@@ -228,6 +250,7 @@ export class Japanread extends Source {
             })
 
             const response = await this.requestManager.schedule(request, 1)
+            this.CloudFlareError(response.status)
             const $ = this.cheerio.load(response.data)
 
             manga = parseSearch($)
@@ -257,6 +280,7 @@ export class Japanread extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 1)
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data)
 
         parseHomeSections($, [section1, section2, section3, section4], sectionCallback)
@@ -283,6 +307,7 @@ export class Japanread extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 1)
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data)
 
         const manga = parseLatestUpdatedManga($)
@@ -307,6 +332,7 @@ export class Japanread extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 1)
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data)
 
         return parseTags($)
@@ -332,6 +358,7 @@ export class Japanread extends Source {
             })
 
             const response = await this.requestManager.schedule(request, 1)
+            this.CloudFlareError(response.status)
             const $ = this.cheerio.load(response.data)
 
             updatedManga = parseUpdatedManga($, time, ids)
@@ -341,5 +368,23 @@ export class Japanread extends Source {
                 }));
             }
         }
+    }
+
+    ///////////////////////////////////
+    /////    CLOUDFLARE BYPASS    /////
+    ///////////////////////////////////
+
+    CloudFlareError(status: any) {
+        if (status == 503) {
+            throw new Error('CLOUDFLARE BYPASS ERROR:\nVeuillez aller dans les Paramètres > Sources > Japanread et appuyez sur Cloudflare Bypass')
+        }
+    }
+
+    getCloudflareBypassRequest() {
+        return createRequestObject({
+            url: `${JAPANREAD_DOMAIN}`,
+            method,
+            headers
+        })
     }
 }

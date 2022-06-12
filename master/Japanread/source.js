@@ -412,6 +412,10 @@ exports.JapanreadInfo = {
         {
             text: 'Notifications',
             type: paperback_extensions_common_1.TagType.GREEN
+        },
+        {
+            text: 'Cloudflare',
+            type: paperback_extensions_common_1.TagType.RED
         }
     ]
 };
@@ -420,7 +424,18 @@ class Japanread extends paperback_extensions_common_1.Source {
         super(...arguments);
         this.requestManager = createRequestManager({
             requestsPerSecond: 3,
-            requestTimeout: 100000
+            requestTimeout: 100000,
+            interceptor: {
+                interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
+                    request.headers = {
+                        'Referer': 'https://www.japanread.cc/'
+                    };
+                    return request;
+                }),
+                interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () {
+                    return response;
+                })
+            }
         });
     }
     /////////////////////////////////
@@ -440,6 +455,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return yield JapanreadParser_1.parseJapanreadMangaDetails($, mangaId);
         });
@@ -456,6 +472,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                 headers
             });
             let response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             let $ = this.cheerio.load(response.data);
             const page_max = Number($('.pagination .page-item .page-link').slice(-2, -1).text());
             const chapters = [];
@@ -519,6 +536,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                 headers
             });
             const response0 = yield this.requestManager.schedule(request0, 1);
+            this.CloudFlareError(response0.status);
             const $0 = this.cheerio.load(response0.data);
             const id = (_a = $0("meta[data-chapter-id]").attr("data-chapter-id")) !== null && _a !== void 0 ? _a : '';
             const request = createRequestObject({
@@ -531,6 +549,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                 }
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             return yield JapanreadParser_1.parseJapanreadChapterDetails(response.data, mangaId, chapterId, id);
         });
     }
@@ -550,6 +569,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                     headers
                 });
                 const response = yield this.requestManager.schedule(request, 1);
+                this.CloudFlareError(response.status);
                 const $ = this.cheerio.load(response.data);
                 manga = JapanreadParser_1.parseSearch($);
                 metadata = !JapanreadParser_1.isLastPage($) ? { page: page + 1 } : undefined;
@@ -561,6 +581,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                     headers
                 });
                 const response = yield this.requestManager.schedule(request, 1);
+                this.CloudFlareError(response.status);
                 const $ = this.cheerio.load(response.data);
                 manga = JapanreadParser_1.parseSearch($);
                 metadata = !JapanreadParser_1.isLastPage($) ? { page: page + 1 } : undefined;
@@ -585,6 +606,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                 method: 'GET'
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             JapanreadParser_1.parseHomeSections($, [section1, section2, section3, section4], sectionCallback);
         });
@@ -608,6 +630,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             const manga = JapanreadParser_1.parseLatestUpdatedManga($);
             metadata = !JapanreadParser_1.isLastPage($) ? { page: page + 1 } : undefined;
@@ -628,6 +651,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return JapanreadParser_1.parseTags($);
         });
@@ -649,6 +673,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                     headers
                 });
                 const response = yield this.requestManager.schedule(request, 1);
+                this.CloudFlareError(response.status);
                 const $ = this.cheerio.load(response.data);
                 updatedManga = JapanreadParser_1.parseUpdatedManga($, time, ids);
                 if (updatedManga.ids.length > 0) {
@@ -657,6 +682,21 @@ class Japanread extends paperback_extensions_common_1.Source {
                     }));
                 }
             }
+        });
+    }
+    ///////////////////////////////////
+    /////    CLOUDFLARE BYPASS    /////
+    ///////////////////////////////////
+    CloudFlareError(status) {
+        if (status == 503) {
+            throw new Error('CLOUDFLARE BYPASS ERROR:\nVeuillez aller dans les Paramètres > Sources > Japanread et appuyez sur Cloudflare Bypass');
+        }
+    }
+    getCloudflareBypassRequest() {
+        return createRequestObject({
+            url: `${JAPANREAD_DOMAIN}`,
+            method,
+            headers
         });
     }
 }

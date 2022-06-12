@@ -560,7 +560,7 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parseFuryoSquadMangaDetails = ($, mangaId) => {
+const parseFuryoSquadMangaDetails = ($, mangaId) => {
     var _a;
     let titles = [decodeHTMLEntity($('.fs-comic-title').text().trim())];
     const image = (_a = $('.comic-cover').attr('src')) !== null && _a !== void 0 ? _a : "";
@@ -599,10 +599,11 @@ exports.parseFuryoSquadMangaDetails = ($, mangaId) => {
         hentai
     });
 };
+exports.parseFuryoSquadMangaDetails = parseFuryoSquadMangaDetails;
 //////////////////////////
 /////    CHAPTERS    /////
 //////////////////////////
-exports.parseFuryoSquadChapters = ($, mangaId) => {
+const parseFuryoSquadChapters = ($, mangaId) => {
     var _a, _b;
     const chapters = [];
     for (let chapter of $('.fs-chapter-list .element.desktop').toArray()) {
@@ -623,10 +624,11 @@ exports.parseFuryoSquadChapters = ($, mangaId) => {
     }
     return chapters;
 };
+exports.parseFuryoSquadChapters = parseFuryoSquadChapters;
 /////////////////////////////////
 /////    CHAPTER DETAILS    /////
 /////////////////////////////////
-exports.parseFuryoSquadChapterDetails = ($, mangaId, chapterId) => {
+const parseFuryoSquadChapterDetails = ($, mangaId, chapterId) => {
     var _a;
     const pages = [];
     for (let item of $('img', '.fs-reader-page').toArray()) {
@@ -642,10 +644,11 @@ exports.parseFuryoSquadChapterDetails = ($, mangaId, chapterId) => {
         longStrip: false
     });
 };
+exports.parseFuryoSquadChapterDetails = parseFuryoSquadChapterDetails;
 ////////////////////////
 /////    SEARCH    /////
 ////////////////////////
-exports.parseSearch = ($) => {
+const parseSearch = ($) => {
     var _a;
     const manga = [];
     for (const item of $('.group').toArray()) {
@@ -664,6 +667,7 @@ exports.parseSearch = ($) => {
     }
     return manga;
 };
+exports.parseSearch = parseSearch;
 /////////////////////////////////////
 /////    LAST MANGAS UPDATED    /////
 /////////////////////////////////////
@@ -749,7 +753,7 @@ const parseStoppedManga = ($) => {
 //////////////////////////////
 /////    HOME SECTION    /////
 //////////////////////////////
-exports.parseHomeSections = ($, sections, sectionCallback) => {
+const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const latestManga = parseLatestManga($);
@@ -757,10 +761,11 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseHomeSections = parseHomeSections;
 ////////////////////////////////
 /////    MANGAS SECTION    /////
 ////////////////////////////////
-exports.parseMangaSectionOthers = ($, sections, sectionCallback) => {
+const parseMangaSectionOthers = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const ongoingManga = parseOngoingManga($);
@@ -772,7 +777,8 @@ exports.parseMangaSectionOthers = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
-exports.parseUpdatedManga = ($, time, ids) => {
+exports.parseMangaSectionOthers = parseMangaSectionOthers;
+const parseUpdatedManga = ($, time, ids) => {
     var _a, _b, _c;
     const manga = [];
     let loadMore = true;
@@ -790,6 +796,7 @@ exports.parseUpdatedManga = ($, time, ids) => {
         loadMore,
     };
 };
+exports.parseUpdatedManga = parseUpdatedManga;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////

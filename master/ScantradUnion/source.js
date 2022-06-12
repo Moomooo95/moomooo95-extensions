@@ -583,7 +583,7 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parseScantradUnionMangaDetails = ($, mangaId) => {
+const parseScantradUnionMangaDetails = ($, mangaId) => {
     var _a, _b, _c, _d, _e, _f;
     const panel = $('.projet-description');
     const titles = [
@@ -635,10 +635,11 @@ exports.parseScantradUnionMangaDetails = ($, mangaId) => {
         hentai
     });
 };
+exports.parseScantradUnionMangaDetails = parseScantradUnionMangaDetails;
 //////////////////////////
 /////    CHAPTERS    /////
 //////////////////////////
-exports.parseScantradUnionChapters = ($, mangaId) => {
+const parseScantradUnionChapters = ($, mangaId) => {
     var _a;
     const chapters = [];
     for (let chapter of $('.chapter-list .links-projects li').toArray()) {
@@ -659,10 +660,11 @@ exports.parseScantradUnionChapters = ($, mangaId) => {
     }
     return chapters;
 };
+exports.parseScantradUnionChapters = parseScantradUnionChapters;
 //////////////////////////////////
 /////    CHAPTERS DETAILS    /////
 //////////////////////////////////
-exports.parseScantradUnionChapterDetails = ($, mangaId, chapterId) => {
+const parseScantradUnionChapterDetails = ($, mangaId, chapterId) => {
     var _a, _b;
     const pages = [];
     for (let item of $('.manga-image-link img').toArray()) {
@@ -678,10 +680,11 @@ exports.parseScantradUnionChapterDetails = ($, mangaId, chapterId) => {
         longStrip: false
     });
 };
+exports.parseScantradUnionChapterDetails = parseScantradUnionChapterDetails;
 ////////////////////////
 /////    SEARCH    /////
 ////////////////////////
-exports.parseSearch = ($) => {
+const parseSearch = ($) => {
     var _a, _b, _c;
     const manga = [];
     for (const item of $('article').toArray()) {
@@ -696,6 +699,7 @@ exports.parseSearch = ($) => {
     }
     return manga;
 };
+exports.parseSearch = parseSearch;
 ////////////////////////////////
 /////    SERIES FORWARD    /////
 ////////////////////////////////
@@ -741,7 +745,7 @@ const parseLatestManga = ($) => {
 //////////////////////////////
 /////    HOME SECTION    /////
 //////////////////////////////
-exports.parseHomeSections = ($, sections, sectionCallback) => {
+const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const forwardManga = parseForwardManga($);
@@ -751,10 +755,11 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseHomeSections = parseHomeSections;
 //////////////////////
 /////    TAGS    /////
 //////////////////////
-exports.parseTags = ($) => {
+const parseTags = ($) => {
     const arrayTags = [];
     for (let item of $('.asp_gochosen').eq(1).children().toArray()) {
         let id = $(item).text().trim().toLowerCase().replace(/ /g, '-');
@@ -764,13 +769,15 @@ exports.parseTags = ($) => {
     const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
     return tagSections;
 };
+exports.parseTags = parseTags;
 /////////////////////////////////
 /////    CHECK LAST PAGE    /////
 /////////////////////////////////
-exports.isLastPage = ($) => {
+const isLastPage = ($) => {
     return $('li:contains("Page suivante")').length == 0;
 };
-exports.parseUpdatedManga = ($, time, ids) => {
+exports.isLastPage = isLastPage;
+const parseUpdatedManga = ($, time, ids) => {
     var _a;
     const manga = [];
     let loadMore = true;
@@ -788,6 +795,7 @@ exports.parseUpdatedManga = ($, time, ids) => {
         loadMore,
     };
 };
+exports.parseUpdatedManga = parseUpdatedManga;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////

@@ -711,7 +711,7 @@ const JAPANREAD_DOMAIN = "https://www.japanread.cc";
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parseJapanreadMangaDetails = ($, mangaId) => {
+const parseJapanreadMangaDetails = ($, mangaId) => {
     var _a, _b, _c, _d, _e;
     const panel = $('.card.card-manga');
     const titles = [decodeHTMLEntity($('.card-header.h3').text().trim())];
@@ -762,10 +762,11 @@ exports.parseJapanreadMangaDetails = ($, mangaId) => {
         hentai
     });
 };
+exports.parseJapanreadMangaDetails = parseJapanreadMangaDetails;
 /////////////////////////////////
 /////    CHAPTER DETAILS    /////
 /////////////////////////////////
-exports.parseJapanreadChapterDetails = (data, mangaId, chapterId, id) => {
+const parseJapanreadChapterDetails = (data, mangaId, chapterId, id) => {
     const pages = [];
     for (let item of JSON.parse(data).page_array) {
         let page = encodeURI(`${JAPANREAD_DOMAIN}/images/mangas/chapters/${id}/${item}`);
@@ -780,10 +781,11 @@ exports.parseJapanreadChapterDetails = (data, mangaId, chapterId, id) => {
         longStrip: false
     });
 };
+exports.parseJapanreadChapterDetails = parseJapanreadChapterDetails;
 ////////////////////////
 /////    SEARCH    /////
 ////////////////////////
-exports.parseSearch = ($) => {
+const parseSearch = ($) => {
     var _a, _b;
     const manga = [];
     for (const item of $('#manga-container div.col-lg-6').toArray()) {
@@ -800,10 +802,11 @@ exports.parseSearch = ($) => {
     }
     return manga;
 };
+exports.parseSearch = parseSearch;
 ///////////////////////////////////////
 /////    LASTEST UPDATED MANGA    /////
 ///////////////////////////////////////
-exports.parseLatestUpdatedManga = ($) => {
+const parseLatestUpdatedManga = ($) => {
     var _a, _b;
     const latestUpdatedManga = [];
     for (const item of $('.table-responsive tbody .manga').toArray()) {
@@ -822,6 +825,7 @@ exports.parseLatestUpdatedManga = ($) => {
     }
     return latestUpdatedManga;
 };
+exports.parseLatestUpdatedManga = parseLatestUpdatedManga;
 ///////////////////////////////////
 /////    MOST VIEWED MANGA    /////
 ///////////////////////////////////
@@ -891,7 +895,7 @@ const parseNoveltyManga = ($) => {
 //////////////////////////////
 /////    HOME SECTION    /////
 //////////////////////////////
-exports.parseHomeSections = ($, sections, sectionCallback) => {
+const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const latestUpdatedManga = exports.parseLatestUpdatedManga($);
@@ -905,10 +909,11 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseHomeSections = parseHomeSections;
 //////////////////////
 /////    TAGS    /////
 //////////////////////
-exports.parseTags = ($) => {
+const parseTags = ($) => {
     var _a, _b;
     const arrayTags = [];
     for (let item of $('.category_item').toArray()) {
@@ -919,13 +924,15 @@ exports.parseTags = ($) => {
     const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
     return tagSections;
 };
+exports.parseTags = parseTags;
 /////////////////////////////////
 /////    CHECK LAST PAGE    /////
 /////////////////////////////////
-exports.isLastPage = ($) => {
+const isLastPage = ($) => {
     return $('.pagination').length == 0 ? true : $('.pagination li').last().hasClass('disabled');
 };
-exports.parseUpdatedManga = ($, time, ids) => {
+exports.isLastPage = isLastPage;
+const parseUpdatedManga = ($, time, ids) => {
     var _a, _b, _c;
     const manga = [];
     let loadMore = true;
@@ -943,6 +950,7 @@ exports.parseUpdatedManga = ($, time, ids) => {
         loadMore,
     };
 };
+exports.parseUpdatedManga = parseUpdatedManga;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////

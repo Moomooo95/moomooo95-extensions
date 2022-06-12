@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.7',
+    version: '1.7.1',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -426,7 +426,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
     /////    MANGA SHARE URL    /////
     /////////////////////////////////
     getMangaShareUrl(mangaId) {
-        return `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}`;
+        return `${MANGASORIGINES_DOMAIN}/catalogues/${mangaId}`;
     }
     ///////////////////////////////
     /////    MANGA DETAILS    /////
@@ -434,7 +434,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
     getMangaDetails(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}`,
+                url: `${MANGASORIGINES_DOMAIN}/catalogues/${mangaId}`,
                 method,
                 headers
             });
@@ -449,7 +449,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
     getChapters(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}/ajax/chapters/`,
+                url: `${MANGASORIGINES_DOMAIN}/catalogues/${mangaId}/ajax/chapters/`,
                 method: 'POST',
                 headers
             });
@@ -485,7 +485,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
             if (query.includedTags && ((_d = query.includedTags) === null || _d === void 0 ? void 0 : _d.length) != 0) {
                 const request = createRequestObject({
                     url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga&genre%5B0%5D=${query.includedTags[0].id}&paged=${page}`,
-                    method: 'GET',
+                    method,
                     headers
                 });
                 const response = yield this.requestManager.schedule(request, 1);
@@ -496,7 +496,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
             else {
                 const request = createRequestObject({
                     url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga&paged=${page}`,
-                    method: 'GET',
+                    method,
                     headers
                 });
                 const response = yield this.requestManager.schedule(request, 1);
@@ -540,10 +540,10 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
             let param = '';
             switch (homepageSectionId) {
                 case 'popular_today':
-                    param = `catalogue/?m_orderby=trending&page=${page}`;
+                    param = `catalogues/?m_orderby=trending&page=${page}`;
                     break;
                 case 'latest_updated':
-                    param = `catalogue/?m_orderby=latest&page=${page}`;
+                    param = `catalogues/?m_orderby=latest&page=${page}`;
                     break;
             }
             const request = createRequestObject({
@@ -573,7 +573,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
             };
             while (updatedManga.loadMore) {
                 const request = createRequestObject({
-                    url: `${MANGASORIGINES_DOMAIN}/catalogue/?m_orderby=latest&page=${page++}`,
+                    url: `${MANGASORIGINES_DOMAIN}/catalogues/?m_orderby=latest&page=${page++}`,
                     method,
                     headers
                 });
@@ -594,7 +594,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
     getSearchTags() {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${MANGASORIGINES_DOMAIN}/?s=&post_type=wp-manga`,
+                url: `${MANGASORIGINES_DOMAIN}/catalogues`,
                 method,
                 headers
             });
@@ -614,7 +614,7 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parseMangasOriginesDetails = ($, mangaId) => {
+const parseMangasOriginesDetails = ($, mangaId) => {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     const panel = $('.container .tab-summary');
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())];
@@ -631,7 +631,7 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
     const arrayTags = [];
     const tags = $('.post-content_item .summary-heading:contains("Genre(s)")', panel).next().find('a').toArray();
     for (const tag of tags) {
-        const label = capitalizeFirstLetter(decodeHTMLEntity($(tag).text()));
+        const label = decodeHTMLEntity($(tag).text());
         const id = (_h = (_g = $(tag).attr('href')) === null || _g === void 0 ? void 0 : _g.split("/")[4]) !== null && _h !== void 0 ? _h : label;
         if (['Adulte'].includes(label) || ['Hentai'].includes(label) || ['Sexe'].includes(label) || ['Uncensored'].includes(label)) {
             hentai = true;
@@ -646,6 +646,12 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
             break;
         case "En cours":
             status = paperback_extensions_common_1.MangaStatus.ONGOING;
+            break;
+        case "Abandonné":
+            status = paperback_extensions_common_1.MangaStatus.ABANDONED;
+            break;
+        case "En pause":
+            status = paperback_extensions_common_1.MangaStatus.HIATUS;
             break;
     }
     const desc = decodeHTMLEntity($('.manga-excerpt', panel).text().trim());
@@ -663,10 +669,11 @@ exports.parseMangasOriginesDetails = ($, mangaId) => {
         hentai
     });
 };
+exports.parseMangasOriginesDetails = parseMangasOriginesDetails;
 ///////////////////////////////
 /////    CHAPTERS LIST    /////
 ///////////////////////////////
-exports.parseMangasOriginesChapters = ($, mangaId) => {
+const parseMangasOriginesChapters = ($, mangaId) => {
     var _a, _b;
     const chapters = [];
     for (let chapter of $('.wp-manga-chapter').toArray()) {
@@ -685,10 +692,11 @@ exports.parseMangasOriginesChapters = ($, mangaId) => {
     }
     return chapters;
 };
+exports.parseMangasOriginesChapters = parseMangasOriginesChapters;
 //////////////////////////////////
 /////    CHAPTERS DETAILS    /////
 //////////////////////////////////
-exports.parseMangasOriginesChapterDetails = ($, mangaId, chapterId) => {
+const parseMangasOriginesChapterDetails = ($, mangaId, chapterId) => {
     const pages = [];
     for (let item of $('.container .reading-content img').toArray()) {
         let page = $(item).attr('src') == undefined ? encodeURI($(item).attr('data-src').trim()) : encodeURI($(item).attr('src').trim());
@@ -703,10 +711,11 @@ exports.parseMangasOriginesChapterDetails = ($, mangaId, chapterId) => {
         longStrip: false
     });
 };
+exports.parseMangasOriginesChapterDetails = parseMangasOriginesChapterDetails;
 ////////////////////////
 /////    SEARCH    /////
 ////////////////////////
-exports.parseSearch = ($) => {
+const parseSearch = ($) => {
     var _a, _b, _c, _d, _e, _f, _g;
     const manga = [];
     for (const item of $('.row .c-tabs-item__content').toArray()) {
@@ -723,6 +732,7 @@ exports.parseSearch = ($) => {
     }
     return manga;
 };
+exports.parseSearch = parseSearch;
 ///////////////////////////
 /////    🔥 HOT 🔥    /////
 ///////////////////////////
@@ -832,7 +842,7 @@ const parseNoveltyManga = ($) => {
 //////////////////////////////
 /////    HOME SECTION    /////
 //////////////////////////////
-exports.parseHomeSections = ($, sections, sectionCallback) => {
+const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const hotManga = parseHotManga($);
@@ -848,10 +858,11 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseHomeSections = parseHomeSections;
 ///////////////////////////
 /////    VIEW MORE    /////
 ///////////////////////////
-exports.parseViewMore = ($) => {
+const parseViewMore = ($) => {
     var _a, _b, _c, _d, _e;
     const viewMore = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
@@ -870,27 +881,30 @@ exports.parseViewMore = ($) => {
     }
     return viewMore;
 };
+exports.parseViewMore = parseViewMore;
 /////////////////////////////////
 /////    CHECK LAST PAGE    /////
 /////////////////////////////////
-exports.isLastPage = ($) => {
+const isLastPage = ($) => {
     return $('.error-404.not-found').length != 0;
 };
+exports.isLastPage = isLastPage;
 //////////////////////
 /////    TAGS    /////
 //////////////////////
-exports.parseTags = ($) => {
-    var _a;
+const parseTags = ($) => {
+    var _a, _b;
     const arrayTags = [];
-    for (let item of $('.search-advanced-form .checkbox').toArray()) {
-        let id = (_a = $('input', item).attr('value')) !== null && _a !== void 0 ? _a : '';
-        let label = capitalizeFirstLetter(decodeHTMLEntity($('label', item).text().trim()));
+    for (let item of $('.genres_wrap .row.genres li').toArray()) {
+        let id = (_b = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/')[4]) !== null && _b !== void 0 ? _b : '';
+        let label = ($('a', item).text().trim().split('\n')[0]);
         arrayTags.push({ id: id, label: label });
     }
     const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
     return tagSections;
 };
-exports.parseUpdatedManga = ($, time, ids) => {
+exports.parseTags = parseTags;
+const parseUpdatedManga = ($, time, ids) => {
     var _a, _b;
     const manga = [];
     let loadMore = true;
@@ -908,6 +922,7 @@ exports.parseUpdatedManga = ($, time, ids) => {
         loadMore,
     };
 };
+exports.parseUpdatedManga = parseUpdatedManga;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////

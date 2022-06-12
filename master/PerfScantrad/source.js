@@ -551,7 +551,7 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parsePerfScantradMangaDetails = ($, mangaId) => {
+const parsePerfScantradMangaDetails = ($, mangaId) => {
     var _a, _b, _c, _d;
     const panel = $('.css-15qcq2r.e1jf7yel9');
     const titles = [
@@ -593,10 +593,11 @@ exports.parsePerfScantradMangaDetails = ($, mangaId) => {
         hentai: false
     });
 };
+exports.parsePerfScantradMangaDetails = parsePerfScantradMangaDetails;
 //////////////////////////
 /////    CHAPTERS    /////
 //////////////////////////
-exports.parsePerfScantradChapters = ($, mangaId) => {
+const parsePerfScantradChapters = ($, mangaId) => {
     var _a, _b, _c, _d;
     const chapters = [];
     for (let chapter of $('.css-1pfv033.e1ba5g7u0').toArray()) {
@@ -614,10 +615,11 @@ exports.parsePerfScantradChapters = ($, mangaId) => {
     }
     return chapters;
 };
+exports.parsePerfScantradChapters = parsePerfScantradChapters;
 //////////////////////////////////
 /////    CHAPTERS DETAILS    /////
 //////////////////////////////////
-exports.parsePerfScantradChapterDetails = ($, mangaId, chapterId) => {
+const parsePerfScantradChapterDetails = ($, mangaId, chapterId) => {
     var _a;
     const pages = JSON.parse((_a = $('#__NEXT_DATA__').html()) !== null && _a !== void 0 ? _a : '').props.pageProps.pages;
     return createChapterDetails({
@@ -627,6 +629,7 @@ exports.parsePerfScantradChapterDetails = ($, mangaId, chapterId) => {
         longStrip: false
     });
 };
+exports.parsePerfScantradChapterDetails = parsePerfScantradChapterDetails;
 ///////////////////////////////////
 /////    RECOMMENDED MANGA    /////
 ///////////////////////////////////
@@ -690,7 +693,7 @@ const parseAllManga = ($) => {
 //////////////////////////////
 /////    HOME SECTION    /////
 //////////////////////////////
-exports.parseHomeSections = ($, sections, sectionCallback) => {
+const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const recommendedManga = parseRecommendedManga($);
@@ -702,7 +705,8 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
-exports.parseUpdatedManga = ($, time, ids) => {
+exports.parseHomeSections = parseHomeSections;
+const parseUpdatedManga = ($, time, ids) => {
     var _a;
     const manga = [];
     let loadMore = true;
@@ -720,6 +724,7 @@ exports.parseUpdatedManga = ($, time, ids) => {
         loadMore,
     };
 };
+exports.parseUpdatedManga = parseUpdatedManga;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////

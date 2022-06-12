@@ -596,7 +596,7 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parseLeCercleDuScanMangaDetails = ($, mangaId) => {
+const parseLeCercleDuScanMangaDetails = ($, mangaId) => {
     var _a;
     const titles = [decodeHTMLEntity($('.large.comic .title').text().trim())];
     const image = (_a = $('.thumbnail img').attr('src')) !== null && _a !== void 0 ? _a : "";
@@ -614,10 +614,11 @@ exports.parseLeCercleDuScanMangaDetails = ($, mangaId) => {
         hentai: false
     });
 };
+exports.parseLeCercleDuScanMangaDetails = parseLeCercleDuScanMangaDetails;
 //////////////////////////
 /////    CHAPTERS    /////
 //////////////////////////
-exports.parseLeCercleDuScanChapters = ($, mangaId) => {
+const parseLeCercleDuScanChapters = ($, mangaId) => {
     var _a, _b, _c;
     const chapters = [];
     for (let chapter of $('.list .element').toArray()) {
@@ -638,10 +639,11 @@ exports.parseLeCercleDuScanChapters = ($, mangaId) => {
     }
     return chapters;
 };
+exports.parseLeCercleDuScanChapters = parseLeCercleDuScanChapters;
 //////////////////////////////////
 /////    CHAPTERS DETAILS    /////
 //////////////////////////////////
-exports.parseLeCercleDuScanChapterDetails = ($, mangaId, chapterId) => {
+const parseLeCercleDuScanChapterDetails = ($, mangaId, chapterId) => {
     var _a;
     const pages = [];
     for (let item of JSON.parse(((_a = $('script').eq(3).html()) !== null && _a !== void 0 ? _a : "").split('\n')[2].split('=')[1].slice(0, -1))) {
@@ -657,10 +659,11 @@ exports.parseLeCercleDuScanChapterDetails = ($, mangaId, chapterId) => {
         longStrip: false
     });
 };
+exports.parseLeCercleDuScanChapterDetails = parseLeCercleDuScanChapterDetails;
 ////////////////////////
 /////    SEARCH    /////
 ////////////////////////
-exports.parseSearch = ($) => {
+const parseSearch = ($) => {
     var _a, _b;
     const manga = [];
     for (const item of $('.list .group').toArray()) {
@@ -677,6 +680,7 @@ exports.parseSearch = ($) => {
     }
     return manga;
 };
+exports.parseSearch = parseSearch;
 //////////////////////////////////////
 /////    DERNIERS MANGA SORTI    /////
 //////////////////////////////////////
@@ -724,7 +728,7 @@ const parseAllManga = ($) => {
 //////////////////////////////
 /////    HOME SECTION    /////
 //////////////////////////////
-exports.parseHomeSections = ($, sections, sectionCallback) => {
+const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const latestManga = parseLatestManga($);
@@ -732,10 +736,11 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseHomeSections = parseHomeSections;
 //////////////////////////////////
 /////    HOME SECTION TWO    /////
 //////////////////////////////////
-exports.parseMangaSectionOthers = ($, sections, sectionCallback) => {
+const parseMangaSectionOthers = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const allManga = parseAllManga($);
@@ -743,10 +748,11 @@ exports.parseMangaSectionOthers = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseMangaSectionOthers = parseMangaSectionOthers;
 ///////////////////////////
 /////    VIEW MORE    /////
 ///////////////////////////
-exports.parseViewMore = ($, section) => {
+const parseViewMore = ($, section) => {
     switch (section) {
         case 'latest_updates':
             return parseLatestManga($);
@@ -756,13 +762,15 @@ exports.parseViewMore = ($, section) => {
             return [];
     }
 };
+exports.parseViewMore = parseViewMore;
 /////////////////////////////////
 /////    CHECK LAST PAGE    /////
 /////////////////////////////////
-exports.isLastPage = ($) => {
+const isLastPage = ($) => {
     return $('.next').length == 0;
 };
-exports.parseUpdatedManga = ($, time, ids) => {
+exports.isLastPage = isLastPage;
+const parseUpdatedManga = ($, time, ids) => {
     var _a, _b;
     const manga = [];
     let loadMore = true;
@@ -780,6 +788,7 @@ exports.parseUpdatedManga = ($, time, ids) => {
         loadMore,
     };
 };
+exports.parseUpdatedManga = parseUpdatedManga;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////

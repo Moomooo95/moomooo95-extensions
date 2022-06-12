@@ -12,7 +12,9 @@ import {
   TagType,
   RequestManager,
   ContentRating,
-  MangaTile
+  MangaTile,
+  Request,
+  Response
 } from "paperback-extensions-common"
 
 import {
@@ -34,7 +36,7 @@ const headers = {
 }
 
 export const FRScanInfo: SourceInfo = {
-  version: '1.2',
+  version: '1.2.1',
   name: 'FRScan',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -57,7 +59,18 @@ export const FRScanInfo: SourceInfo = {
 export class FRScan extends Source {
 
   requestManager: RequestManager = createRequestManager({
-    requestsPerSecond: 3
+    requestsPerSecond: 3,
+    interceptor: {
+        interceptRequest: async (request: Request): Promise<Request> => {
+            request.headers = {
+                'Referer': 'https://frscan.ws/'
+            }
+            return request
+        },
+        interceptResponse: async (response: Response): Promise<Response> => {
+            return response
+        }
+    }
   });
 
 

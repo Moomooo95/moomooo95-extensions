@@ -35,7 +35,7 @@ export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): M
   const arrayTags: Tag[] = []
   const tags = $('.post-content_item .summary-heading:contains("Genre(s)")', panel).next().find('a').toArray()
   for (const tag of tags) {
-    const label = capitalizeFirstLetter(decodeHTMLEntity($(tag).text()))
+    const label = decodeHTMLEntity($(tag).text())
     const id = $(tag).attr('href')?.split("/")[4] ?? label
     if (['Adulte'].includes(label) || ['Hentai'].includes(label) || ['Sexe'].includes(label) || ['Uncensored'].includes(label)) {
       hentai = true
@@ -52,6 +52,12 @@ export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): M
       case "En cours":
           status = MangaStatus.ONGOING
           break;
+      case "Abandonné":
+          status = MangaStatus.ABANDONED
+          break;
+      case "En pause":
+        status = MangaStatus.HIATUS
+        break;   
   }
 
   const desc = decodeHTMLEntity($('.manga-excerpt', panel).text().trim())
@@ -343,9 +349,9 @@ export const isLastPage = ($: CheerioStatic): boolean => {
 export const parseTags = ($: CheerioStatic): TagSection[] => {
   const arrayTags: Tag[] = []
 
-  for (let item of $('.search-advanced-form .checkbox').toArray()) {
-    let id = $('input', item).attr('value') ?? ''
-    let label = capitalizeFirstLetter(decodeHTMLEntity($('label', item).text().trim()))
+  for (let item of $('.genres_wrap .row.genres li').toArray()) {
+    let id = $('a', item).attr('href')?.split('/')[4] ?? ''
+    let label = ($('a', item).text().trim().split('\n')[0])
 
     arrayTags.push({ id: id, label: label })
   }

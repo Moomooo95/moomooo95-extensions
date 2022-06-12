@@ -29,14 +29,14 @@ import {
   UpdatedManga
 } from "../ReaperScansFR/ReaperScansFRParser";
 
-const REAPERSCANS_DOMAIN = "https://reaperscans.fr";
+const REAPERSCANS_DOMAIN = "https://new.reaperscans.fr";
 const method = 'GET'
 const headers = {
-  'Host': 'reaperscans.fr'
+  'Host': 'new.reaperscans.fr'
 }
 
 export const ReaperScansFRInfo: SourceInfo = {
-  version: '1.2',
+  version: '1.3.0',
   name: 'ReaperScansFR',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -52,10 +52,6 @@ export const ReaperScansFRInfo: SourceInfo = {
     {
       text: 'Notifications',
       type: TagType.GREEN
-    },
-    {
-      text: 'Cloudflare',
-      type: TagType.RED
     }
   ]
 }
@@ -72,7 +68,7 @@ export class ReaperScansFR extends Source {
   /////////////////////////////////
 
   getMangaShareUrl(mangaId: string): string {
-    return `${REAPERSCANS_DOMAIN}/manga/${mangaId}`
+    return `${REAPERSCANS_DOMAIN}/series/${mangaId}`
   }
 
 
@@ -82,13 +78,12 @@ export class ReaperScansFR extends Source {
 
   async getMangaDetails(mangaId: string): Promise<Manga> {
     const request = createRequestObject({
-      url: `${REAPERSCANS_DOMAIN}/manga/${mangaId}`,
+      url: `${REAPERSCANS_DOMAIN}/series/${mangaId}`,
       method,
       headers
     })
 
     const response = await this.requestManager.schedule(request, 1);
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
 
     return await parseReaperScansFRDetails($, mangaId);
@@ -101,13 +96,12 @@ export class ReaperScansFR extends Source {
 
   async getChapters(mangaId: string): Promise<Chapter[]> {
     const request = createRequestObject({
-      url: `${REAPERSCANS_DOMAIN}/manga/${mangaId}`,
+      url: `${REAPERSCANS_DOMAIN}/series/${mangaId}`,
       method,
       headers
     })
 
     const response = await this.requestManager.schedule(request, 1);
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
 
     return await parseReaperScansFRChapters($, mangaId);
@@ -126,7 +120,6 @@ export class ReaperScansFR extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1);
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
 
     return await parseReaperScansFRChapterDetails($, mangaId, chapterId);
@@ -144,31 +137,29 @@ export class ReaperScansFR extends Source {
 
     if (query.includedTags && query.includedTags?.length != 0) {
       const request = createRequestObject({
-        url: `${REAPERSCANS_DOMAIN}/manga/?page=${page}&genre%5B0%5D=${query.includedTags[0].id}`,
-        method: 'GET',
+        url: `${REAPERSCANS_DOMAIN}/page/${page}/?s=${search}&post_type=wp-manga&genre%5B0%5D=${query.includedTags[0].id}`,
+        method,
         headers
       })
 
       const response = await this.requestManager.schedule(request, 1)
-      this.CloudFlareError(response.status)
       const $ = this.cheerio.load(response.data)
 
       manga = parseSearch($)
-      metadata = !isLastPage($, 'search_tags') ? { page: page + 1 } : undefined
+      metadata = !isLastPage($) ? { page: page + 1 } : undefined
     }
     else {
       const request = createRequestObject({
-        url: `${REAPERSCANS_DOMAIN}/page/${page}/?s=${search}`,
-        method: 'GET',
+        url: `${REAPERSCANS_DOMAIN}/page/${page}/?s=${search}&post_type=wp-manga`,
+        method,
         headers
       })
 
       const response = await this.requestManager.schedule(request, 1)
-      this.CloudFlareError(response.status)
       const $ = this.cheerio.load(response.data)
 
       manga = parseSearch($)
-      metadata = !isLastPage($, 'search') ? { page: page + 1 } : undefined
+      metadata = !isLastPage($) ? { page: page + 1 } : undefined
     }
 
     return createPagedResults({
@@ -183,14 +174,12 @@ export class ReaperScansFR extends Source {
   //////////////////////////////
 
   async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-    const section1 = createHomeSection({ id: 'hot_manga', title: 'HOT', type: HomeSectionType.featured })
-    const section2 = createHomeSection({ id: 'latest_updated', title: 'Dernières Sorties', view_more: true })
-    const section3 = createHomeSection({ id: 'popular_today', title: 'Populaire : Aujourd\'hui' })
-    const section4 = createHomeSection({ id: 'popular_week', title: 'Populaire : Semaine' })
-    const section5 = createHomeSection({ id: 'popular_month', title: 'Populaire : Mois' })
-    const section6 = createHomeSection({ id: 'popular_all_times', title: 'Populaire : Tous' })
-    const section7 = createHomeSection({ id: 'latest_projects', title: 'Derniers Projets', view_more: true })
-    const section8 = createHomeSection({ id: 'new_projects', title: 'Nouvelles Séries' })
+    const section1 = createHomeSection({ id: 'hot_manga', title: 'À la une', type: HomeSectionType.featured })
+    const section2 = createHomeSection({ id: 'latest_updated_webtoons', title: 'Dernières Sorties Webtoons', view_more: true })
+    const section3 = createHomeSection({ id: 'latest_updated_novels', title: 'Dernières Sorties Novels', view_more: true })
+    const section4 = createHomeSection({ id: 'popular_today', title: 'Tendances : Journalières' })
+    const section5 = createHomeSection({ id: 'popular_week', title: 'Tendances : Hebdomadaires' })
+    const section6 = createHomeSection({ id: 'popular_all_times', title: 'Tendances : Globales' })
 
     const request = createRequestObject({
       url: `${REAPERSCANS_DOMAIN}`,
@@ -199,10 +188,9 @@ export class ReaperScansFR extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
-    this.CloudFlareError(response.status)
     const $1 = this.cheerio.load(response.data)
 
-    parseHomeSections($1, [section1, section2, section3, section4, section5, section6, section7, section8], sectionCallback)
+    parseHomeSections($1, [section1, section2, section3, section4, section5, section6], sectionCallback)
   }
 
 
@@ -215,11 +203,11 @@ export class ReaperScansFR extends Source {
     let param = ''
 
     switch (homepageSectionId) {
-      case 'latest_projects':
-        param = `projets/page/${page}`
+      case 'latest_updated_webtoons':
+        param = `webtoons/page/${page}/?m_orderby=latest`
         break;
-      case 'latest_updated':
-        param = `manga/?page=${page}&order=update`
+      case 'latest_updated_novels':
+        param = `webnovel/page/${page}/?m_orderby=latest`
         break;
     }
 
@@ -230,11 +218,10 @@ export class ReaperScansFR extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
 
     const manga = parseViewMore($)
-    metadata = !isLastPage($, homepageSectionId) ? { page: page + 1 } : undefined
+    metadata = !isLastPage($) ? { page: page + 1 } : undefined
 
     return createPagedResults({
       results: manga,
@@ -256,7 +243,7 @@ export class ReaperScansFR extends Source {
 
     while (updatedManga.loadMore) {
       const request = createRequestObject({
-        url: `${REAPERSCANS_DOMAIN}/page/${page++}`,
+        url: `${REAPERSCANS_DOMAIN}`,
         method,
         headers
       })
@@ -279,34 +266,14 @@ export class ReaperScansFR extends Source {
 
   async getSearchTags(): Promise<TagSection[]> {
     const request = createRequestObject({
-      url: `${REAPERSCANS_DOMAIN}/manga`,
+      url: `${REAPERSCANS_DOMAIN}/series`,
       method,
       headers
     })
 
     const response = await this.requestManager.schedule(request, 1)
-    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
 
     return parseTags($)
-  }
-
-
-  ///////////////////////////////////
-  /////    CLOUDFLARE BYPASS    /////
-  ///////////////////////////////////
-
-  CloudFlareError(status: any) {
-    if (status == 503) {
-      throw new Error('CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > ReaperScansFR and press Cloudflare Bypass')
-    }
-  }
-
-  getCloudflareBypassRequest() {
-    return createRequestObject({
-      url: `${REAPERSCANS_DOMAIN}`,
-      method,
-      headers
-    })
   }
 }

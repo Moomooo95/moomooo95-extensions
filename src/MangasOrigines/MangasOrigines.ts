@@ -36,7 +36,7 @@ const headers = {
 }
 
 export const MangasOriginesInfo: SourceInfo = {
-  version: '1.7',
+  version: '1.7.1',
   name: 'MangasOrigines',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -68,7 +68,7 @@ export class MangasOrigines extends Source {
   /////////////////////////////////
 
   getMangaShareUrl(mangaId: string): string {
-    return `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}`
+    return `${MANGASORIGINES_DOMAIN}/catalogues/${mangaId}`
   }
 
 
@@ -78,7 +78,7 @@ export class MangasOrigines extends Source {
 
   async getMangaDetails(mangaId: string): Promise<Manga> {
     const request = createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}`,
+      url: `${MANGASORIGINES_DOMAIN}/catalogues/${mangaId}`,
       method,
       headers
     })
@@ -96,7 +96,7 @@ export class MangasOrigines extends Source {
 
   async getChapters(mangaId: string): Promise<Chapter[]> {
     const request = createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}/catalogue/${mangaId}/ajax/chapters/`,
+      url: `${MANGASORIGINES_DOMAIN}/catalogues/${mangaId}/ajax/chapters/`,
       method: 'POST',
       headers
     })
@@ -138,7 +138,7 @@ export class MangasOrigines extends Source {
     if (query.includedTags && query.includedTags?.length != 0) {
       const request = createRequestObject({
         url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga&genre%5B0%5D=${query.includedTags[0].id}&paged=${page}`,
-        method: 'GET',
+        method,
         headers
       })
 
@@ -151,7 +151,7 @@ export class MangasOrigines extends Source {
     else {
       const request = createRequestObject({
         url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga&paged=${page}`,
-        method: 'GET',
+        method,
         headers
       })
 
@@ -201,10 +201,10 @@ export class MangasOrigines extends Source {
     let param = ''
     switch (homepageSectionId) {
       case 'popular_today':
-        param = `catalogue/?m_orderby=trending&page=${page}`
+        param = `catalogues/?m_orderby=trending&page=${page}`
         break;
       case 'latest_updated':
-        param = `catalogue/?m_orderby=latest&page=${page}`
+        param = `catalogues/?m_orderby=latest&page=${page}`
         break;
     }
 
@@ -240,7 +240,7 @@ export class MangasOrigines extends Source {
 
     while (updatedManga.loadMore) {
       const request = createRequestObject({
-        url: `${MANGASORIGINES_DOMAIN}/catalogue/?m_orderby=latest&page=${page++}`,
+        url: `${MANGASORIGINES_DOMAIN}/catalogues/?m_orderby=latest&page=${page++}`,
         method,
         headers
       })
@@ -264,7 +264,7 @@ export class MangasOrigines extends Source {
 
   async getSearchTags(): Promise<TagSection[]> {
     const request = createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}/?s=&post_type=wp-manga`,
+      url: `${MANGASORIGINES_DOMAIN}/catalogues`,
       method,
       headers
     })

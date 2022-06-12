@@ -4,33 +4,29 @@
   "repositoryName": "Moomooo95's Extensions",
   "description": "Multiple french sources for Paperback",
   "scripts": {
-    "test": "node_modules/.bin/mocha --timeout 300000 -r ts-node/register src/**/*.test.ts",
     "bundle": "paperback bundle",
-    "serve": "paperback serve -p 8000"
+    "serve": "paperback serve",
+    "test": "node_modules/.bin/mocha --timeout 300000 -r ts-node/register src/**/*.test.ts"
   },
   "author": "Moomooo95",
   "license": "MIT",
-  "dependencies": {
-    "chai": "^4.2.0",
-    "chai-as-promised": "^7.1.1",
-    "cheerio": "^0.22.0",
-    "paperback-cli": "^1.4.0",
-    "paperback-extensions-common": "^4.3.5",
-    "ts-mocha": "^7.0.0",
-    "tsify": "^4.0.2",
-    "typescript": "^3.9.6"
-  },
   "devDependencies": {
-    "@types/chai": "^4.2.22",
+    "@types/chai": "^4.2.21",
     "@types/chai-as-promised": "^7.1.4",
     "@types/cheerio": "^0.22.21",
-    "@types/mocha": "^7.0.2",
-    "@typescript-eslint/eslint-plugin": "^4.14.1",
-    "eslint": "^7.18.0",
-    "eslint-config-oclif": "^3.1.0",
-    "eslint-config-oclif-typescript": "^0.2.0",
-    "mocha": "^9.1.3",
-    "nyc": "^15.1.0",
-    "typedoc": "^0.17.6"
+    "@types/mocha": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "@typescript-eslint/parser": "^4.25.0",
+    "chai": "^4.3.4",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^7.27.0",
+    "eslint-plugin-modules-newline": "^0.0.6",
+    "mocha": "^9.1.1",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {
+    "paperback-cli": "^1.4.0",
+    "paperback-extensions-common": "^4.3.5",
+    "ts-node": "^10.2.1"
   }
 }

@@ -396,7 +396,7 @@ const headers = {
     'Host': 'frscan.ws',
 };
 exports.FRScanInfo = {
-    version: '1.2',
+    version: '1.2.1',
     name: 'FRScan',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -419,7 +419,18 @@ class FRScan extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
         this.requestManager = createRequestManager({
-            requestsPerSecond: 3
+            requestsPerSecond: 3,
+            interceptor: {
+                interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
+                    request.headers = {
+                        'Referer': 'https://frscan.ws/'
+                    };
+                    return request;
+                }),
+                interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () {
+                    return response;
+                })
+            }
         });
     }
     /////////////////////////////////

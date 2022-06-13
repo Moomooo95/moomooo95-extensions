@@ -393,7 +393,7 @@ const FRScanParser_1 = require("./FRScanParser");
 const FRSCAN_DOMAIN = "https://frscan.ws/";
 const method = 'GET';
 const headers = {
-    'Host': 'frscan.ws',
+    'Host': 'frscan.ws'
 };
 exports.FRScanInfo = {
     version: '1.2.1',
@@ -531,7 +531,7 @@ class FRScan extends paperback_extensions_common_1.Source {
             const section3 = createHomeSection({ id: 'top_manga', title: 'Top MANGA' });
             const request1 = createRequestObject({
                 url: `${FRSCAN_DOMAIN}`,
-                method: 'GET'
+                method
             });
             const response1 = yield this.requestManager.schedule(request1, 1);
             const $1 = this.cheerio.load(response1.data);
@@ -587,6 +587,7 @@ exports.FRScan = FRScan;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseUpdatedManga = exports.isLastPage = exports.parseTags = exports.parseHomeSections = exports.parseSearch = exports.parseFRScanChapterDetails = exports.parseFRScanChapters = exports.parseFRScanMangaDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
+const FRSCAN_DOMAIN = "https://frscan.ws";
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
@@ -716,28 +717,6 @@ const parseSearch = ($) => {
     return manga;
 };
 exports.parseSearch = parseSearch;
-//////////////////////////////////////
-/////    LAST MANGAS RELEASED    /////
-//////////////////////////////////////
-const parseLatestManga = ($) => {
-    var _a, _b;
-    const latestManga = [];
-    for (const item of $('.mangalist .manga-item').toArray()) {
-        let url = (_a = $('a', item).first().attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").pop();
-        let image = "https://frscan.cc/uploads/manga/" + url + "/cover/cover_250x350.jpg";
-        let title = decodeHTMLEntity($('a', item).first().text());
-        let subtitle = "Chapitre " + decodeHTMLEntity(((_b = $('a', item).eq(1).text().trim().match(/(\d)+[.]?(\d)*/gm)) !== null && _b !== void 0 ? _b : "")[0]);
-        if (typeof url === 'undefined' || typeof image === 'undefined')
-            continue;
-        latestManga.push(createMangaTile({
-            id: url,
-            image: image,
-            title: createIconText({ text: title }),
-            subtitleText: createIconText({ text: subtitle }),
-        }));
-    }
-    return latestManga;
-};
 ///////////////////////////////////////////////
 /////    LATEST POPULAR MANGAS UPDATED    /////
 ///////////////////////////////////////////////
@@ -753,12 +732,34 @@ const parseLatestPopularMangaUpdated = ($) => {
             continue;
         popularManga.push(createMangaTile({
             id: url,
-            image: image,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle })
         }));
     }
     return popularManga;
+};
+//////////////////////////////////////
+/////    LAST MANGAS RELEASED    /////
+//////////////////////////////////////
+const parseLatestManga = ($) => {
+    var _a, _b;
+    const latestManga = [];
+    for (const item of $('.mangalist .manga-item').toArray()) {
+        let url = (_a = $('a', item).first().attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").pop();
+        let image = `${FRSCAN_DOMAIN}/uploads/manga/${url}/cover/cover_250x350.jpg`;
+        let title = decodeHTMLEntity($('a', item).first().text());
+        let subtitle = "Chapitre " + decodeHTMLEntity(((_b = $('a', item).eq(1).text().trim().match(/(\d)+[.]?(\d)*/gm)) !== null && _b !== void 0 ? _b : "")[0]);
+        if (typeof url === 'undefined' || typeof image === 'undefined')
+            continue;
+        latestManga.push(createMangaTile({
+            id: url,
+            image,
+            title: createIconText({ text: title }),
+            subtitleText: createIconText({ text: subtitle }),
+        }));
+    }
+    return latestManga;
 };
 ///////////////////////////
 /////    TOP MANGA    /////
@@ -768,14 +769,14 @@ const parseTopManga = ($) => {
     const topManga = [];
     for (const item of $('.panel.panel-success').eq(0).find('ul .list-group-item').toArray()) {
         let url = (_a = $('a', item).first().attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").pop();
-        let image = "https://frscan.cc/uploads/manga/" + url + "/cover/cover_250x350.jpg";
+        let image = `${FRSCAN_DOMAIN}/uploads/manga/${url}/cover/cover_250x350.jpg`;
         let title = decodeHTMLEntity($('strong', item).text());
         let subtitle = "👀 " + $('.media-body', item).text().split('\n')[2].trim().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
         topManga.push(createMangaTile({
             id: url,
-            image: image,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle })
         }));

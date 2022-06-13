@@ -32,7 +32,7 @@ import {
 const FRSCAN_DOMAIN = "https://frscan.ws/";
 const method = 'GET'
 const headers = {
-  'Host': 'frscan.ws',
+  'Host': 'frscan.ws'
 }
 
 export const FRScanInfo: SourceInfo = {
@@ -192,7 +192,7 @@ export class FRScan extends Source {
 
     const request1 = createRequestObject({
       url: `${FRSCAN_DOMAIN}`,
-      method: 'GET'
+      method
     })
 
     const response1 = await this.requestManager.schedule(request1, 1)

@@ -10,6 +10,7 @@ import {
   TagSection
 } from "paperback-extensions-common";
 
+const FRSCAN_DOMAIN = "https://frscan.ws";
 
 ///////////////////////////////
 /////    MANGA DETAILS    /////
@@ -162,34 +163,6 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
   return manga
 }
 
-
-//////////////////////////////////////
-/////    LAST MANGAS RELEASED    /////
-//////////////////////////////////////
-
-const parseLatestManga = ($: CheerioStatic): MangaTile[] => {
-  const latestManga: MangaTile[] = []
-
-  for (const item of $('.mangalist .manga-item').toArray()) {
-    let url = $('a', item).first().attr('href')?.split("/").pop()
-    let image = "https://frscan.cc/uploads/manga/" + url + "/cover/cover_250x350.jpg"
-    let title = decodeHTMLEntity($('a', item).first().text())
-    let subtitle = "Chapitre " + decodeHTMLEntity(($('a', item).eq(1).text().trim().match(/(\d)+[.]?(\d)*/gm) ?? "")[0])
-
-    if (typeof url === 'undefined' || typeof image === 'undefined')
-      continue
-
-    latestManga.push(createMangaTile({
-      id: url,
-      image: image,
-      title: createIconText({ text: title }),
-      subtitleText: createIconText({ text: subtitle }),
-    }))
-  }
-
-  return latestManga
-}
-
 ///////////////////////////////////////////////
 /////    LATEST POPULAR MANGAS UPDATED    /////
 ///////////////////////////////////////////////
@@ -208,13 +181,40 @@ const parseLatestPopularMangaUpdated = ($: CheerioStatic): MangaTile[] => {
 
     popularManga.push(createMangaTile({
       id: url,
-      image: image,
+      image,
       title: createIconText({ text: title }),
       subtitleText: createIconText({ text: subtitle })
     }))
   }
 
   return popularManga
+}
+
+//////////////////////////////////////
+/////    LAST MANGAS RELEASED    /////
+//////////////////////////////////////
+
+const parseLatestManga = ($: CheerioStatic): MangaTile[] => {
+  const latestManga: MangaTile[] = []
+
+  for (const item of $('.mangalist .manga-item').toArray()) {
+    let url = $('a', item).first().attr('href')?.split("/").pop()
+    let image = `${FRSCAN_DOMAIN}/uploads/manga/${url}/cover/cover_250x350.jpg`
+    let title = decodeHTMLEntity($('a', item).first().text())
+    let subtitle = "Chapitre " + decodeHTMLEntity(($('a', item).eq(1).text().trim().match(/(\d)+[.]?(\d)*/gm) ?? "")[0])
+
+    if (typeof url === 'undefined' || typeof image === 'undefined')
+      continue
+
+    latestManga.push(createMangaTile({
+      id: url,
+      image,
+      title: createIconText({ text: title }),
+      subtitleText: createIconText({ text: subtitle }),
+    }))
+  }
+
+  return latestManga
 }
 
 ///////////////////////////
@@ -226,7 +226,7 @@ const parseTopManga = ($: CheerioStatic): MangaTile[] => {
 
   for (const item of $('.panel.panel-success').eq(0).find('ul .list-group-item').toArray()) {
     let url = $('a', item).first().attr('href')?.split("/").pop()
-    let image = "https://frscan.cc/uploads/manga/" + url + "/cover/cover_250x350.jpg"
+    let image = `${FRSCAN_DOMAIN}/uploads/manga/${url}/cover/cover_250x350.jpg`
     let title = decodeHTMLEntity($('strong', item).text())
     let subtitle = "👀 " + $('.media-body', item).text().split('\n')[2].trim().replace(/\B(?=(\d{3})+(?!\d))/g, " ")
 
@@ -235,7 +235,7 @@ const parseTopManga = ($: CheerioStatic): MangaTile[] => {
 
     topManga.push(createMangaTile({
       id: url,
-      image: image,
+      image,
       title: createIconText({ text: title }),
       subtitleText: createIconText({ text: subtitle })
     }))

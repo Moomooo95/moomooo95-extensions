@@ -39,7 +39,7 @@ const headers = {
 }
 
 export const JapanreadInfo: SourceInfo = {
-    version: '1.2',
+    version: '1.2.1',
     name: 'Japanread',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -162,7 +162,7 @@ export class Japanread extends Source {
 
                 for (let chapter of $('#chapters div[data-row=chapter]').toArray()) {
                     const id = `https://www.japanread.cc${$('a', chapter).eq(0).attr('href') ?? ''}`
-                    const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? decodeHTMLEntity($('a', chapter).eq(0).children().text().replace(/^ -/, '').trim()) : undefined
+                    const name = $('.manga_title', chapter).text().trim() != '' ? decodeHTMLEntity($('.manga_title', chapter).text().trim()) : undefined
                     const chapNum = Number((($('a', chapter).eq(0).attr('href') ?? '').split('/').pop() ?? '').replace(/-/g, '.'))
                     const volume = !isNaN(Number(($('a', chapter).eq(0).text().match(/^Vol.(\d) /gm) ?? '.')[0].split('.')[1])) ? Number(($('a', chapter).eq(0).text().match(/^Vol.(\d) /gm) ?? '.')[0].split('.')[1]) : undefined
                     const time = parseDate($('a', chapter).eq(0).parent().next().next().clone().children().remove().end().text().trim().replace(/-/g, '.'))
@@ -382,7 +382,7 @@ export class Japanread extends Source {
 
     getCloudflareBypassRequest() {
         return createRequestObject({
-            url: `${JAPANREAD_DOMAIN}`,
+            url: `${JAPANREAD_DOMAIN}/manga/reverse-villain`,
             method,
             headers
         })

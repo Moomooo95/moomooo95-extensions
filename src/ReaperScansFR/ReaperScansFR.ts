@@ -29,14 +29,14 @@ import {
   UpdatedManga
 } from "../ReaperScansFR/ReaperScansFRParser";
 
-const REAPERSCANS_DOMAIN = "https://new.reaperscans.fr";
+const REAPERSCANS_DOMAIN = "https://reaperscans.fr";
 const method = 'GET'
 const headers = {
-  'Host': 'new.reaperscans.fr'
+  'Host': 'reaperscans.fr'
 }
 
 export const ReaperScansFRInfo: SourceInfo = {
-  version: '1.3.0',
+  version: '1.3.1',
   name: 'ReaperScansFR',
   icon: 'logo.png',
   author: 'Moomooo95',

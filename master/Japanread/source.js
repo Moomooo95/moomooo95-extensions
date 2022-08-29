@@ -396,7 +396,7 @@ const headers = {
     'Host': 'www.japanread.cc',
 };
 exports.JapanreadInfo = {
-    version: '1.2',
+    version: '1.2.1',
     name: 'Japanread',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -505,7 +505,7 @@ class Japanread extends paperback_extensions_common_1.Source {
                     let $ = this.cheerio.load(response.data);
                     for (let chapter of $('#chapters div[data-row=chapter]').toArray()) {
                         const id = `https://www.japanread.cc${(_f = $('a', chapter).eq(0).attr('href')) !== null && _f !== void 0 ? _f : ''}`;
-                        const name = $('a', chapter).eq(0).children().text().replace(/^ -/, '').trim() != '' ? JapanreadParser_1.decodeHTMLEntity($('a', chapter).eq(0).children().text().replace(/^ -/, '').trim()) : undefined;
+                        const name = $('.manga_title', chapter).text().trim() != '' ? JapanreadParser_1.decodeHTMLEntity($('.manga_title', chapter).text().trim()) : undefined;
                         const chapNum = Number(((_h = ((_g = $('a', chapter).eq(0).attr('href')) !== null && _g !== void 0 ? _g : '').split('/').pop()) !== null && _h !== void 0 ? _h : '').replace(/-/g, '.'));
                         const volume = !isNaN(Number(((_j = $('a', chapter).eq(0).text().match(/^Vol.(\d) /gm)) !== null && _j !== void 0 ? _j : '.')[0].split('.')[1])) ? Number(((_k = $('a', chapter).eq(0).text().match(/^Vol.(\d) /gm)) !== null && _k !== void 0 ? _k : '.')[0].split('.')[1]) : undefined;
                         const time = JapanreadParser_1.parseDate($('a', chapter).eq(0).parent().next().next().clone().children().remove().end().text().trim().replace(/-/g, '.'));
@@ -694,7 +694,7 @@ class Japanread extends paperback_extensions_common_1.Source {
     }
     getCloudflareBypassRequest() {
         return createRequestObject({
-            url: `${JAPANREAD_DOMAIN}`,
+            url: `${JAPANREAD_DOMAIN}/manga/reverse-villain`,
             method,
             headers
         });

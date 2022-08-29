@@ -390,13 +390,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReaperScansFR = exports.ReaperScansFRInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const ReaperScansFRParser_1 = require("../ReaperScansFR/ReaperScansFRParser");
-const REAPERSCANS_DOMAIN = "https://new.reaperscans.fr";
+const REAPERSCANS_DOMAIN = "https://reaperscans.fr";
 const method = 'GET';
 const headers = {
-    'Host': 'new.reaperscans.fr'
+    'Host': 'reaperscans.fr'
 };
 exports.ReaperScansFRInfo = {
-    version: '1.3.0',
+    version: '1.3.1',
     name: 'ReaperScansFR',
     icon: 'logo.png',
     author: 'Moomooo95',

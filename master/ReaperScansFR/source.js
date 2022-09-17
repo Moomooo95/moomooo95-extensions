@@ -396,7 +396,7 @@ const headers = {
     'Host': 'reaperscans.fr'
 };
 exports.ReaperScansFRInfo = {
-    version: '1.3.1',
+    version: '1.3.2',
     name: 'ReaperScansFR',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -412,6 +412,10 @@ exports.ReaperScansFRInfo = {
         {
             text: 'Notifications',
             type: paperback_extensions_common_1.TagType.GREEN
+        },
+        {
+            text: 'Cloudflare',
+            type: paperback_extensions_common_1.TagType.RED
         }
     ]
 };
@@ -426,7 +430,7 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
     /////    MANGA SHARE URL    /////
     /////////////////////////////////
     getMangaShareUrl(mangaId) {
-        return `${REAPERSCANS_DOMAIN}/series/${mangaId}`;
+        return `${REAPERSCANS_DOMAIN}/serie/${mangaId}`;
     }
     ///////////////////////////////
     /////    MANGA DETAILS    /////
@@ -434,11 +438,12 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
     getMangaDetails(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${REAPERSCANS_DOMAIN}/series/${mangaId}`,
+                url: `${REAPERSCANS_DOMAIN}/serie/${mangaId}`,
                 method,
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return yield ReaperScansFRParser_1.parseReaperScansFRDetails($, mangaId);
         });
@@ -449,11 +454,12 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
     getChapters(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${REAPERSCANS_DOMAIN}/series/${mangaId}`,
+                url: `${REAPERSCANS_DOMAIN}/serie/${mangaId}`,
                 method,
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return yield ReaperScansFRParser_1.parseReaperScansFRChapters($, mangaId);
         });
@@ -469,6 +475,7 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return yield ReaperScansFRParser_1.parseReaperScansFRChapterDetails($, mangaId, chapterId);
         });
@@ -482,28 +489,25 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
             const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
             const search = (_c = (_b = query.title) === null || _b === void 0 ? void 0 : _b.replace(/ /g, '+').replace(/[’'´]/g, '%27')) !== null && _c !== void 0 ? _c : '';
             let manga = [];
+            let url = `${REAPERSCANS_DOMAIN}/?post_type=wp-manga&s=${search}&paged=${page}`;
             if (query.includedTags && ((_d = query.includedTags) === null || _d === void 0 ? void 0 : _d.length) != 0) {
-                const request = createRequestObject({
-                    url: `${REAPERSCANS_DOMAIN}/page/${page}/?s=${search}&post_type=wp-manga&genre%5B0%5D=${query.includedTags[0].id}`,
-                    method,
-                    headers
-                });
-                const response = yield this.requestManager.schedule(request, 1);
-                const $ = this.cheerio.load(response.data);
-                manga = ReaperScansFRParser_1.parseSearch($);
-                metadata = !ReaperScansFRParser_1.isLastPage($) ? { page: page + 1 } : undefined;
+                for (let tag of query.includedTags) {
+                    url += `&genre[]=${tag.id}`;
+                    console.log(tag.id);
+                    console.log(url);
+                }
             }
-            else {
-                const request = createRequestObject({
-                    url: `${REAPERSCANS_DOMAIN}/page/${page}/?s=${search}&post_type=wp-manga`,
-                    method,
-                    headers
-                });
-                const response = yield this.requestManager.schedule(request, 1);
-                const $ = this.cheerio.load(response.data);
-                manga = ReaperScansFRParser_1.parseSearch($);
-                metadata = !ReaperScansFRParser_1.isLastPage($) ? { page: page + 1 } : undefined;
-            }
+            const request = createRequestObject({
+                url,
+                method,
+                headers
+            });
+            console.log(url);
+            const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
+            const $ = this.cheerio.load(response.data);
+            manga = ReaperScansFRParser_1.parseSearch($);
+            metadata = !ReaperScansFRParser_1.isLastPage($) ? { page: page + 1 } : undefined;
             return createPagedResults({
                 results: manga,
                 metadata
@@ -527,6 +531,7 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $1 = this.cheerio.load(response.data);
             ReaperScansFRParser_1.parseHomeSections($1, [section1, section2, section3, section4, section5, section6], sectionCallback);
         });
@@ -553,6 +558,7 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             const manga = ReaperScansFRParser_1.parseViewMore($);
             metadata = !ReaperScansFRParser_1.isLastPage($) ? { page: page + 1 } : undefined;
@@ -579,6 +585,7 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
                     headers
                 });
                 const response = yield this.requestManager.schedule(request, 1);
+                this.CloudFlareError(response.status);
                 const $ = this.cheerio.load(response.data);
                 updatedManga = ReaperScansFRParser_1.parseUpdatedManga($, time, ids);
                 if (updatedManga.ids.length > 0) {
@@ -595,13 +602,29 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
     getSearchTags() {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${REAPERSCANS_DOMAIN}/series`,
+                url: `${REAPERSCANS_DOMAIN}/serie`,
                 method,
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return ReaperScansFRParser_1.parseTags($);
+        });
+    }
+    ///////////////////////////////////
+    /////    CLOUDFLARE BYPASS    /////
+    ///////////////////////////////////
+    CloudFlareError(status) {
+        if (status == 503) {
+            throw new Error('CLOUDFLARE BYPASS ERROR:\nVeuillez aller dans les Paramètres > Sources > ReaperScansFR et appuyez sur Cloudflare Bypass');
+        }
+    }
+    getCloudflareBypassRequest() {
+        return createRequestObject({
+            url: `${REAPERSCANS_DOMAIN}`,
+            method,
+            headers
         });
     }
 }
@@ -612,7 +635,6 @@ exports.ReaperScansFR = ReaperScansFR;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseUpdatedManga = exports.parseTags = exports.isLastPage = exports.parseViewMore = exports.parseHomeSections = exports.parseSearch = exports.parseReaperScansFRChapterDetails = exports.parseReaperScansFRChapters = exports.parseReaperScansFRDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
-const REAPERSCANS_DOMAIN = "https://new.reaperscans.fr";
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
@@ -724,8 +746,8 @@ const parseSearch = ($) => {
     for (const item of $('.c-tabs-item .row.c-tabs-item__content').toArray()) {
         let id = (_b = (_a = $('.tab-thumb.c-image-hover a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4]) !== null && _b !== void 0 ? _b : '';
         let image = (_d = (_c = $('.tab-thumb.c-image-hover a img', item).attr('src')) === null || _c === void 0 ? void 0 : _c.replace('-193x278', '')) !== null && _d !== void 0 ? _d : '';
-        let title = ($('.tab-summary .post-title h3', item).text().trim());
-        let subtitle = ($('.tab-meta .meta-item.latest-chap a', item).text().trim());
+        let title = decodeHTMLEntity(($('.tab-summary .post-title h3', item).text().trim()));
+        let subtitle = decodeHTMLEntity($('.tab-meta .meta-item.latest-chap a', item).text().trim());
         manga.push(createMangaTile({
             id,
             image,
@@ -927,7 +949,7 @@ const parseTags = ($) => {
     var _a, _b;
     const arrayTags = [];
     for (let item of $('.genres_wrap .row.genres li').toArray()) {
-        let id = (_b = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/')[4]) !== null && _b !== void 0 ? _b : '';
+        let id = (_b = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/')[5]) !== null && _b !== void 0 ? _b : '';
         let label = ($('a', item).text().trim().split('\n')[0]);
         arrayTags.push({ id: id, label: label });
     }

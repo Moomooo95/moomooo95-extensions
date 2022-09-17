@@ -396,7 +396,7 @@ const headers = {
     'Host': 'reaperscans.fr'
 };
 exports.ReaperScansFRInfo = {
-    version: '1.3.2',
+    version: '1.3.3',
     name: 'ReaperScansFR',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -470,7 +470,7 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
     getChapterDetails(mangaId, chapterId) {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
-                url: `${chapterId}`,
+                url: `${chapterId}?style=list`,
                 method,
                 headers
             });
@@ -493,8 +493,6 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
             if (query.includedTags && ((_d = query.includedTags) === null || _d === void 0 ? void 0 : _d.length) != 0) {
                 for (let tag of query.includedTags) {
                     url += `&genre[]=${tag.id}`;
-                    console.log(tag.id);
-                    console.log(url);
                 }
             }
             const request = createRequestObject({
@@ -502,7 +500,6 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
                 method,
                 headers
             });
-            console.log(url);
             const response = yield this.requestManager.schedule(request, 1);
             this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
@@ -546,7 +543,7 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
             let param = '';
             switch (homepageSectionId) {
                 case 'latest_updated_webtoons':
-                    param = `webtoons/page/${page}/?m_orderby=latest`;
+                    param = `webtoon/page/${page}/?m_orderby=latest`;
                     break;
                 case 'latest_updated_novels':
                     param = `webnovel/page/${page}/?m_orderby=latest`;
@@ -580,7 +577,7 @@ class ReaperScansFR extends paperback_extensions_common_1.Source {
             };
             while (updatedManga.loadMore) {
                 const request = createRequestObject({
-                    url: `${REAPERSCANS_DOMAIN}`,
+                    url: `${REAPERSCANS_DOMAIN}/serie/?m_orderby=latest&page=${page++}`,
                     method,
                     headers
                 });
@@ -690,20 +687,20 @@ const parseReaperScansFRDetails = ($, mangaId) => {
         status,
         tags: tagSections,
         desc,
-        hentai: false
+        hentai
     });
 };
 exports.parseReaperScansFRDetails = parseReaperScansFRDetails;
 //////////////////////////
-/////    Chapters    /////
+/////    CHAPTERS    /////
 //////////////////////////
 const parseReaperScansFRChapters = ($, mangaId) => {
-    var _a, _b;
+    var _a;
     const chapters = [];
     for (let chapter of $('.listing-chapters_wrap .wp-manga-chapter').toArray()) {
         let id = (_a = $('a', chapter).attr('href')) !== null && _a !== void 0 ? _a : '';
-        let name = decodeHTMLEntity($('.chapter-manhwa-title', chapter).text());
-        let chapNum = Number(((_b = $('.chapter-manhwa-title', chapter).text().trim().match(/(\d+)(\.?)(\d*)/gm)) !== null && _b !== void 0 ? _b : '')[0]);
+        let name = decodeHTMLEntity($('.chapter-manhwa-title', chapter).text() != '' ? $('.chapter-manhwa-title', chapter).text() : $('a', chapter).text().trim()).replace(/\w+\s{1}\d+\s?-?/gm, '').trim();
+        let chapNum = Number((id.split("/").slice(-2, -1)[0].split('-')[1]));
         let time = parseDate($('.chapter-release-date', chapter).text().trim());
         chapters.push(createChapter({
             id,
@@ -718,7 +715,7 @@ const parseReaperScansFRChapters = ($, mangaId) => {
 };
 exports.parseReaperScansFRChapters = parseReaperScansFRChapters;
 //////////////////////////////////
-/////    Chapters Details    /////
+/////    CHAPTERS DETAILS    /////
 //////////////////////////////////
 const parseReaperScansFRChapterDetails = ($, mangaId, chapterId) => {
     var _a;
@@ -738,7 +735,7 @@ const parseReaperScansFRChapterDetails = ($, mangaId, chapterId) => {
 };
 exports.parseReaperScansFRChapterDetails = parseReaperScansFRChapterDetails;
 ////////////////////////
-/////    Search    /////
+/////    SEARCH    /////
 ////////////////////////
 const parseSearch = ($) => {
     var _a, _b, _c, _d;
@@ -896,18 +893,12 @@ const parsePopularMangaAllTime = ($) => {
 const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
-    const hotManga = parseHotManga($);
-    const lastUpdatedWebtoons = parseLastUpdatedWebtoons($);
-    const lastUpdatedNovels = parseLastUpdatedNovels($);
-    const popularMangaToday = parsePopularMangaToday($);
-    const popularMangaWeek = parsePopularMangaWeek($);
-    const popularMangaAllTime = parsePopularMangaAllTime($);
-    sections[0].items = hotManga;
-    sections[1].items = lastUpdatedWebtoons;
-    sections[2].items = lastUpdatedNovels;
-    sections[3].items = popularMangaToday;
-    sections[4].items = popularMangaWeek;
-    sections[5].items = popularMangaAllTime;
+    sections[0].items = parseHotManga($);
+    sections[1].items = parseLastUpdatedWebtoons($);
+    sections[2].items = parseLastUpdatedNovels($);
+    sections[3].items = parsePopularMangaToday($);
+    sections[4].items = parsePopularMangaWeek($);
+    sections[5].items = parsePopularMangaAllTime($);
     for (const section of sections)
         sectionCallback(section);
 };
@@ -918,16 +909,16 @@ exports.parseHomeSections = parseHomeSections;
 const parseViewMore = ($) => {
     var _a, _b;
     const viewMore = [];
-    for (const item of $('.page-content-listing.item-big_thumbnail .page-item-detail.manga').toArray()) {
-        let url = (_a = $('.item-thumb.c-image-hover a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
+    for (const item of $('.page-content-listing.item-big_thumbnail .page-item-detail').toArray()) {
+        let id = (_a = $('.item-thumb.c-image-hover a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
         let image = (_b = $('.item-thumb.c-image-hover a img', item).attr('src')) === null || _b === void 0 ? void 0 : _b.replace('-175x238', '');
         let title = decodeHTMLEntity($('.item-summary .post-title h3', item).text().trim());
         let subtitle = decodeHTMLEntity($('.item-summary .list-chapter .chapter a', item).eq(0).text().trim());
-        if (typeof url === 'undefined' || typeof image === 'undefined')
+        if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
         viewMore.push(createMangaTile({
-            id: url,
-            image: image,
+            id,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle })
         }));
@@ -953,25 +944,29 @@ const parseTags = ($) => {
         let label = ($('a', item).text().trim().split('\n')[0]);
         arrayTags.push({ id: id, label: label });
     }
-    const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
-    return tagSections;
+    return [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
 };
 exports.parseTags = parseTags;
 const parseUpdatedManga = ($, time, ids) => {
     var _a, _b;
-    const manga = [];
     let loadMore = true;
-    for (const item of $('.feed-reaper tbody tr').toArray()) {
-        let id = (_b = (_a = $('td a', item).eq(0).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4]) !== null && _b !== void 0 ? _b : '';
-        let mangaTime = parseDate($('td', item).eq(2).text().trim());
-        if (mangaTime > time)
-            if (ids.includes(id))
-                manga.push(id);
-            else
-                loadMore = false;
+    const updatedManga = [];
+    for (const item of $('.page-content-listing.item-big_thumbnail .page-item-detail').toArray()) {
+        let id = (_b = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4]) !== null && _b !== void 0 ? _b : '';
+        let date = parseDate($('.list-chapter .post-on', item).first().text().trim());
+        if (typeof id === 'undefined' || typeof date === 'undefined')
+            continue;
+        if (date > time) {
+            if (ids.includes(id)) {
+                updatedManga.push(id);
+            }
+        }
+        else {
+            loadMore = false;
+        }
     }
     return {
-        ids: manga,
+        ids: updatedManga,
         loadMore,
     };
 };

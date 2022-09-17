@@ -36,7 +36,7 @@ const headers = {
 }
 
 export const ReaperScansFRInfo: SourceInfo = {
-  version: '1.3.2',
+  version: '1.3.3',
   name: 'ReaperScansFR',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -120,7 +120,7 @@ export class ReaperScansFR extends Source {
 
   async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
     const request = createRequestObject({
-      url: `${chapterId}`,
+      url: `${chapterId}?style=list`,
       method,
       headers
     })
@@ -147,18 +147,14 @@ export class ReaperScansFR extends Source {
     if (query.includedTags && query.includedTags?.length != 0) {
       for (let tag of query.includedTags) {
         url += `&genre[]=${tag.id}`
-        console.log(tag.id)
-        console.log(url)
       }
     }
-    
+
     const request = createRequestObject({
       url,
       method,
       headers
     })
-
-    console.log(url)
 
     const response = await this.requestManager.schedule(request, 1)
     this.CloudFlareError(response.status)
@@ -210,7 +206,7 @@ export class ReaperScansFR extends Source {
 
     switch (homepageSectionId) {
       case 'latest_updated_webtoons':
-        param = `webtoons/page/${page}/?m_orderby=latest`
+        param = `webtoon/page/${page}/?m_orderby=latest`
         break;
       case 'latest_updated_novels':
         param = `webnovel/page/${page}/?m_orderby=latest`
@@ -250,7 +246,7 @@ export class ReaperScansFR extends Source {
 
     while (updatedManga.loadMore) {
       const request = createRequestObject({
-        url: `${REAPERSCANS_DOMAIN}`,
+        url: `${REAPERSCANS_DOMAIN}/serie/?m_orderby=latest&page=${page++}`,
         method,
         headers
       })
@@ -292,15 +288,15 @@ export class ReaperScansFR extends Source {
 
   CloudFlareError(status: any) {
     if (status == 503) {
-        throw new Error('CLOUDFLARE BYPASS ERROR:\nVeuillez aller dans les Paramètres > Sources > ReaperScansFR et appuyez sur Cloudflare Bypass')
+      throw new Error('CLOUDFLARE BYPASS ERROR:\nVeuillez aller dans les Paramètres > Sources > ReaperScansFR et appuyez sur Cloudflare Bypass')
     }
   }
 
   getCloudflareBypassRequest() {
-      return createRequestObject({
-          url: `${REAPERSCANS_DOMAIN}`,
-          method,
-          headers
-      })
+    return createRequestObject({
+      url: `${REAPERSCANS_DOMAIN}`,
+      method,
+      headers
+    })
   }
 }

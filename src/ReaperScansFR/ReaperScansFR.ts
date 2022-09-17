@@ -36,7 +36,7 @@ const headers = {
 }
 
 export const ReaperScansFRInfo: SourceInfo = {
-  version: '1.3.1',
+  version: '1.3.2',
   name: 'ReaperScansFR',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -52,6 +52,10 @@ export const ReaperScansFRInfo: SourceInfo = {
     {
       text: 'Notifications',
       type: TagType.GREEN
+    },
+    {
+      text: 'Cloudflare',
+      type: TagType.RED
     }
   ]
 }
@@ -68,7 +72,7 @@ export class ReaperScansFR extends Source {
   /////////////////////////////////
 
   getMangaShareUrl(mangaId: string): string {
-    return `${REAPERSCANS_DOMAIN}/series/${mangaId}`
+    return `${REAPERSCANS_DOMAIN}/serie/${mangaId}`
   }
 
 
@@ -78,12 +82,13 @@ export class ReaperScansFR extends Source {
 
   async getMangaDetails(mangaId: string): Promise<Manga> {
     const request = createRequestObject({
-      url: `${REAPERSCANS_DOMAIN}/series/${mangaId}`,
+      url: `${REAPERSCANS_DOMAIN}/serie/${mangaId}`,
       method,
       headers
     })
 
     const response = await this.requestManager.schedule(request, 1);
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
 
     return await parseReaperScansFRDetails($, mangaId);
@@ -96,12 +101,13 @@ export class ReaperScansFR extends Source {
 
   async getChapters(mangaId: string): Promise<Chapter[]> {
     const request = createRequestObject({
-      url: `${REAPERSCANS_DOMAIN}/series/${mangaId}`,
+      url: `${REAPERSCANS_DOMAIN}/serie/${mangaId}`,
       method,
       headers
     })
 
     const response = await this.requestManager.schedule(request, 1);
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
 
     return await parseReaperScansFRChapters($, mangaId);
@@ -120,6 +126,7 @@ export class ReaperScansFR extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1);
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
 
     return await parseReaperScansFRChapterDetails($, mangaId, chapterId);
@@ -135,32 +142,30 @@ export class ReaperScansFR extends Source {
     const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? ''
     let manga: MangaTile[] = []
 
+    let url = `${REAPERSCANS_DOMAIN}/?post_type=wp-manga&s=${search}&paged=${page}`
+
     if (query.includedTags && query.includedTags?.length != 0) {
-      const request = createRequestObject({
-        url: `${REAPERSCANS_DOMAIN}/page/${page}/?s=${search}&post_type=wp-manga&genre%5B0%5D=${query.includedTags[0].id}`,
-        method,
-        headers
-      })
-
-      const response = await this.requestManager.schedule(request, 1)
-      const $ = this.cheerio.load(response.data)
-
-      manga = parseSearch($)
-      metadata = !isLastPage($) ? { page: page + 1 } : undefined
+      for (let tag of query.includedTags) {
+        url += `&genre[]=${tag.id}`
+        console.log(tag.id)
+        console.log(url)
+      }
     }
-    else {
-      const request = createRequestObject({
-        url: `${REAPERSCANS_DOMAIN}/page/${page}/?s=${search}&post_type=wp-manga`,
-        method,
-        headers
-      })
+    
+    const request = createRequestObject({
+      url,
+      method,
+      headers
+    })
 
-      const response = await this.requestManager.schedule(request, 1)
-      const $ = this.cheerio.load(response.data)
+    console.log(url)
 
-      manga = parseSearch($)
-      metadata = !isLastPage($) ? { page: page + 1 } : undefined
-    }
+    const response = await this.requestManager.schedule(request, 1)
+    this.CloudFlareError(response.status)
+    const $ = this.cheerio.load(response.data)
+
+    manga = parseSearch($)
+    metadata = !isLastPage($) ? { page: page + 1 } : undefined
 
     return createPagedResults({
       results: manga,
@@ -188,6 +193,7 @@ export class ReaperScansFR extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
+    this.CloudFlareError(response.status)
     const $1 = this.cheerio.load(response.data)
 
     parseHomeSections($1, [section1, section2, section3, section4, section5, section6], sectionCallback)
@@ -218,6 +224,7 @@ export class ReaperScansFR extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
 
     const manga = parseViewMore($)
@@ -249,6 +256,7 @@ export class ReaperScansFR extends Source {
       })
 
       const response = await this.requestManager.schedule(request, 1)
+      this.CloudFlareError(response.status)
       const $ = this.cheerio.load(response.data)
 
       updatedManga = parseUpdatedManga($, time, ids)
@@ -266,14 +274,33 @@ export class ReaperScansFR extends Source {
 
   async getSearchTags(): Promise<TagSection[]> {
     const request = createRequestObject({
-      url: `${REAPERSCANS_DOMAIN}/series`,
+      url: `${REAPERSCANS_DOMAIN}/serie`,
       method,
       headers
     })
 
     const response = await this.requestManager.schedule(request, 1)
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
 
     return parseTags($)
+  }
+
+  ///////////////////////////////////
+  /////    CLOUDFLARE BYPASS    /////
+  ///////////////////////////////////
+
+  CloudFlareError(status: any) {
+    if (status == 503) {
+        throw new Error('CLOUDFLARE BYPASS ERROR:\nVeuillez aller dans les Paramètres > Sources > ReaperScansFR et appuyez sur Cloudflare Bypass')
+    }
+  }
+
+  getCloudflareBypassRequest() {
+      return createRequestObject({
+          url: `${REAPERSCANS_DOMAIN}`,
+          method,
+          headers
+      })
   }
 }

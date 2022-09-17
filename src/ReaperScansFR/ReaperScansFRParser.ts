@@ -10,8 +10,6 @@ import {
   TagSection
 } from "paperback-extensions-common";
 
-const REAPERSCANS_DOMAIN = "https://new.reaperscans.fr";
-
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
@@ -141,8 +139,8 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
   for (const item of $('.c-tabs-item .row.c-tabs-item__content').toArray()) {
     let id = $('.tab-thumb.c-image-hover a', item).attr('href')?.split("/")[4] ?? ''
     let image = $('.tab-thumb.c-image-hover a img', item).attr('src')?.replace('-193x278', '') ?? ''
-    let title = ($('.tab-summary .post-title h3', item).text().trim())
-    let subtitle = ($('.tab-meta .meta-item.latest-chap a', item).text().trim())
+    let title = decodeHTMLEntity(($('.tab-summary .post-title h3', item).text().trim()))
+    let subtitle = decodeHTMLEntity($('.tab-meta .meta-item.latest-chap a', item).text().trim())
 
     manga.push(createMangaTile({
       id,
@@ -387,7 +385,7 @@ export const parseTags = ($: CheerioStatic): TagSection[] => {
   const arrayTags: Tag[] = []
 
   for (let item of $('.genres_wrap .row.genres li').toArray()) {
-    let id = $('a', item).attr('href')?.split('/')[4] ?? ''
+    let id = $('a', item).attr('href')?.split('/')[5] ?? ''
     let label = ($('a', item).text().trim().split('\n')[0])
     arrayTags.push({ id: id, label: label })
   }

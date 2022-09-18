@@ -7,6 +7,7 @@
 | Le Cercle du Scan | [Site Web](https://lel.lecercleduscan.com/) |
 | FRScan            | [Site Web](https://frscan.cc/) |
 | LelscanVF         | [Site Web](https://lelscanvf.com/) |
+| MangaScantrad     | [Site Web](https://manga-scantrad.net/) |
 | ReaperScansFR     | [Site Web](https://reaperscans.fr/) |
 | MangasOrigines    | [Site Web](https://mangas-origines.fr/) |
 | FuryoSquad        | [Site Web](https://furyosquad.com/) |

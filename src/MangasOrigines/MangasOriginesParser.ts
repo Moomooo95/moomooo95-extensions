@@ -20,44 +20,43 @@ export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): M
 
   const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())]
   const image = $('img', panel).attr('data-src') == undefined ? encodeURI(($('img', panel).attr('src') ?? "").trim().replace(/-[75]+x(\w)+/gm, '')) : encodeURI(($('img', panel).attr('data-src') ?? "").trim().replace(/-[75]+x(\w)+/gm, ''))
-  const author = $('.post-content_item .summary-heading:contains("Auteur(s)")', panel).next().text().trim() ?? "Unknown"
-  const artist = $('.post-content_item .summary-heading:contains("Artiste(s)")', panel).next().text().trim() ?? "Unknown"
+  const author = $('[href*=manga-author]', panel).text().trim() ?? undefined
+  const artist = $('[href*=manga-artist]', panel).text().trim() ?? undefined
 
   const rating = Number($('.post-total-rating .score', panel).text().trim())
   const views = convertNbViews(($('.post-content_item .summary-heading:contains("Rang")', panel).next().text().trim().match(/(\d+\.?\d*\w?) /gm) ?? '')[0].trim()) ?? undefined
   let hentai = false
 
-  let otherTitles = $('.post-content_item .summary-heading:contains("Alternatif")', panel).next().text().trim().split(',')
+  let otherTitles = $('.post-content_item .summary-heading:contains("Autre")', panel).next().text().trim().split(',')
   for (let title of otherTitles) {
-      titles.push(decodeHTMLEntity(title.trim()))
+    titles.push(decodeHTMLEntity(title.trim()))
   }
 
   const arrayTags: Tag[] = []
-  const tags = $('.post-content_item .summary-heading:contains("Genre(s)")', panel).next().find('a').toArray()
-  for (const tag of tags) {
+  for (const tag of $('[href*=manga-genre]', panel).toArray()) {
     const label = decodeHTMLEntity($(tag).text())
     const id = $(tag).attr('href')?.split("/")[4] ?? label
     if (['Adulte'].includes(label) || ['Hentai'].includes(label) || ['Sexe'].includes(label) || ['Uncensored'].includes(label)) {
       hentai = true
     }
-    arrayTags.push({ id: id, label: label })
+    arrayTags.push({ id, label })
   }
-  const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
+  const tags: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
 
   let status = MangaStatus.UNKNOWN
-  switch ($('.post-content_item .summary-heading:contains("STATUS")', panel).next().text().trim().slice(0,-2).trim()) {
-      case "Terminé":
-          status = MangaStatus.COMPLETED
-          break;
-      case "En cours":
-          status = MangaStatus.ONGOING
-          break;
-      case "Abandonné":
-          status = MangaStatus.ABANDONED
-          break;
-      case "En pause":
-        status = MangaStatus.HIATUS
-        break;   
+  switch ($('.post-content_item .summary-heading:contains("STATUS")', panel).next().text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')) {
+    case "Complété":
+      status = MangaStatus.COMPLETED
+      break;
+    case "En cours":
+      status = MangaStatus.ONGOING
+      break;
+    case "Annulé":
+      status = MangaStatus.ABANDONED
+      break;
+    case "En pause":
+      status = MangaStatus.HIATUS
+      break;
   }
 
   const desc = decodeHTMLEntity($('.manga-excerpt', panel).text().trim())
@@ -70,7 +69,7 @@ export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): M
     artist,
     rating,
     status,
-    tags: tagSections,
+    tags,
     views,
     desc,
     hentai
@@ -87,14 +86,12 @@ export const parseMangasOriginesChapters = ($: CheerioStatic, mangaId: string): 
 
   for (let chapter of $('.wp-manga-chapter').toArray()) {
     const id = $('a', chapter).first().attr('href') + "?style=list" ?? ''
-    const name = undefined
     const chapNum = Number(($('a', chapter).first().text().trim().match(/(\d+)(\.?)(\d*)/gm) ?? '')[0])
-    const time = parseDate($('.chapter-release-date i', chapter).text())
+    const time = parseDate($('.chapter-release-date i', chapter).text() != '' ? $('.c-new-tag', chapter).attr('title') ?? '' : $('.chapter-release-date i', chapter).text())
 
     chapters.push(createChapter({
       id,
       mangaId,
-      name,
       langCode: LanguageCode.FRENCH,
       chapNum,
       time
@@ -122,7 +119,7 @@ export const parseMangasOriginesChapterDetails = ($: CheerioStatic, mangaId: str
 
   return createChapterDetails({
     id: chapterId,
-    mangaId: mangaId,
+    mangaId,
     pages,
     longStrip: false
   })
@@ -137,13 +134,13 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
   const manga: MangaTile[] = []
 
   for (const item of $('.row .c-tabs-item__content').toArray()) {
-    const url = $('h3 a', item).attr('href')?.split('/')[4] ?? ''
-    const title = $('h3 a', item).text() ?? ''
-    const image = $('img', item).attr('srcset') == undefined ? encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
+    const id = $('h3 a', item).attr('href')?.split('/')[4] ?? ''
+    const title = decodeHTMLEntity($('h3 a', item).text()) ?? ''
+    const image = getURLImage($, item)
     const subtitle = decodeHTMLEntity($('.latest-chap .chapter a', item).text())
 
     manga.push(createMangaTile({
-      id: url,
+      id,
       image,
       title: createIconText({ text: title }),
       subtitleText: createIconText({ text: subtitle })
@@ -154,24 +151,24 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
 }
 
 
-///////////////////////////
-/////    🔥 HOT 🔥    /////
-///////////////////////////
+/////////////////////
+/////    HOT    /////
+/////////////////////
 
 const parseHotManga = ($: CheerioStatic): MangaTile[] => {
   const hotManga: MangaTile[] = []
 
   for (const item of $('.container .manga-slider .slider__container .slider__item').toArray()) {
-    let url = $('h4 a', item).attr('href')?.split("/")[4]
+    let id = $('h4 a', item).attr('href')?.split("/")[4]
     let image = encodeURI(($('img', item).attr('src') ?? "").trim())
     let title = decodeHTMLEntity($('h4', item).text().trim())
 
-    if (typeof url === 'undefined' || typeof image === 'undefined')
+    if (typeof id === 'undefined' || typeof image === 'undefined')
       continue
 
     hotManga.push(createMangaTile({
-      id: url,
-      image: image,
+      id,
+      image,
       title: createIconText({ text: title })
     }))
   }
@@ -186,18 +183,18 @@ const parseHotManga = ($: CheerioStatic): MangaTile[] => {
 const parseLatestUpdatedManga = ($: CheerioStatic): MangaTile[] => {
   const latestUpdatedManga: MangaTile[] = []
 
-  for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
-    let url = $('h3 a', item).attr('href')?.split("/")[4]
-    let image = $('img', item).attr('srcset') == undefined ? encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
+  for (const item of $('#loop-content .page-item-detail.manga').toArray()) {
+    let id = $('h3 a', item).attr('href')?.split("/")[4]
+    let image = getURLImage($, item)
     let title = decodeHTMLEntity($('h3 a', item).text().trim())
     let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim())
 
-    if (typeof url === 'undefined' || typeof image === 'undefined')
+    if (typeof id === 'undefined' || typeof image === 'undefined')
       continue
 
     latestUpdatedManga.push(createMangaTile({
-      id: url,
-      image: image,
+      id,
+      image,
       title: createIconText({ text: title }),
       subtitleText: createIconText({ text: subtitle })
     }))
@@ -206,24 +203,24 @@ const parseLatestUpdatedManga = ($: CheerioStatic): MangaTile[] => {
   return latestUpdatedManga
 }
 
-////////////////////////////////////
-/////    ORIGINS EXCLUSIVES    /////
-////////////////////////////////////
+////////////////////////
+/////    TRENDS    /////
+////////////////////////
 
-const parseOriginsExclusivesManga = ($: CheerioStatic): MangaTile[] => {
+const parseTrendsManga = ($: CheerioStatic): MangaTile[] => {
   const popularOriginsExclusives: MangaTile[] = []
 
-  for (const item of $('#custom_html-5 .item').toArray()) {
-    let url = $('h3 a', item).attr('href')?.split("/")[4]
-    let image = $('img', item).attr('srcset') == undefined ? encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
+  for (const item of $('#block-7 .item').toArray()) {
+    let id = $('h3 a', item).attr('href')?.split("/")[4]
+    let image = getURLImage($, item)
     let title = $('h3 a', item).text().trim()
 
-    if (typeof url === 'undefined' || typeof image === 'undefined')
+    if (typeof id === 'undefined' || typeof image === 'undefined')
       continue
 
     popularOriginsExclusives.push(createMangaTile({
-      id: url,
-      image: image,
+      id,
+      image,
       title: createIconText({ text: title })
     }))
   }
@@ -231,58 +228,31 @@ const parseOriginsExclusivesManga = ($: CheerioStatic): MangaTile[] => {
   return popularOriginsExclusives
 }
 
-///////////////////////////////
-/////    POPULAR TODAY    /////
-///////////////////////////////
+//////////////////////////////
+/////    POPULAR WEEK    /////
+//////////////////////////////
 
-const parsePopularTodayManga = ($: CheerioStatic): MangaTile[] => {
-  const popularTodayManga: MangaTile[] = []
+const parsePopularWeekManga = ($: CheerioStatic): MangaTile[] => {
+  const popularWeekManga: MangaTile[] = []
 
   for (const item of $('.widget-content .popular-item-wrap').toArray()) {
-    let url = $('h5 a', item).attr('href')?.split("/")[4]
-    let image = $('img', item).attr('data-src') == undefined ? encodeURI(($('img', item).attr('src') ?? "").trim().replace(/-[75]+x(\w)+/gm, '')) : encodeURI(($('img', item).attr('data-src') ?? "").trim().replace(/-[75]+x(\w)+/gm, ''))
+    let id = $('h5 a', item).attr('href')?.split("/")[4]
+    let image = getURLImage($, item)
     let title = decodeHTMLEntity($('h5 a', item).text().trim())
     let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim())
 
-    if (typeof url === 'undefined' || typeof image === 'undefined')
+    if (typeof id === 'undefined' || typeof image === 'undefined')
       continue
 
-    popularTodayManga.push(createMangaTile({
-      id: url,
-      image: image,
+    popularWeekManga.push(createMangaTile({
+      id,
+      image,
       title: createIconText({ text: title }),
       subtitleText: createIconText({ text: subtitle })
     }))
   }
 
-  return popularTodayManga
-}
-
-/////////////////////////
-/////    NOVELTY    /////
-/////////////////////////
-
-const parseNoveltyManga = ($: CheerioStatic): MangaTile[] => {
-  const noveltyManga: MangaTile[] = []
-
-  for (const item of $('#manga-popular-slider-3 .slider__container .slider__item').toArray()) {
-    let url = $('h4 a', item).attr('href')?.split("/")[4]
-    let image = $('img', item).attr('srcset') == undefined ? encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
-    let title = decodeHTMLEntity($('h4 a', item).text().trim())
-    let subtitle = decodeHTMLEntity($('.chapter-item .chapter', item).eq(0).text().trim())
-
-    if (typeof url === 'undefined' || typeof image === 'undefined')
-      continue
-
-    noveltyManga.push(createMangaTile({
-      id: url,
-      image: image,
-      title: createIconText({ text: title }),
-      subtitleText: createIconText({ text: subtitle })
-    }))
-  }
-
-  return noveltyManga
+  return popularWeekManga
 }
 
 //////////////////////////////
@@ -291,17 +261,10 @@ const parseNoveltyManga = ($: CheerioStatic): MangaTile[] => {
 
 export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sectionCallback: (section: HomeSection) => void): void => {
   for (const section of sections) sectionCallback(section)
-  const hotManga: MangaTile[] = parseHotManga($)
-  const latestUpdatedManga: MangaTile[] = parseLatestUpdatedManga($)
-  const originsExclusivesManga: MangaTile[] = parseOriginsExclusivesManga($)
-  const popularTodayManga: MangaTile[] = parsePopularTodayManga($)
-  const noveltyManga: MangaTile[] = parseNoveltyManga($)
-
-  sections[0].items = hotManga
-  sections[1].items = latestUpdatedManga
-  sections[2].items = originsExclusivesManga
-  sections[3].items = popularTodayManga
-  sections[4].items = noveltyManga
+  sections[0].items = parseHotManga($)
+  sections[1].items = parseLatestUpdatedManga($)
+  sections[2].items = parseTrendsManga($)
+  sections[3].items = parsePopularWeekManga($)
 
   for (const section of sections) sectionCallback(section)
 }
@@ -314,17 +277,17 @@ export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
   const viewMore: MangaTile[] = []
 
   for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
-    let url = $('h3 a', item).attr('href')?.split("/")[4]
-    let image = $('img', item).attr('srcset') == undefined ? encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, '')) : encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w)+x(\w)+/gm, ''))
+    let id = $('h3 a', item).attr('href')?.split("/")[4]
+    let image = getURLImage($, item)
     let title = decodeHTMLEntity($('h3 a', item).text().trim())
     let subtitle = decodeHTMLEntity($('.chapter-item .chapter', item).eq(0).text().trim())
 
-    if (typeof url === 'undefined' || typeof image === 'undefined')
+    if (typeof id === 'undefined' || typeof image === 'undefined')
       continue
 
     viewMore.push(createMangaTile({
-      id: url,
-      image: image,
+      id,
+      image,
       title: createIconText({ text: title }),
       subtitleText: createIconText({ text: subtitle })
     }))
@@ -347,17 +310,46 @@ export const isLastPage = ($: CheerioStatic): boolean => {
 //////////////////////
 
 export const parseTags = ($: CheerioStatic): TagSection[] => {
-  const arrayTags: Tag[] = []
+  const arrayGenres: Tag[] = []
+  const arrayGenresConditions: Tag[] = []
+  const arrayAdultContent: Tag[] = []
+  const arrayStatutManga: Tag[] = []
 
-  for (let item of $('.genres_wrap .row.genres li').toArray()) {
-    let id = $('a', item).attr('href')?.split('/')[4] ?? ''
-    let label = ($('a', item).text().trim().split('\n')[0])
+  // Genres
+  for (let item of $('#search-advanced .checkbox-group .checkbox').toArray()) {
+    let id = $('input', item).attr('value') ?? ''
+    let label = decodeHTMLEntity($('label', item).text().trim())
 
-    arrayTags.push({ id: id, label: label })
+    arrayGenres.push({ id, label })
   }
-  const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })]
+  // Genres Conditions
+  for (let item of $('#search-advanced .form-group .form-control').eq(0).children().toArray()) {
+    let id = $(item).attr('value') ?? ''
+    let label = decodeHTMLEntity($(item).text().trim())
 
-  return tagSections
+    arrayGenresConditions.push({ id, label })
+  }
+  // Adult Content
+  for (let item of $('#search-advanced .form-group .form-control').eq(4).children().toArray()) {
+    let id = $(item).attr('value') ?? ''
+    let label = decodeHTMLEntity($(item).text().trim())
+
+    arrayAdultContent.push({ id, label })
+  }
+  // Statut
+  for (let item of $('#search-advanced .form-group').eq(6).children('.checkbox-inline').toArray()) {
+    let id = $('input', item).attr('value') ?? ''
+    let label = decodeHTMLEntity($('label', item).text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, ''))
+
+    arrayStatutManga.push({ id, label })
+  }
+
+  return [
+    createTagSection({ id: '0', label: 'Genres', tags: arrayGenres.map(x => createTag(x)) }),
+    createTagSection({ id: '1', label: 'Genres Conditions', tags: arrayGenresConditions.map(x => createTag(x)) }),
+    createTagSection({ id: '2', label: 'Contenu pour adulte', tags: arrayAdultContent.map(x => createTag(x)) }),
+    createTagSection({ id: '3', label: 'Statut', tags: arrayStatutManga.map(x => createTag(x)) })
+  ]
 }
 
 
@@ -459,6 +451,21 @@ function convertNbViews(str: string) {
   return Number(views)
 }
 
-function capitalizeFirstLetter(str: string) {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+function getURLImage($ : CheerioStatic, item: CheerioElement) {
+  let image = undefined
+  if ($('img', item).attr('srcset') != undefined) {
+    image = encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+  }
+  else if ($('img', item).attr('data-srcset') != undefined) {
+    image = encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+  }
+  else if ($('img', item).attr('data-src') != undefined) {
+    image = encodeURI(($('img', item).attr('data-src') ?? "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+  }
+  else {
+    image = encodeURI(($('img', item).attr('src') ?? "").trim().replace(/-[75]+x(\w)+[.]{1}/gm, '.'))
+  }
+
+  return image
 }
+

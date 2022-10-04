@@ -36,7 +36,7 @@ const headers = {
 }
 
 export const MangasOriginesInfo: SourceInfo = {
-  version: '1.7.1',
+  version: '1.7.2',
   name: 'MangasOrigines',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -68,7 +68,7 @@ export class MangasOrigines extends Source {
   /////////////////////////////////
 
   getMangaShareUrl(mangaId: string): string {
-    return `${MANGASORIGINES_DOMAIN}/catalogues/${mangaId}`
+    return `${MANGASORIGINES_DOMAIN}/manga/${mangaId}`
   }
 
 
@@ -78,7 +78,7 @@ export class MangasOrigines extends Source {
 
   async getMangaDetails(mangaId: string): Promise<Manga> {
     const request = createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}/catalogues/${mangaId}`,
+      url: `${MANGASORIGINES_DOMAIN}/manga/${mangaId}`,
       method,
       headers
     })
@@ -96,7 +96,7 @@ export class MangasOrigines extends Source {
 
   async getChapters(mangaId: string): Promise<Chapter[]> {
     const request = createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}/catalogues/${mangaId}/ajax/chapters/`,
+      url: `${MANGASORIGINES_DOMAIN}/manga/${mangaId}/ajax/chapters/`,
       method: 'POST',
       headers
     })
@@ -135,32 +135,45 @@ export class MangasOrigines extends Source {
     const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? ''
     let manga: MangaTile[] = []
 
+    let url = `${MANGASORIGINES_DOMAIN}/?post_type=wp-manga&s=${search}&paged=${page}`
+
     if (query.includedTags && query.includedTags?.length != 0) {
-      const request = createRequestObject({
-        url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga&genre%5B0%5D=${query.includedTags[0].id}&paged=${page}`,
-        method,
-        headers
-      })
-
-      const response = await this.requestManager.schedule(request, 1)
-      const $ = this.cheerio.load(response.data)
-
-      manga = parseSearch($)
-      metadata = !isLastPage($) ? { page: page + 1 } : undefined
+      for (let tag of query.includedTags) {
+        switch (tag.label) {
+          case "Doit contenir un genre sélectionné":
+          case "Doit avoir contenir tous les genres sélectionnés":
+            url += `&op=${tag.id}`
+            break;
+          case "Tout":
+          case "Aucun contenu pour adulte":
+          case "Afficher seulement du contenus pour adulte":
+            url += `&adult=${tag.id}`
+            break;
+          case "En cours":
+          case "Complété":
+          case "Annulé":
+          case "En pause":
+          case "Prochainement":
+            url += `&status%5B%5D=${tag.id}`
+            break;
+          default:
+            url += `&genre%5B%5D=${tag.id}`
+            break;
+        }
+      }
     }
-    else {
-      const request = createRequestObject({
-        url: `${MANGASORIGINES_DOMAIN}/?s=${search}&post_type=wp-manga&paged=${page}`,
-        method,
-        headers
-      })
 
-      const response = await this.requestManager.schedule(request, 1)
-      const $ = this.cheerio.load(response.data)
+    const request = createRequestObject({
+      url,
+      method,
+      headers
+    })
 
-      manga = parseSearch($)
-      metadata = !isLastPage($) ? { page: page + 1 } : undefined
-    }
+    const response = await this.requestManager.schedule(request, 1)
+    const $ = this.cheerio.load(response.data)
+
+    manga = parseSearch($)
+    metadata = !isLastPage($) ? { page: page + 1 } : undefined
 
     return createPagedResults({
       results: manga,
@@ -175,10 +188,9 @@ export class MangasOrigines extends Source {
 
   async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
     const section1 = createHomeSection({ id: 'hot_manga', title: '🔥 HOT 🔥', type: HomeSectionType.featured })
-    const section2 = createHomeSection({ id: 'latest_updated', title: 'Dernières Mise à jour', view_more: true })
-    const section3 = createHomeSection({ id: 'origins_exclusives', title: 'Exclusivités Origines' })
-    const section4 = createHomeSection({ id: 'popular_today', title: 'TOP DU JOUR', view_more: true })
-    const section5 = createHomeSection({ id: 'novelty', title: 'Nouveautés' })
+    const section2 = createHomeSection({ id: 'latest_updated', title: 'Dernières Sorties', view_more: true })
+    const section3 = createHomeSection({ id: 'trends', title: 'Tendances', view_more: true })
+    const section4 = createHomeSection({ id: 'popular_week', title: 'TOP Hebdomadaire' })
 
     const request = createRequestObject({
       url: `${MANGASORIGINES_DOMAIN}`,
@@ -189,7 +201,7 @@ export class MangasOrigines extends Source {
     const response = await this.requestManager.schedule(request, 1)
     const $ = this.cheerio.load(response.data)
 
-    parseHomeSections($, [section1, section2, section3, section4, section5], sectionCallback)
+    parseHomeSections($, [section1, section2, section3, section4], sectionCallback)
   }
 
   /////////////////////////////////
@@ -200,11 +212,11 @@ export class MangasOrigines extends Source {
     let page: number = metadata?.page ?? 1
     let param = ''
     switch (homepageSectionId) {
-      case 'popular_today':
-        param = `catalogues/?m_orderby=trending&page=${page}`
-        break;
       case 'latest_updated':
-        param = `catalogues/?m_orderby=latest&page=${page}`
+        param = `catalogues/page/${page}/?m_orderby=latest`
+        break;
+      case 'trends':
+        param = `catalogues/page/${page}/?m_orderby=trending`
         break;
     }
 
@@ -264,7 +276,7 @@ export class MangasOrigines extends Source {
 
   async getSearchTags(): Promise<TagSection[]> {
     const request = createRequestObject({
-      url: `${MANGASORIGINES_DOMAIN}/catalogues`,
+      url: `${MANGASORIGINES_DOMAIN}/?s=&post_type=wp-manga`,
       method,
       headers
     })

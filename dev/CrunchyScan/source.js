@@ -377,15 +377,6 @@ __exportStar(require("./RawData"), exports);
 
 },{"./Chapter":6,"./ChapterDetails":7,"./Constants":8,"./DynamicUI":24,"./HomeSection":25,"./Languages":26,"./Manga":27,"./MangaTile":28,"./MangaUpdate":29,"./PagedResults":30,"./RawData":31,"./RequestHeaders":32,"./RequestInterceptor":33,"./RequestManager":34,"./RequestObject":35,"./ResponseObject":36,"./SearchField":37,"./SearchRequest":38,"./SourceInfo":39,"./SourceManga":40,"./SourceStateManager":41,"./SourceTag":42,"./TagSection":43,"./TrackedManga":44,"./TrackedMangaChapterReadAction":45,"./TrackerActionQueue":46}],48:[function(require,module,exports){
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CrunchyScan = exports.CrunchyScanInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
@@ -449,157 +440,141 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
     ///////////////////////////////
     /////    MANGA DETAILS    /////
     ///////////////////////////////
-    getMangaDetails(mangaId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/${mangaId}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            this.CloudFlareError(response.status);
-            const $ = this.cheerio.load(response.data);
-            return yield CrunchyScanParser_1.parseCrunchyScanDetails($, mangaId);
+    async getMangaDetails(mangaId) {
+        const request = createRequestObject({
+            url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/${mangaId}`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status);
+        const $ = this.cheerio.load(response.data);
+        return await CrunchyScanParser_1.parseCrunchyScanDetails($, mangaId);
     }
     //////////////////////////
     /////    CHAPTERS    /////
     //////////////////////////
-    getChapters(mangaId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/${mangaId}/ajax/chapters/`,
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "Host": "crunchyscan.fr",
-                    "Origin": "https://crunchyscan.fr",
-                    "Referer": "https://crunchyscan.fr/",
-                    "X-Requested-With": "XMLHttpRequest"
-                },
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            this.CloudFlareError(response.status);
-            const $ = this.cheerio.load(response.data);
-            return yield CrunchyScanParser_1.parseCrunchyScanChapters($, mangaId);
+    async getChapters(mangaId) {
+        const request = createRequestObject({
+            url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/${mangaId}/ajax/chapters/`,
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Host": "crunchyscan.fr",
+                "Origin": "https://crunchyscan.fr",
+                "Referer": "https://crunchyscan.fr/",
+                "X-Requested-With": "XMLHttpRequest"
+            },
         });
+        const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status);
+        const $ = this.cheerio.load(response.data);
+        return await CrunchyScanParser_1.parseCrunchyScanChapters($, mangaId);
     }
     //////////////////////////////////
     /////    CHAPTERS DETAILS    /////
     //////////////////////////////////
-    getChapterDetails(mangaId, chapterId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${SHADOWOFBABEL_DOMAIN}/crunchyscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
-                method
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            return yield CrunchyScanParser_1.parseCrunchyScanChapterDetails(response.data, mangaId, chapterId);
+    async getChapterDetails(mangaId, chapterId) {
+        const request = createRequestObject({
+            url: `${SHADOWOFBABEL_DOMAIN}/crunchyscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
+            method
         });
+        const response = await this.requestManager.schedule(request, 1);
+        return await CrunchyScanParser_1.parseCrunchyScanChapterDetails(response.data, mangaId, chapterId);
     }
     ////////////////////////////////
     /////    SEARCH REQUEST    /////
     ////////////////////////////////
-    getSearchResults(query, metadata) {
-        var _a, _b, _c, _d;
-        return __awaiter(this, void 0, void 0, function* () {
-            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            const search = (_c = (_b = query.title) === null || _b === void 0 ? void 0 : _b.replace(/ /g, '+').replace(/[’'´]/g, '%27')) !== null && _c !== void 0 ? _c : '';
-            let manga = [];
-            if (query.includedTags && ((_d = query.includedTags) === null || _d === void 0 ? void 0 : _d.length) != 0) {
-                const request = createRequestObject({
-                    url: `${CRUNCHYSCAN_DOMAIN}/archives/manga-genre/${query.includedTags[0].id}/page/${page}?s=${search}`,
-                    method: 'GET',
-                    headers
-                });
-                const response = yield this.requestManager.schedule(request, 1);
-                this.CloudFlareError(response.status);
-                const $ = this.cheerio.load(response.data);
-                manga = CrunchyScanParser_1.parseViewMore($);
-                metadata = !CrunchyScanParser_1.isLastPage($) ? { page: page + 1 } : undefined;
-            }
-            else {
-                const request = createRequestObject({
-                    url: `${CRUNCHYSCAN_DOMAIN}/wp-admin/admin-ajax.php`,
-                    method: 'POST',
-                    headers: headers_search,
-                    data: `action=ajaxsearchpro_search&aspp=${encodeURI(search)}&asid=1&asp_inst_id=1_2&options=current_page_id%3D793%26qtranslate_lang%3D0%26filters_changed%3D0%26filters_initial%3D1%26asp_gen%255B%255D%3Dtitle%26asp_gen%255B%255D%3Dcontent%26asp_gen%255B%255D%3Dexcerpt%26customset%255B%255D%3Dwp-manga`
-                });
-                const response = yield this.requestManager.schedule(request, 1);
-                this.CloudFlareError(response.status);
-                const $ = this.cheerio.load(response.data);
-                manga = CrunchyScanParser_1.parseSearch($);
-                metadata = undefined;
-            }
-            return createPagedResults({
-                results: manga,
-                metadata
+    async getSearchResults(query, metadata) {
+        const page = metadata?.page ?? 1;
+        const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? '';
+        let manga = [];
+        if (query.includedTags && query.includedTags?.length != 0) {
+            const request = createRequestObject({
+                url: `${CRUNCHYSCAN_DOMAIN}/archives/manga-genre/${query.includedTags[0].id}/page/${page}?s=${search}`,
+                method: 'GET',
+                headers
             });
+            const response = await this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
+            const $ = this.cheerio.load(response.data);
+            manga = CrunchyScanParser_1.parseViewMore($);
+            metadata = !CrunchyScanParser_1.isLastPage($) ? { page: page + 1 } : undefined;
+        }
+        else {
+            const request = createRequestObject({
+                url: `${CRUNCHYSCAN_DOMAIN}/wp-admin/admin-ajax.php`,
+                method: 'POST',
+                headers: headers_search,
+                data: `action=ajaxsearchpro_search&aspp=${encodeURI(search)}&asid=1&asp_inst_id=1_2&options=current_page_id%3D793%26qtranslate_lang%3D0%26filters_changed%3D0%26filters_initial%3D1%26asp_gen%255B%255D%3Dtitle%26asp_gen%255B%255D%3Dcontent%26asp_gen%255B%255D%3Dexcerpt%26customset%255B%255D%3Dwp-manga`
+            });
+            const response = await this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
+            const $ = this.cheerio.load(response.data);
+            manga = CrunchyScanParser_1.parseSearch($);
+            metadata = undefined;
+        }
+        return createPagedResults({
+            results: manga,
+            metadata
         });
     }
     //////////////////////////////
     /////    HOME SECTION    /////
     //////////////////////////////
-    getHomePageSections(sectionCallback) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const section1 = createHomeSection({ id: 'latest_updated', title: 'Dernières Mise à jour', view_more: true });
-            const section2 = createHomeSection({ id: 'most_viewed', title: 'Mangas avec le plus de vues' });
-            const section3 = createHomeSection({ id: 'random_mangas', title: 'Mangas Aléatoires' });
-            const request = createRequestObject({
-                url: `${CRUNCHYSCAN_DOMAIN}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            this.CloudFlareError(response.status);
-            const $ = this.cheerio.load(response.data);
-            CrunchyScanParser_1.parseHomeSections($, [section1, section2, section3], sectionCallback);
+    async getHomePageSections(sectionCallback) {
+        const section1 = createHomeSection({ id: 'latest_updated', title: 'Dernières Mise à jour', view_more: true });
+        const section2 = createHomeSection({ id: 'most_viewed', title: 'Mangas avec le plus de vues' });
+        const section3 = createHomeSection({ id: 'random_mangas', title: 'Mangas Aléatoires' });
+        const request = createRequestObject({
+            url: `${CRUNCHYSCAN_DOMAIN}`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status);
+        const $ = this.cheerio.load(response.data);
+        CrunchyScanParser_1.parseHomeSections($, [section1, section2, section3], sectionCallback);
     }
     /////////////////////////////////
     /////    VIEW MORE ITEMS    /////
     /////////////////////////////////
-    getViewMoreItems(homepageSectionId, metadata) {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            let param = '';
-            switch (homepageSectionId) {
-                case 'latest_updated':
-                    param = `liste-manga/page/${page}?m_orderby=latest`;
-                    break;
-            }
-            const request = createRequestObject({
-                url: `${CRUNCHYSCAN_DOMAIN}/${param}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            this.CloudFlareError(response.status);
-            const $ = this.cheerio.load(response.data);
-            const manga = CrunchyScanParser_1.parseViewMore($);
-            metadata = !CrunchyScanParser_1.isLastPage($) ? { page: page + 1 } : { page: page + 1 };
-            return createPagedResults({
-                results: manga,
-                metadata
-            });
+    async getViewMoreItems(homepageSectionId, metadata) {
+        let page = metadata?.page ?? 1;
+        let param = '';
+        switch (homepageSectionId) {
+            case 'latest_updated':
+                param = `liste-manga/page/${page}?m_orderby=latest`;
+                break;
+        }
+        const request = createRequestObject({
+            url: `${CRUNCHYSCAN_DOMAIN}/${param}`,
+            method,
+            headers
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status);
+        const $ = this.cheerio.load(response.data);
+        const manga = CrunchyScanParser_1.parseViewMore($);
+        metadata = !CrunchyScanParser_1.isLastPage($) ? { page: page + 1 } : { page: page + 1 };
+        return createPagedResults({
+            results: manga,
+            metadata
         });
     }
     //////////////////////
     /////    TAGS    /////
     //////////////////////
-    getSearchTags() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${CRUNCHYSCAN_DOMAIN}/liste-manga`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            this.CloudFlareError(response.status);
-            const $ = this.cheerio.load(response.data);
-            return CrunchyScanParser_1.parseTags($);
+    async getSearchTags() {
+        const request = createRequestObject({
+            url: `${CRUNCHYSCAN_DOMAIN}/liste-manga`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status);
+        const $ = this.cheerio.load(response.data);
+        return CrunchyScanParser_1.parseTags($);
     }
     ///////////////////////////////////
     /////    CLOUDFLARE BYPASS    /////
@@ -634,17 +609,16 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parseCrunchyScanDetails = ($, mangaId) => {
-    var _a, _b, _c, _d, _e, _f, _g;
+const parseCrunchyScanDetails = ($, mangaId) => {
     const panel = $('.container .tab-summary');
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())];
-    const image = (_a = $('.summary_image img', panel).attr('data-src')) !== null && _a !== void 0 ? _a : "";
+    const image = $('.summary_image img', panel).attr('data-src') ?? "";
     const rating = Number($('.post-total-rating .score', panel).text().trim());
     const arrayTags = [];
-    let author = (_b = $('.post-content_item:contains("Author(s)") .summary-content', panel).text().trim()) !== null && _b !== void 0 ? _b : "Unknown";
-    let artist = (_c = $('.post-content_item:contains("Artist(s)") .summary-content', panel).text().trim()) !== null && _c !== void 0 ? _c : "Unknown";
+    let author = $('.post-content_item:contains("Author(s)") .summary-content', panel).text().trim() ?? "Unknown";
+    let artist = $('.post-content_item:contains("Artist(s)") .summary-content', panel).text().trim() ?? "Unknown";
     let hentai = false;
-    let views = convertNbViews((_e = ((_d = $('.post-content_item:contains("Rank") .summary-content', panel).text().trim().match(/(\d+\.?\d*\w?) /gm)) !== null && _d !== void 0 ? _d : '')[0].trim()) !== null && _e !== void 0 ? _e : '');
+    let views = convertNbViews(($('.post-content_item:contains("Rank") .summary-content', panel).text().trim().match(/(\d+\.?\d*\w?) /gm) ?? '')[0].trim() ?? '');
     let otherTitles = $('.post-content_item:contains("Alternative") .summary-content', panel).text().trim().split('/');
     for (let title of otherTitles) {
         titles.push(decodeHTMLEntity(title.trim()));
@@ -652,7 +626,7 @@ exports.parseCrunchyScanDetails = ($, mangaId) => {
     const tags = $('.post-content_item:contains("Genre(s)") .summary-content a', panel).toArray();
     for (const tag of tags) {
         const label = $(tag).text();
-        const id = (_g = (_f = $(tag).attr('href')) === null || _f === void 0 ? void 0 : _f.split("/").slice(-2, -1)[0]) !== null && _g !== void 0 ? _g : label;
+        const id = $(tag).attr('href')?.split("/").slice(-2, -1)[0] ?? label;
         if (['Hentai'].includes(label) || ['Erotique'].includes(label) || ['Mature'].includes(label)) {
             hentai = true;
         }
@@ -683,17 +657,17 @@ exports.parseCrunchyScanDetails = ($, mangaId) => {
         hentai
     });
 };
+exports.parseCrunchyScanDetails = parseCrunchyScanDetails;
 ///////////////////////////////
 /////    CHAPTERS LIST    /////
 ///////////////////////////////
-exports.parseCrunchyScanChapters = ($, mangaId) => {
-    var _a, _b;
+const parseCrunchyScanChapters = ($, mangaId) => {
     const allChapters = $('.main .wp-manga-chapter');
     const chapters = [];
     for (let chapter of allChapters.toArray()) {
-        const id = (_a = $('a', chapter).attr('href')) !== null && _a !== void 0 ? _a : '';
+        const id = $('a', chapter).attr('href') ?? '';
         const name = $('a', chapter).text().trim();
-        const chapNum = Number(((_b = name.match(/(\d+)(\.?)(\d*)/gm)) !== null && _b !== void 0 ? _b : '')[0]);
+        const chapNum = Number((name.match(/(\d+)(\.?)(\d*)/gm) ?? '')[0]);
         const time = new Date();
         chapters.push(createChapter({
             id,
@@ -706,10 +680,11 @@ exports.parseCrunchyScanChapters = ($, mangaId) => {
     }
     return chapters;
 };
+exports.parseCrunchyScanChapters = parseCrunchyScanChapters;
 //////////////////////////////////
 /////    CHAPTERS DETAILS    /////
 //////////////////////////////////
-exports.parseCrunchyScanChapterDetails = (data, mangaId, chapterId) => {
+const parseCrunchyScanChapterDetails = (data, mangaId, chapterId) => {
     const pages = [];
     for (let item of JSON.parse(data)) {
         let page = encodeURI(item);
@@ -724,16 +699,16 @@ exports.parseCrunchyScanChapterDetails = (data, mangaId, chapterId) => {
         longStrip: false
     });
 };
+exports.parseCrunchyScanChapterDetails = parseCrunchyScanChapterDetails;
 ////////////////////////
 /////    Search    /////
 ////////////////////////
-exports.parseSearch = ($) => {
-    var _a, _b, _c, _d;
+const parseSearch = ($) => {
     const manga = [];
     for (const item of $('.item').toArray()) {
-        const url = (_b = (_a = $('.asp_res_url', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/').slice(-2, -1)[0]) !== null && _b !== void 0 ? _b : '';
-        const title = (_c = $('.asp_res_url', item).text().trim()) !== null && _c !== void 0 ? _c : '';
-        const image = (_d = $('.asp_image', item).attr("data-src")) !== null && _d !== void 0 ? _d : '';
+        const url = $('.asp_res_url', item).attr('href')?.split('/').slice(-2, -1)[0] ?? '';
+        const title = $('.asp_res_url', item).text().trim() ?? '';
+        const image = $('.asp_image', item).attr("data-src") ?? '';
         const subtitle = '';
         manga.push(createMangaTile({
             id: url,
@@ -744,15 +719,15 @@ exports.parseSearch = ($) => {
     }
     return manga;
 };
+exports.parseSearch = parseSearch;
 ////////////////////////////////
 /////    LATEST UPDATED    /////
 ////////////////////////////////
 const parseLatestUpdatedManga = ($) => {
-    var _a, _b;
     const latestUpdatedManga = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
-        let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0];
-        let image = ((_b = $('img', item).attr('data-src')) !== null && _b !== void 0 ? _b : "");
+        let url = $('h3 a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = ($('img', item).attr('data-src') ?? "");
         let title = $('h3 a', item).text().trim();
         let subtitle = $('.chapter-item .chapter.font-meta', item).eq(0).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -770,11 +745,10 @@ const parseLatestUpdatedManga = ($) => {
 /////    MOST VIEWED    /////
 /////////////////////////////
 const parseMostViewedManga = ($) => {
-    var _a, _b;
     const mostViewedManga = [];
     for (const item of $('.wrap #manga-slider-3 .slider__item').toArray()) {
-        let url = (_a = $('h4 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0];
-        let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "");
+        let url = $('h4 a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = ($('img', item).attr('src') ?? "");
         let title = $('h4 a', item).text().trim();
         let subtitle = '';
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -792,11 +766,10 @@ const parseMostViewedManga = ($) => {
 /////    RANDOM MANGAS    /////
 ///////////////////////////////
 const parseRandomManga = ($) => {
-    var _a, _b;
     const randomManga = [];
     for (const item of $('.wrap #manga-popular-slider-3 .slider__item').toArray()) {
-        let url = (_a = $('h4 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0];
-        let image = ((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "");
+        let url = $('h4 a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = ($('img', item).attr('src') ?? "");
         let title = $('h4 a', item).text().trim();
         let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim();
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -813,7 +786,7 @@ const parseRandomManga = ($) => {
 //////////////////////////////
 /////    HOME SECTION    /////
 //////////////////////////////
-exports.parseHomeSections = ($, sections, sectionCallback) => {
+const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const latestUpdatedManga = parseLatestUpdatedManga($);
@@ -825,14 +798,14 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseHomeSections = parseHomeSections;
 ///////////////////////////
 /////    VIEW MORE    /////
 ///////////////////////////
-exports.parseViewMore = ($) => {
-    var _a;
+const parseViewMore = ($) => {
     const viewMore = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
-        let url = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").pop();
+        let url = $('h3 a', item).attr('href')?.split("/").pop();
         let image = $('img', item).attr('data-src');
         let title = $('h3 a', item).text().trim();
         let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim();
@@ -847,28 +820,30 @@ exports.parseViewMore = ($) => {
     }
     return viewMore;
 };
+exports.parseViewMore = parseViewMore;
 /////////////////////////////////
 /////    CHECK LAST PAGE    /////
 /////////////////////////////////
-exports.isLastPage = ($) => {
+const isLastPage = ($) => {
     return $('.page-content-listing.item-default .page-item-detail.manga').length == 0;
 };
+exports.isLastPage = isLastPage;
 //////////////////////
 /////    TAGS    /////
 //////////////////////
-exports.parseTags = ($) => {
-    var _a, _b, _c;
+const parseTags = ($) => {
     const arrayTags = [];
     for (let item of $('.row.genres li').toArray()) {
-        let id = (_b = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/').pop()) !== null && _b !== void 0 ? _b : '';
+        let id = $('a', item).attr('href')?.split('/').pop() ?? '';
         let label = $('a', item).text().trim().replace(/(\s+)\([^()]+\)/gm, '');
-        let nb_manga = ((_c = $('a', item).text().trim().match(/(\d+)/gm)) !== null && _c !== void 0 ? _c : "")[0];
+        let nb_manga = ($('a', item).text().trim().match(/(\d+)/gm) ?? "")[0];
         if (parseInt(nb_manga) > 0)
             arrayTags.push({ id: id, label: label });
     }
     const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
     return tagSections;
 };
+exports.parseTags = parseTags;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
@@ -885,10 +860,9 @@ function parseDate(str) {
 }
 exports.parseDate = parseDate;
 function convertNbViews(str) {
-    var _a, _b;
     let views = undefined;
-    let number = parseInt(((_a = str.match(/(\d+\.?\d?)/gm)) !== null && _a !== void 0 ? _a : "")[0]);
-    let unit = ((_b = str.match(/[a-zA-Z]/gm)) !== null && _b !== void 0 ? _b : "")[0];
+    let number = parseInt((str.match(/(\d+\.?\d?)/gm) ?? "")[0]);
+    let unit = (str.match(/[a-zA-Z]/gm) ?? "")[0];
     switch (unit) {
         case "K":
             views = number * 1e3;

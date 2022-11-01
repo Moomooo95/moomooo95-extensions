@@ -377,15 +377,6 @@ __exportStar(require("./RawData"), exports);
 
 },{"./Chapter":6,"./ChapterDetails":7,"./Constants":8,"./DynamicUI":24,"./HomeSection":25,"./Languages":26,"./Manga":27,"./MangaTile":28,"./MangaUpdate":29,"./PagedResults":30,"./RawData":31,"./RequestHeaders":32,"./RequestInterceptor":33,"./RequestManager":34,"./RequestObject":35,"./ResponseObject":36,"./SearchField":37,"./SearchRequest":38,"./SourceInfo":39,"./SourceManga":40,"./SourceStateManager":41,"./SourceTag":42,"./TagSection":43,"./TrackedManga":44,"./TrackedMangaChapterReadAction":45,"./TrackerActionQueue":46}],48:[function(require,module,exports){
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LegacyScans = exports.LegacyScansInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
@@ -431,172 +422,154 @@ class LegacyScans extends paperback_extensions_common_1.Source {
     ///////////////////////////////
     /////    MANGA DETAILS    /////
     ///////////////////////////////
-    getMangaDetails(mangaId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${LEGACYSCANS_DOMAIN}/manga/${mangaId}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            return yield LegacyScansParser_1.parseLegacyScansMangaDetails($, mangaId);
+    async getMangaDetails(mangaId) {
+        const request = createRequestObject({
+            url: `${LEGACYSCANS_DOMAIN}/manga/${mangaId}`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        return await LegacyScansParser_1.parseLegacyScansMangaDetails($, mangaId);
     }
     //////////////////////////
     /////    CHAPTERS    /////
     //////////////////////////
-    getChapters(mangaId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${LEGACYSCANS_DOMAIN}/manga/${mangaId}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            return yield LegacyScansParser_1.parseLegacyScansChapters($, mangaId);
+    async getChapters(mangaId) {
+        const request = createRequestObject({
+            url: `${LEGACYSCANS_DOMAIN}/manga/${mangaId}`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        return await LegacyScansParser_1.parseLegacyScansChapters($, mangaId);
     }
     //////////////////////////////////
     /////    CHAPTERS DETAILS    /////
     //////////////////////////////////
-    getChapterDetails(mangaId, chapterId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${chapterId}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            return yield LegacyScansParser_1.parseLegacyScansChapterDetails($, mangaId, chapterId);
+    async getChapterDetails(mangaId, chapterId) {
+        const request = createRequestObject({
+            url: `${chapterId}`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        return await LegacyScansParser_1.parseLegacyScansChapterDetails($, mangaId, chapterId);
     }
     ////////////////////////////////
     /////    SEARCH REQUEST    /////
     ////////////////////////////////
-    getSearchResults(query, metadata) {
-        var _a, _b, _c, _d;
-        return __awaiter(this, void 0, void 0, function* () {
-            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            const search = (_c = (_b = query.title) === null || _b === void 0 ? void 0 : _b.replace(/ /g, '+').replace(/[’'´]/g, '%27')) !== null && _c !== void 0 ? _c : "";
-            let manga = [];
-            if (query.includedTags && ((_d = query.includedTags) === null || _d === void 0 ? void 0 : _d.length) != 0) {
-                const request = createRequestObject({
-                    url: `${LEGACYSCANS_DOMAIN}/manga/?page=${page}&genre%5B%5D=${query.includedTags[0].id}`,
-                    method: 'GET',
-                    headers
-                });
-                const response = yield this.requestManager.schedule(request, 1);
-                const $ = this.cheerio.load(response.data);
-                manga = LegacyScansParser_1.parseSearch($);
-                metadata = !LegacyScansParser_1.isLastPage($, 'search_tags') ? { page: page + 1 } : undefined;
-            }
-            else {
-                const request = createRequestObject({
-                    url: `${LEGACYSCANS_DOMAIN}/page/${page}/?s=${search}`,
-                    method: 'GET',
-                    headers
-                });
-                const response = yield this.requestManager.schedule(request, 1);
-                const $ = this.cheerio.load(response.data);
-                manga = LegacyScansParser_1.parseSearch($);
-                metadata = !LegacyScansParser_1.isLastPage($, 'search') ? { page: page + 1 } : undefined;
-            }
-            return createPagedResults({
-                results: manga,
-                metadata
+    async getSearchResults(query, metadata) {
+        const page = metadata?.page ?? 1;
+        const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? "";
+        let manga = [];
+        if (query.includedTags && query.includedTags?.length != 0) {
+            const request = createRequestObject({
+                url: `${LEGACYSCANS_DOMAIN}/manga/?page=${page}&genre%5B%5D=${query.includedTags[0].id}`,
+                method: 'GET',
+                headers
             });
+            const response = await this.requestManager.schedule(request, 1);
+            const $ = this.cheerio.load(response.data);
+            manga = LegacyScansParser_1.parseSearch($);
+            metadata = !LegacyScansParser_1.isLastPage($, 'search_tags') ? { page: page + 1 } : undefined;
+        }
+        else {
+            const request = createRequestObject({
+                url: `${LEGACYSCANS_DOMAIN}/page/${page}/?s=${search}`,
+                method: 'GET',
+                headers
+            });
+            const response = await this.requestManager.schedule(request, 1);
+            const $ = this.cheerio.load(response.data);
+            manga = LegacyScansParser_1.parseSearch($);
+            metadata = !LegacyScansParser_1.isLastPage($, 'search') ? { page: page + 1 } : undefined;
+        }
+        return createPagedResults({
+            results: manga,
+            metadata
         });
     }
     //////////////////////////////
     /////    HOME SECTION    /////
     //////////////////////////////
-    getHomePageSections(sectionCallback) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernières sorties', view_more: true });
-            const section2 = createHomeSection({ id: 'popular_today', title: 'Populaires aujourd\'hui' });
-            const section3 = createHomeSection({ id: 'popular_week', title: 'Populaires Semaine' });
-            const section4 = createHomeSection({ id: 'popular_months', title: 'Populaires Mois' });
-            const section5 = createHomeSection({ id: 'popular_all', title: 'Populaires Tous' });
-            const request1 = createRequestObject({
-                url: `${LEGACYSCANS_DOMAIN}`,
-                method: 'GET'
-            });
-            const response1 = yield this.requestManager.schedule(request1, 1);
-            const $1 = this.cheerio.load(response1.data);
-            LegacyScansParser_1.parseHomeSections($1, [section1, section2, section3, section4, section5], sectionCallback);
+    async getHomePageSections(sectionCallback) {
+        const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernières sorties', view_more: true });
+        const section2 = createHomeSection({ id: 'popular_today', title: 'Populaires aujourd\'hui' });
+        const section3 = createHomeSection({ id: 'popular_week', title: 'Populaires Semaine' });
+        const section4 = createHomeSection({ id: 'popular_months', title: 'Populaires Mois' });
+        const section5 = createHomeSection({ id: 'popular_all', title: 'Populaires Tous' });
+        const request1 = createRequestObject({
+            url: `${LEGACYSCANS_DOMAIN}`,
+            method: 'GET'
         });
+        const response1 = await this.requestManager.schedule(request1, 1);
+        const $1 = this.cheerio.load(response1.data);
+        LegacyScansParser_1.parseHomeSections($1, [section1, section2, section3, section4, section5], sectionCallback);
     }
     /////////////////////////////////
     /////    VIEW MORE ITEMS    /////
     /////////////////////////////////
-    getViewMoreItems(homepageSectionId, metadata) {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            let param = '';
-            switch (homepageSectionId) {
-                case 'latest_updates':
-                    param = `page/${page}`;
-                    break;
-            }
-            const request = createRequestObject({
-                url: `${LEGACYSCANS_DOMAIN}/${param}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            const manga = LegacyScansParser_1.parseViewMore($);
-            metadata = !LegacyScansParser_1.isLastPage($, homepageSectionId) ? { page: page + 1 } : undefined;
-            return createPagedResults({
-                results: manga,
-                metadata
-            });
+    async getViewMoreItems(homepageSectionId, metadata) {
+        let page = metadata?.page ?? 1;
+        let param = '';
+        switch (homepageSectionId) {
+            case 'latest_updates':
+                param = `page/${page}`;
+                break;
+        }
+        const request = createRequestObject({
+            url: `${LEGACYSCANS_DOMAIN}/${param}`,
+            method,
+            headers
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        const manga = LegacyScansParser_1.parseViewMore($);
+        metadata = !LegacyScansParser_1.isLastPage($, homepageSectionId) ? { page: page + 1 } : undefined;
+        return createPagedResults({
+            results: manga,
+            metadata
         });
     }
     //////////////////////
     /////    TAGS    /////
     //////////////////////
-    getSearchTags() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${LEGACYSCANS_DOMAIN}/genres`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            return LegacyScansParser_1.parseTags($);
+    async getSearchTags() {
+        const request = createRequestObject({
+            url: `${LEGACYSCANS_DOMAIN}/genres`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        return LegacyScansParser_1.parseTags($);
     }
     //////////////////////////////////////
     /////    FILTER UPDATED MANGA    /////
     //////////////////////////////////////
-    filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let updatedManga = {
-                ids: [],
-                loadMore: true
-            };
-            while (updatedManga.loadMore) {
-                const request = createRequestObject({
-                    url: `${LEGACYSCANS_DOMAIN}`,
-                    method,
-                    headers
-                });
-                const response = yield this.requestManager.schedule(request, 1);
-                const $ = this.cheerio.load(response.data);
-                updatedManga = LegacyScansParser_1.parseUpdatedManga($, time, ids);
-                if (updatedManga.ids.length > 0) {
-                    mangaUpdatesFoundCallback(createMangaUpdates({
-                        ids: updatedManga.ids
-                    }));
-                }
+    async filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
+        let updatedManga = {
+            ids: [],
+            loadMore: true
+        };
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${LEGACYSCANS_DOMAIN}`,
+                method,
+                headers
+            });
+            const response = await this.requestManager.schedule(request, 1);
+            const $ = this.cheerio.load(response.data);
+            updatedManga = LegacyScansParser_1.parseUpdatedManga($, time, ids);
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
             }
-        });
+        }
     }
 }
 exports.LegacyScans = LegacyScans;
@@ -609,10 +582,9 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parseLegacyScansMangaDetails = ($, mangaId) => {
-    var _a, _b, _c, _d, _e;
+const parseLegacyScansMangaDetails = ($, mangaId) => {
     const panell = $('.thumbook');
-    const image = (_a = $('img', panell).attr('src')) !== null && _a !== void 0 ? _a : "";
+    const image = $('img', panell).attr('src') ?? "";
     const follows = Number($('.bmc').text().trim().replace(/[^\d]/g, ""));
     const rating = Number($('.num').text().trim());
     let status = paperback_extensions_common_1.MangaStatus.UNKNOWN;
@@ -626,14 +598,14 @@ exports.parseLegacyScansMangaDetails = ($, mangaId) => {
     }
     const panelr = $('.infox');
     const titles = [decodeHTMLEntity($('.entry-title', panelr).text().trim())];
-    const author = (_b = $('b:contains("Auteur")', panelr).next().text().trim()) !== null && _b !== void 0 ? _b : "Unknown";
-    const artist = (_c = $('b:contains("Artiste")', panelr).next().text().trim()) !== null && _c !== void 0 ? _c : "Unknown";
+    const author = $('b:contains("Auteur")', panelr).next().text().trim() ?? "Unknown";
+    const artist = $('b:contains("Artiste")', panelr).next().text().trim() ?? "Unknown";
     const lastUpdate = new Date($('b:contains("Mis à jour le")', panelr).next().text().trim());
     const arrayTags = [];
     // Tags 
     const tags = $('b:contains("Genre")', panelr).next().find('a').toArray();
     for (const tag of tags) {
-        const id = (_e = (_d = $(tag).attr('href')) === null || _d === void 0 ? void 0 : _d.split("/").slice(-2, -1)[0]) !== null && _e !== void 0 ? _e : '';
+        const id = $(tag).attr('href')?.split("/").slice(-2, -1)[0] ?? '';
         const label = capitalizeFirstLetter(decodeHTMLEntity($(tag).text()));
         arrayTags.push({ id: id, label: label });
     }
@@ -654,14 +626,14 @@ exports.parseLegacyScansMangaDetails = ($, mangaId) => {
         hentai: false
     });
 };
+exports.parseLegacyScansMangaDetails = parseLegacyScansMangaDetails;
 //////////////////////////
 /////    CHAPTERS    /////
 //////////////////////////
-exports.parseLegacyScansChapters = ($, mangaId) => {
-    var _a;
+const parseLegacyScansChapters = ($, mangaId) => {
     const chapters = [];
     for (let chapter of $('#chapterlist li').toArray()) {
-        const id = (_a = $('a', chapter).attr('href')) !== null && _a !== void 0 ? _a : '';
+        const id = $('a', chapter).attr('href') ?? '';
         const name = decodeHTMLEntity($('.chapternum', chapter).text()) != "" ? decodeHTMLEntity($('.chapternum', chapter).text()) : undefined;
         const chapNum = Number($('.chapternum', chapter).text().split(' ')[1]);
         const time = new Date(parseDateChap($('.chapterdate', chapter).text().trim()));
@@ -676,10 +648,11 @@ exports.parseLegacyScansChapters = ($, mangaId) => {
     }
     return chapters;
 };
+exports.parseLegacyScansChapters = parseLegacyScansChapters;
 /////////////////////////////////
 /////    CHAPTER DETAILS    /////
 /////////////////////////////////
-exports.parseLegacyScansChapterDetails = ($, mangaId, chapterId) => {
+const parseLegacyScansChapterDetails = ($, mangaId, chapterId) => {
     const pages = [];
     for (let page of JSON.parse($('.wrapper script').eq(0).html().slice(14, -2)).sources[0].images) {
         if (typeof page === 'undefined')
@@ -693,16 +666,16 @@ exports.parseLegacyScansChapterDetails = ($, mangaId, chapterId) => {
         longStrip: false
     });
 };
+exports.parseLegacyScansChapterDetails = parseLegacyScansChapterDetails;
 ////////////////////////
 /////    SEARCH    /////
 ////////////////////////
-exports.parseSearch = ($) => {
-    var _a, _b, _c, _d;
+const parseSearch = ($) => {
     const manga = [];
     for (const item of $('.listupd .bs').toArray()) {
-        const id = (_b = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/')[4]) !== null && _b !== void 0 ? _b : '';
-        const title = decodeHTMLEntity((_c = $('a', item).attr('title')) !== null && _c !== void 0 ? _c : '');
-        const image = (_d = $('img', item).attr("src")) !== null && _d !== void 0 ? _d : '';
+        const id = $('a', item).attr('href')?.split('/')[4] ?? '';
+        const title = decodeHTMLEntity($('a', item).attr('title') ?? '');
+        const image = $('img', item).attr("src") ?? '';
         const subtitle = decodeHTMLEntity($('.epxs', item).text());
         if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
@@ -715,15 +688,15 @@ exports.parseSearch = ($) => {
     }
     return manga;
 };
+exports.parseSearch = parseSearch;
 ////////////////////////////////
 /////    LATEST UPDATES    /////
 ////////////////////////////////
 const parseLatestUpdatesManga = ($) => {
-    var _a, _b;
     const latestUpdatesManga = [];
     for (const item of $('.bixbox .listupd .utao.styletwo .uta').toArray()) {
-        let url = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0];
-        let image = (_b = $('img', item).attr('src')) === null || _b === void 0 ? void 0 : _b.replace(/-(\d){2,}x(\d){2,}/gm, '');
+        let url = $('a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = $('img', item).attr('src')?.replace(/-(\d){2,}x(\d){2,}/gm, '');
         let title = decodeHTMLEntity($('.luf h4', item).text());
         let subtitle = decodeHTMLEntity($('.luf ul li', item).first().find("a").text());
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -741,11 +714,10 @@ const parseLatestUpdatesManga = ($) => {
 /////    POPULAR TODAY    /////
 ///////////////////////////////
 const parsePopularTodayManga = ($) => {
-    var _a, _b;
     const popularTodayManga = [];
     for (const item of $('.bixbox.hothome .listupd .bsx').toArray()) {
-        let url = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0];
-        let image = (_b = $('img', item).attr('src')) === null || _b === void 0 ? void 0 : _b.replace(/-(\d){2,}x(\d){2,}/gm, '');
+        let url = $('a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = $('img', item).attr('src')?.replace(/-(\d){2,}x(\d){2,}/gm, '');
         let title = decodeHTMLEntity($('.bigor .tt', item).text().trim());
         let subtitle = decodeHTMLEntity($('.bigor .adds .epxs', item).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -763,11 +735,10 @@ const parsePopularTodayManga = ($) => {
 /////    POPULAR WEEK    /////
 //////////////////////////////
 const parsePopularWeekManga = ($) => {
-    var _a, _b;
     const popularWeekManga = [];
     for (const item of $('#sidebar .wpop-weekly li').toArray()) {
-        let url = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0];
-        let image = (_b = $('img', item).attr('src')) === null || _b === void 0 ? void 0 : _b.replace(/-(\d){2,}x(\d){2,}/gm, '');
+        let url = $('a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = $('img', item).attr('src')?.replace(/-(\d){2,}x(\d){2,}/gm, '');
         let title = decodeHTMLEntity($('.leftseries h2', item).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
@@ -783,11 +754,10 @@ const parsePopularWeekManga = ($) => {
 /////    POPULAR MONTHS    /////
 ////////////////////////////////
 const parsePopularMonthManga = ($) => {
-    var _a, _b;
     const popularMonthsManga = [];
     for (const item of $('#sidebar .wpop-monthly li').toArray()) {
-        let url = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0];
-        let image = (_b = $('img', item).attr('src')) === null || _b === void 0 ? void 0 : _b.replace(/-(\d){2,}x(\d){2,}/gm, '');
+        let url = $('a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = $('img', item).attr('src')?.replace(/-(\d){2,}x(\d){2,}/gm, '');
         let title = decodeHTMLEntity($('.leftseries h2', item).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
@@ -803,11 +773,10 @@ const parsePopularMonthManga = ($) => {
 /////    POPULAR ALL    /////
 /////////////////////////////
 const parsePopularAllManga = ($) => {
-    var _a, _b;
     const popularAllManga = [];
     for (const item of $('#sidebar .wpop-alltime li').toArray()) {
-        let url = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0];
-        let image = (_b = $('img', item).attr('src')) === null || _b === void 0 ? void 0 : _b.replace(/-(\d){2,}x(\d){2,}/gm, '');
+        let url = $('a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = $('img', item).attr('src')?.replace(/-(\d){2,}x(\d){2,}/gm, '');
         let title = decodeHTMLEntity($('.leftseries h2', item).text().trim());
         if (typeof url === 'undefined' || typeof image === 'undefined')
             continue;
@@ -822,7 +791,7 @@ const parsePopularAllManga = ($) => {
 //////////////////////////////
 /////    HOME SECTION    /////
 //////////////////////////////
-exports.parseHomeSections = ($, sections, sectionCallback) => {
+const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
     const latestUpdatesManga = parseLatestUpdatesManga($);
@@ -838,15 +807,15 @@ exports.parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseHomeSections = parseHomeSections;
 ///////////////////////////
 /////    VIEW MORE    /////
 ///////////////////////////
-exports.parseViewMore = ($) => {
-    var _a, _b;
+const parseViewMore = ($) => {
     const viewMore = [];
     for (const item of $('.bixbox .listupd .utao.styletwo .uta').toArray()) {
-        let url = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0];
-        let image = (_b = $('img', item).attr('src')) === null || _b === void 0 ? void 0 : _b.replace(/-(\d){2,}x(\d){2,}/gm, '');
+        let url = $('a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = $('img', item).attr('src')?.replace(/-(\d){2,}x(\d){2,}/gm, '');
         let title = decodeHTMLEntity($('.luf h4', item).text());
         let subtitle = decodeHTMLEntity($('.luf ul li', item).first().find("a").text());
         if (typeof url === 'undefined' || typeof image === 'undefined')
@@ -860,24 +829,25 @@ exports.parseViewMore = ($) => {
     }
     return viewMore;
 };
+exports.parseViewMore = parseViewMore;
 //////////////////////
 /////    TAGS    /////
 //////////////////////
-exports.parseTags = ($) => {
-    var _a, _b, _c;
+const parseTags = ($) => {
     const arrayTags = [];
     for (var item of $('.taxindex li').toArray()) {
-        let id = (_b = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/').slice(-2, -1)[0]) !== null && _b !== void 0 ? _b : '';
-        let label = (_c = capitalizeFirstLetter(decodeHTMLEntity($('span', item).text()))) !== null && _c !== void 0 ? _c : '';
+        let id = $('a', item).attr('href')?.split('/').slice(-2, -1)[0] ?? '';
+        let label = capitalizeFirstLetter(decodeHTMLEntity($('span', item).text())) ?? '';
         arrayTags.push({ id: id, label: label });
     }
     const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
     return tagSections;
 };
+exports.parseTags = parseTags;
 /////////////////////////////////
 /////    CHECK LAST PAGE    /////
 /////////////////////////////////
-exports.isLastPage = ($, section) => {
+const isLastPage = ($, section) => {
     switch (section) {
         case 'latest_updates':
             return $('.hpage .r').length == 0;
@@ -889,13 +859,13 @@ exports.isLastPage = ($, section) => {
             return false;
     }
 };
-exports.parseUpdatedManga = ($, time, ids) => {
-    var _a, _b, _c, _d;
+exports.isLastPage = isLastPage;
+const parseUpdatedManga = ($, time, ids) => {
     const manga = [];
     let loadMore = true;
     for (const item of $('.bixbox .listupd .utao.styletwo .uta').toArray()) {
-        let id = (_b = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/").slice(-2, -1)[0]) !== null && _b !== void 0 ? _b : '';
-        let mangaTime = parseDate(decodeHTMLEntity((_d = ((_c = $('.luf ul li', item).first().find("span").text()) !== null && _c !== void 0 ? _c : '').trim().split('Il y a ')[1]) !== null && _d !== void 0 ? _d : ""));
+        let id = $('a', item).attr('href')?.split("/").slice(-2, -1)[0] ?? '';
+        let mangaTime = parseDate(decodeHTMLEntity(($('.luf ul li', item).first().find("span").text() ?? '').trim().split('Il y a ')[1] ?? ""));
         if (mangaTime != null && mangaTime > time)
             if (ids.includes(id))
                 manga.push(id);
@@ -907,6 +877,7 @@ exports.parseUpdatedManga = ($, time, ids) => {
         loadMore
     };
 };
+exports.parseUpdatedManga = parseUpdatedManga;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////

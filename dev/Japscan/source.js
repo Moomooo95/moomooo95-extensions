@@ -377,34 +377,50 @@ __exportStar(require("./RawData"), exports);
 
 },{"./Chapter":6,"./ChapterDetails":7,"./Constants":8,"./DynamicUI":24,"./HomeSection":25,"./Languages":26,"./Manga":27,"./MangaTile":28,"./MangaUpdate":29,"./PagedResults":30,"./RawData":31,"./RequestHeaders":32,"./RequestInterceptor":33,"./RequestManager":34,"./RequestObject":35,"./ResponseObject":36,"./SearchField":37,"./SearchRequest":38,"./SourceInfo":39,"./SourceManga":40,"./SourceStateManager":41,"./SourceTag":42,"./TagSection":43,"./TrackedManga":44,"./TrackedMangaChapterReadAction":45,"./TrackerActionQueue":46}],48:[function(require,module,exports){
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getScrapServerURL = exports.setStateData = exports.retrieveStateData = void 0;
+const DEFAULT_SCRAP_SERVER_ADDRESS = 'https://127.0.0.1:3000';
+async function retrieveStateData(stateManager) {
+    // Return serverURL saved in the source.
+    // Used to show already saved data in settings
+    const serverURL = await stateManager.retrieve('serverAddress') ?? DEFAULT_SCRAP_SERVER_ADDRESS;
+    return { serverURL };
+}
+exports.retrieveStateData = retrieveStateData;
+async function setStateData(stateManager, data) {
+    await setScrapServerAddress(stateManager, data['serverAddress'] ?? DEFAULT_SCRAP_SERVER_ADDRESS);
+}
+exports.setStateData = setStateData;
+async function setScrapServerAddress(stateManager, apiUri) {
+    await stateManager.store('serverAddress', apiUri);
+}
+async function getScrapServerURL(stateManager) {
+    return await stateManager.retrieve('serverAddress') ?? DEFAULT_SCRAP_SERVER_ADDRESS;
+}
+exports.getScrapServerURL = getScrapServerURL;
+
+},{}],49:[function(require,module,exports){
+"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Japscan = exports.JapscanInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const JapscanParser_1 = require("./JapscanParser");
-const JAPSCAN_DOMAIN = "https://www.japscan.ws";
-const SHADOWOFBABEL_DOMAIN = "https://shadow-of-babel.herokuapp.com";
+const Settings_1 = require("./Settings");
+const Common_1 = require("./Common");
+const JAPSCAN_DOMAIN = "https://www.japscan.me";
 const method = 'GET';
 const headers = {
-    "Host": "www.japscan.ws",
+    "Host": "www.japscan.me",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
 };
 const headers_search = {
-    "Host": "www.japscan.ws",
+    "Host": "www.japscan.me",
     "Content-Type": "application/x-www-form-urlencoded",
     "Content-Length": "11",
     "X-Requested-With": "XMLHttpRequest",
 };
 exports.JapscanInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'Japscan',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -430,9 +446,22 @@ exports.JapscanInfo = {
 class Japscan extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
+        this.stateManager = createSourceStateManager({});
         this.requestManager = createRequestManager({
             requestsPerSecond: 3,
             requestTimeout: 100000
+        });
+    }
+    /////////////////////////////
+    /////    SOURCE MENU    /////
+    /////////////////////////////
+    async getSourceMenu() {
+        return createSection({
+            id: "main",
+            header: "Source Settings",
+            rows: async () => [
+                Settings_1.serverSettingsMenu(this.stateManager),
+            ],
         });
     }
     /////////////////////////////////
@@ -444,151 +473,136 @@ class Japscan extends paperback_extensions_common_1.Source {
     ///////////////////////////////
     /////    MANGA DETAILS    /////
     ///////////////////////////////
-    getMangaDetails(mangaId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${JAPSCAN_DOMAIN}/manga/${mangaId}/`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            return yield JapscanParser_1.parseJapscanMangaDetails($, mangaId);
+    async getMangaDetails(mangaId) {
+        const request = createRequestObject({
+            url: `${JAPSCAN_DOMAIN}/manga/${mangaId}/`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        return await JapscanParser_1.parseJapscanMangaDetails($, mangaId);
     }
     //////////////////////////
     /////    CHAPTERS    /////
     //////////////////////////
-    getChapters(mangaId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${JAPSCAN_DOMAIN}/manga/${mangaId}/`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            return yield JapscanParser_1.parseJapscanChapters($, mangaId);
+    async getChapters(mangaId) {
+        const request = createRequestObject({
+            url: `${JAPSCAN_DOMAIN}/manga/${mangaId}/`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        return await JapscanParser_1.parseJapscanChapters($, mangaId);
     }
     //////////////////////////////////
     /////    CHAPTERS DETAILS    /////
     //////////////////////////////////
-    getChapterDetails(mangaId, chapterId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${SHADOWOFBABEL_DOMAIN}/japscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
-                method
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            return yield JapscanParser_1.parseJapscanChapterDetails(response.data, mangaId, chapterId);
+    async getChapterDetails(mangaId, chapterId) {
+        const SHADOWOFBABEL_DOMAIN = await Common_1.getScrapServerURL(this.stateManager);
+        const request = createRequestObject({
+            url: `${SHADOWOFBABEL_DOMAIN}/japscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
+            method
         });
+        const response = await this.requestManager.schedule(request, 1);
+        return await JapscanParser_1.parseJapscanChapterDetails(response.data, mangaId, chapterId);
     }
     ////////////////////////////////
     /////    SEARCH REQUEST    /////
     ////////////////////////////////
-    getSearchResults(query, metadata) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const search = query.title;
-            const request = createRequestObject({
-                url: `${JAPSCAN_DOMAIN}/live-search/`,
-                method: 'POST',
-                headers: headers_search,
-                data: `search=${search}`
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const manga = JapscanParser_1.parseSearch(response.data);
-            return createPagedResults({
-                results: manga
-            });
+    async getSearchResults(query, _metadattrackera) {
+        const search = query.title;
+        const request = createRequestObject({
+            url: `${JAPSCAN_DOMAIN}/live-search/`,
+            method: 'POST',
+            headers: headers_search,
+            data: `search=${search}`
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        const manga = JapscanParser_1.parseSearch(response.data);
+        return createPagedResults({
+            results: manga
         });
     }
     //////////////////////////////
     /////    HOME SECTION    /////
     //////////////////////////////
-    getHomePageSections(sectionCallback) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernier Manga Sorti', view_more: true });
-            const section2 = createHomeSection({ id: 'top_mangas_today', title: 'TOP MANGAS 24H' });
-            const section3 = createHomeSection({ id: 'top_mangas_week', title: 'TOP MANGAS Semaine' });
-            const section4 = createHomeSection({ id: 'top_mangas_all_time', title: 'TOP MANGAS 2021' });
-            const request = createRequestObject({
-                url: `${JAPSCAN_DOMAIN}/`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            JapscanParser_1.parseHomeSections($, [section1, section2, section3, section4], sectionCallback);
+    async getHomePageSections(sectionCallback) {
+        const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernières Sorties', view_more: true });
+        const section2 = createHomeSection({ id: 'top_mangas_today', title: 'Tendances : Journalières' });
+        const section3 = createHomeSection({ id: 'top_mangas_week', title: 'Tendances : Hebdomadaires' });
+        const section4 = createHomeSection({ id: 'top_mangas_all_time', title: 'Tendances : Année' });
+        const request = createRequestObject({
+            url: `${JAPSCAN_DOMAIN}/`,
+            method,
+            headers
         });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        JapscanParser_1.parseHomeSections($, [section1, section2, section3, section4], sectionCallback);
     }
     /////////////////////////////////
     /////    VIEW MORE ITEMS    /////
     /////////////////////////////////
-    getViewMoreItems(homepageSectionId, metadata) {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            const request = createRequestObject({
-                url: `${JAPSCAN_DOMAIN}`,
-                method,
-                headers
-            });
-            const response = yield this.requestManager.schedule(request, 1);
-            const $ = this.cheerio.load(response.data);
-            const manga = JapscanParser_1.parseViewMore($, page);
-            metadata = !(page == 8) ? { page: page + 1 } : undefined;
-            return createPagedResults({
-                results: manga,
-                metadata
-            });
+    async getViewMoreItems(_homepageSectionId, metadata) {
+        let page = metadata?.page ?? 1;
+        const request = createRequestObject({
+            url: `${JAPSCAN_DOMAIN}`,
+            method,
+            headers
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        const manga = JapscanParser_1.parseViewMore($, page);
+        metadata = !(page == 8) ? { page: page + 1 } : undefined;
+        return createPagedResults({
+            results: manga,
+            metadata
         });
     }
     //////////////////////////////////////
     /////    FILTER UPDATED MANGA    /////
     //////////////////////////////////////
-    filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
-        return __awaiter(this, void 0, void 0, function* () {
+    async filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
+        let updatedManga = {
+            ids: [],
+            loadMore: true
+        };
+        while (updatedManga.loadMore) {
             const request = createRequestObject({
                 url: `${JAPSCAN_DOMAIN}`,
                 method,
                 headers
             });
-            const response = yield this.requestManager.schedule(request, 1);
+            const response = await this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data);
-            const updatedManga = [];
-            for (const manga of $('#tab-1 h3').toArray()) {
-                let id = "https://www.japscan.ws" + $('a', manga).attr('href');
-                let mangaDate = new Date();
-                if (!id)
-                    continue;
-                if (mangaDate > time) {
-                    if (ids.includes(id)) {
-                        updatedManga.push(id);
-                    }
-                }
+            updatedManga = JapscanParser_1.parseUpdatedManga($, time, ids);
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
             }
-            mangaUpdatesFoundCallback(createMangaUpdates({ ids: updatedManga }));
-        });
+        }
     }
 }
 exports.Japscan = Japscan;
 
-},{"./JapscanParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
+},{"./Common":48,"./JapscanParser":50,"./Settings":51,"paperback-extensions-common":5}],50:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDate = exports.parseViewMore = exports.parseHomeSections = exports.parseSearch = exports.parseJapscanChapterDetails = exports.parseJapscanChapters = exports.parseJapscanMangaDetails = void 0;
+exports.parseUpdatedManga = exports.parseViewMore = exports.parseHomeSections = exports.parseSearch = exports.parseJapscanChapterDetails = exports.parseJapscanChapters = exports.parseJapscanMangaDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
+const JAPSCAN_DOMAIN = "https://www.japscan.me";
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////
-exports.parseJapscanMangaDetails = ($, mangaId) => {
-    var _a, _b, _c;
+const parseJapscanMangaDetails = ($, mangaId) => {
     const panel = $('#main>.card').first();
-    let titles = [decodeHTMLEntity($('h1', panel).text().trim().split(/ (.+)/)[1])];
-    const image = "https://www.japscan.ws" + $('img', panel).attr('src');
-    const author = (_a = $('span:contains("Auteur(s)")', panel).parent().clone().children().remove().end().text().trim()) !== null && _a !== void 0 ? _a : "Unknown";
-    const artist = (_b = $('span:contains("Artiste(s):")', panel).parent().clone().children().remove().end().text().trim()) !== null && _b !== void 0 ? _b : "Unknown";
+    let titles = [decodeHTMLEntity($('h1', panel).text().trim().split(/ (.+)/)[1] ?? "")];
+    const image = `${JAPSCAN_DOMAIN}${$('img', panel).attr('src')}`;
+    const author = $('span:contains("Auteur(s)")', panel).parent().clone().children().remove().end().text().trim() ?? "Unknown";
+    const artist = $('span:contains("Artiste(s):")', panel).parent().clone().children().remove().end().text().trim() ?? "Unknown";
     let status = paperback_extensions_common_1.MangaStatus.UNKNOWN;
     switch ($('span:contains("Statut:")', panel).parent().clone().children().remove().end().text().trim()) {
         case "En Cours":
@@ -608,7 +622,7 @@ exports.parseJapscanMangaDetails = ($, mangaId) => {
     if (genres.length > 0) {
         for (const genre of genres) {
             const label = genre.trim();
-            const id = (_c = genre.trim().replace(" ", "-").toLowerCase().trim()) !== null && _c !== void 0 ? _c : label;
+            const id = genre.trim().replace(" ", "-").toLowerCase().trim() ?? label;
             arrayTags.push({ id: id, label: label });
         }
     }
@@ -627,19 +641,18 @@ exports.parseJapscanMangaDetails = ($, mangaId) => {
         hentai: false
     });
 };
+exports.parseJapscanMangaDetails = parseJapscanMangaDetails;
 //////////////////////////
 /////    CHAPTERS    /////
 //////////////////////////
-exports.parseJapscanChapters = ($, mangaId) => {
-    var _a, _b, _c, _d, _e;
-    const allChapters = $('#chapters_list');
+const parseJapscanChapters = ($, mangaId) => {
     const chapters = [];
-    for (let chapter of $('.chapters_list.text-truncate', allChapters).toArray()) {
-        const id = (_a = "https://japscan.ws" + $('a', chapter).attr('href')) !== null && _a !== void 0 ? _a : '';
-        const name = (_b = "Chapitre " + decodeHTMLEntity($('a', chapter).text().replace(/\s\s+/g, '').replace(/^.* (?=\d)/g, ''))) !== null && _b !== void 0 ? _b : '';
-        const chapNum = Number(((_c = $('a', chapter).attr('href')) !== null && _c !== void 0 ? _c : '').split('/')[3].replace(/[^0-9]+/g, ''));
-        const volume = Number(((_d = $(chapter).parent().prev().text().trim().match(/^Volume \d{1,3}/g)) !== null && _d !== void 0 ? _d : ["Nan"])[0].split(" ").pop());
-        const time = new Date((_e = $('span', chapter).text()) !== null && _e !== void 0 ? _e : '');
+    for (let chapter of $('#chapters_list .chapters_list.text-truncate').toArray()) {
+        const id = `${JAPSCAN_DOMAIN}${$('a', chapter).attr('href')}`;
+        const name = decodeHTMLEntity(($('a', chapter).text().split('VF:')[1] ?? '').trim()) ?? '';
+        const chapNum = Number(($('a', chapter).attr('href') ?? '').split('/')[3]);
+        const volume = Number(($(chapter).parent().prev().text().trim().match(/^Volume \d{1,3}/g) ?? ["Nan"])[0]?.split(" ").pop());
+        const time = new Date($('span', chapter).text() ?? '');
         if (isNaN(volume)) {
             chapters.push(createChapter({
                 id,
@@ -664,10 +677,11 @@ exports.parseJapscanChapters = ($, mangaId) => {
     }
     return chapters;
 };
+exports.parseJapscanChapters = parseJapscanChapters;
 /////////////////////////////////
 /////    CHAPTER DETAILS    /////
 /////////////////////////////////
-exports.parseJapscanChapterDetails = (data, mangaId, chapterId) => {
+const parseJapscanChapterDetails = (data, mangaId, chapterId) => {
     const pages = [];
     for (let item of JSON.parse(data)) {
         let page = encodeURI(item);
@@ -682,16 +696,17 @@ exports.parseJapscanChapterDetails = (data, mangaId, chapterId) => {
         longStrip: false
     });
 };
+exports.parseJapscanChapterDetails = parseJapscanChapterDetails;
 ////////////////////////
 /////    SEARCH    /////
 ////////////////////////
-exports.parseSearch = (data) => {
+const parseSearch = (data) => {
     const manga = [];
     const items = JSON.parse(data);
     for (let item of items) {
         let id = item.url.split('/')[2];
-        let image = `https://www.japscan.ws/imgs/mangas/${id}.jpg`;
-        let title = item.name;
+        let image = `${JAPSCAN_DOMAIN}/imgs/mangas/${id}.jpg`;
+        let title = decodeHTMLEntity(item.name);
         manga.push(createMangaTile({
             id: id,
             title: createIconText({ text: title }),
@@ -700,24 +715,24 @@ exports.parseSearch = (data) => {
     }
     return manga;
 };
+exports.parseSearch = parseSearch;
 //////////////////////////////////////
 /////    DERNIERS MANGA SORTI    /////
 //////////////////////////////////////
 const parseLatestManga = ($, num_tab) => {
-    var _a, _b;
     const latestManga = [];
     if (num_tab == undefined) {
         num_tab = 1;
     }
-    for (const item of $('#tab-' + num_tab + ' .chapters_list .text-truncate').toArray()) {
-        const url = (_b = (_a = $('a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split('/')[2]) !== null && _b !== void 0 ? _b : '';
-        const title = $('a', item).text().trim().split(" ").slice(0, -2).join(" ");
-        const image = "https://www.japscan.ws/imgs/mangas/" + url + ".jpg";
-        const subtitle = "Chapitre " + $('a', item).text().trim().split(" ").slice(-2, -1).join(" ");
-        if (typeof url === 'undefined' || typeof image === 'undefined')
+    for (const item of $('#tab-' + num_tab + ' .chapters_list .text-truncate:first-child').toArray()) {
+        const id = $('a', item).attr('href')?.split('/')[2] ?? '';
+        const title = decodeHTMLEntity($('a', item).text().trim().split(" ").slice(0, -2).join(" "));
+        const image = `${JAPSCAN_DOMAIN}/imgs/mangas/${id}.jpg`;
+        const subtitle = "Chapitre " + (($('a', item).text().trim().match(/\d*[.]?\d+\s{1}VF/gm) ?? '')[0] ?? '').split(/\s{1}/gm)[0];
+        if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
         latestManga.push(createMangaTile({
-            id: url,
+            id,
             image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle }),
@@ -729,18 +744,17 @@ const parseLatestManga = ($, num_tab) => {
 /////    TOP MANGA    /////
 ///////////////////////////
 const parseTopManga = ($, period) => {
-    var _a, _b;
     const topManga = [];
     for (const item of $('#' + period + " li").toArray()) {
-        const url = (_b = (_a = $('a', item).first().attr('href')) === null || _a === void 0 ? void 0 : _a.split('/')[2]) !== null && _b !== void 0 ? _b : '';
-        const title = $('a', item).first().text();
-        const image = "https://www.japscan.ws/imgs/mangas/" + url + ".jpg";
+        const id = $('a', item).first().attr('href')?.split('/')[2] ?? '';
+        const title = decodeHTMLEntity($('a', item).first().text());
+        const image = `${JAPSCAN_DOMAIN}/imgs/mangas/${id}.jpg`;
         const subtitle = $('a', item).eq(1).text().replace("Chap", "Chapitre");
-        if (typeof url === 'undefined' || typeof image === 'undefined')
+        if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
         topManga.push(createMangaTile({
-            id: url,
-            image: image,
+            id,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle }),
         }));
@@ -750,52 +764,111 @@ const parseTopManga = ($, period) => {
 //////////////////////////////
 /////    HOME SECTION    /////
 //////////////////////////////
-exports.parseHomeSections = ($, sections, sectionCallback) => {
+const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
-    const latestManga = parseLatestManga($);
-    const topMangaToday = parseTopManga($, sections[1].id);
-    const topMangaWeek = parseTopManga($, sections[2].id);
-    const topMangaAllTime = parseTopManga($, sections[3].id);
-    sections[0].items = latestManga;
-    sections[1].items = topMangaToday;
-    sections[2].items = topMangaWeek;
-    sections[3].items = topMangaAllTime;
+    if (sections[0] != undefined && sections[1] != undefined && sections[2] != undefined && sections[3] != undefined) {
+        const latestManga = parseLatestManga($);
+        const topMangaToday = parseTopManga($, sections[1].id);
+        const topMangaWeek = parseTopManga($, sections[2].id);
+        const topMangaAllTime = parseTopManga($, sections[3].id);
+        sections[0].items = latestManga;
+        sections[1].items = topMangaToday;
+        sections[2].items = topMangaWeek;
+        sections[3].items = topMangaAllTime;
+    }
     for (const section of sections)
         sectionCallback(section);
 };
+exports.parseHomeSections = parseHomeSections;
 ///////////////////////////
 /////    VIEW MORE    /////
 ///////////////////////////
-exports.parseViewMore = ($, page) => {
+const parseViewMore = ($, page) => {
     return parseLatestManga($, page);
 };
+exports.parseViewMore = parseViewMore;
+const parseUpdatedManga = ($, time, ids) => {
+    let page = 1;
+    let loadMore = true;
+    const updatedManga = [];
+    while (page <= 8) {
+        for (const item of $('#tab-' + page + ' .chapters_list .text-truncate:first-child').toArray()) {
+            let id = $('a', item).attr('href')?.split('/')[2] ?? '';
+            let date = new Date();
+            date = new Date(date.getFullYear(), date.getMonth(), date.getDate() - (page - 1));
+            if (typeof id === 'undefined' || typeof date === 'undefined')
+                continue;
+            if (date > time) {
+                if (ids.includes(id)) {
+                    updatedManga.push(id);
+                }
+            }
+            else {
+                loadMore = false;
+            }
+        }
+        page++;
+    }
+    return {
+        ids: updatedManga,
+        loadMore,
+    };
+};
+exports.parseUpdatedManga = parseUpdatedManga;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
 function decodeHTMLEntity(str) {
-    return str.replace(/&#(\d+);/g, function (match, dec) {
+    return str.replace(/&#(\d+);/g, function (_match, dec) {
         return String.fromCharCode(dec);
     });
 }
-function parseDate(str) {
-    if (str.length == 0) {
-        let date = new Date();
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    }
-    switch (str.trim()) {
-        case "Aujourd'hui":
-            let today = new Date();
-            return new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        case "Hier":
-            let yesterday = new Date();
-            return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate() - 1);
-        default:
-            let date = str.split("/");
-            return new Date(parseInt(date[2]), parseInt(date[1]) - 1, parseInt(date[0]));
-    }
-}
-exports.parseDate = parseDate;
 
-},{"paperback-extensions-common":5}]},{},[48])(48)
+},{"paperback-extensions-common":5}],51:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.serverSettingsMenu = void 0;
+const Common_1 = require("./Common");
+const serverSettingsMenu = (stateManager) => {
+    return createNavigationButton({
+        id: "server_settings",
+        value: "",
+        label: "Server Settings",
+        form: createForm({
+            onSubmit: async (values) => Common_1.setStateData(stateManager, values),
+            validate: async () => true,
+            sections: async () => [
+                createSection({
+                    id: "information",
+                    header: undefined,
+                    rows: async () => [
+                        createMultilineLabel({
+                            label: "Scrap Server",
+                            value: "Download and deploy the project :\n\nhttps://github.com/Moomooo95/shadow-of-babel\n\nRead README.md to know how to deploy the server.\n\nNote: The use of this server is MANDATORY otherwise the images of the chapters cannot be recovered",
+                            id: "description",
+                        }),
+                    ],
+                }),
+                createSection({
+                    id: "serverSettings",
+                    header: "Server Settings",
+                    footer: undefined,
+                    rows: async () => Common_1.retrieveStateData(stateManager).then((values) => [
+                        createInputField({
+                            id: "serverAddress",
+                            label: "Server URL",
+                            placeholder: "http://127.0.0.1:3000",
+                            value: values.serverURL,
+                            maskInput: false,
+                        }),
+                    ]),
+                }),
+            ],
+        }),
+    });
+};
+exports.serverSettingsMenu = serverSettingsMenu;
+
+},{"./Common":48}]},{},[49])(49)
 });

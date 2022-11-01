@@ -378,25 +378,42 @@ __exportStar(require("./RawData"), exports);
 },{"./Chapter":6,"./ChapterDetails":7,"./Constants":8,"./DynamicUI":24,"./HomeSection":25,"./Languages":26,"./Manga":27,"./MangaTile":28,"./MangaUpdate":29,"./PagedResults":30,"./RawData":31,"./RequestHeaders":32,"./RequestInterceptor":33,"./RequestManager":34,"./RequestObject":35,"./ResponseObject":36,"./SearchField":37,"./SearchRequest":38,"./SourceInfo":39,"./SourceManga":40,"./SourceStateManager":41,"./SourceTag":42,"./TagSection":43,"./TrackedManga":44,"./TrackedMangaChapterReadAction":45,"./TrackerActionQueue":46}],48:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getScrapServerURL = exports.setStateData = exports.retrieveStateData = void 0;
+const DEFAULT_SCRAP_SERVER_ADDRESS = 'https://127.0.0.1:3000';
+async function retrieveStateData(stateManager) {
+    // Return serverURL saved in the source.
+    // Used to show already saved data in settings
+    const serverURL = await stateManager.retrieve('serverAddress') ?? DEFAULT_SCRAP_SERVER_ADDRESS;
+    return { serverURL };
+}
+exports.retrieveStateData = retrieveStateData;
+async function setStateData(stateManager, data) {
+    await setScrapServerAddress(stateManager, data['serverAddress'] ?? DEFAULT_SCRAP_SERVER_ADDRESS);
+}
+exports.setStateData = setStateData;
+async function setScrapServerAddress(stateManager, apiUri) {
+    await stateManager.store('serverAddress', apiUri);
+}
+async function getScrapServerURL(stateManager) {
+    return await stateManager.retrieve('serverAddress') ?? DEFAULT_SCRAP_SERVER_ADDRESS;
+}
+exports.getScrapServerURL = getScrapServerURL;
+
+},{}],49:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.CrunchyScan = exports.CrunchyScanInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const CrunchyScanParser_1 = require("./CrunchyScanParser");
+const Settings_1 = require("./Settings");
+const Common_1 = require("./Common");
 const CRUNCHYSCAN_DOMAIN = "https://crunchyscan.fr";
-const SHADOWOFBABEL_DOMAIN = "https://shadow-of-babel.herokuapp.com";
 const method = 'GET';
 const headers = {
     'Host': 'crunchyscan.fr',
 };
-const headers_search = {
-    "Host": "crunchyscan.fr",
-    "accept": "text/plain, */*; q=0.01",
-    "accept-encoding": "gzip, deflate, br",
-    "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-    "Content-Length": "275"
-};
 exports.CrunchyScanInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'CrunchyScan',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -426,9 +443,22 @@ exports.CrunchyScanInfo = {
 class CrunchyScan extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
+        this.stateManager = createSourceStateManager({});
         this.requestManager = createRequestManager({
             requestsPerSecond: 3,
-            requestTimeout: 50000
+            requestTimeout: 100000
+        });
+    }
+    /////////////////////////////
+    /////    SOURCE MENU    /////
+    /////////////////////////////
+    async getSourceMenu() {
+        return createSection({
+            id: "main",
+            header: "Source Settings",
+            rows: async () => [
+                Settings_1.serverSettingsMenu(this.stateManager),
+            ],
         });
     }
     /////////////////////////////////
@@ -458,13 +488,7 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
         const request = createRequestObject({
             url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/${mangaId}/ajax/chapters/`,
             method: 'POST',
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "Host": "crunchyscan.fr",
-                "Origin": "https://crunchyscan.fr",
-                "Referer": "https://crunchyscan.fr/",
-                "X-Requested-With": "XMLHttpRequest"
-            },
+            headers,
         });
         const response = await this.requestManager.schedule(request, 1);
         this.CloudFlareError(response.status);
@@ -475,6 +499,7 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
     /////    CHAPTERS DETAILS    /////
     //////////////////////////////////
     async getChapterDetails(mangaId, chapterId) {
+        const SHADOWOFBABEL_DOMAIN = await Common_1.getScrapServerURL(this.stateManager);
         const request = createRequestObject({
             url: `${SHADOWOFBABEL_DOMAIN}/crunchyscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
             method
@@ -489,31 +514,45 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
         const page = metadata?.page ?? 1;
         const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? '';
         let manga = [];
+        let url = `${CRUNCHYSCAN_DOMAIN}/?post_type=wp-manga&s=${search}&paged=${page}`;
         if (query.includedTags && query.includedTags?.length != 0) {
-            const request = createRequestObject({
-                url: `${CRUNCHYSCAN_DOMAIN}/archives/manga-genre/${query.includedTags[0].id}/page/${page}?s=${search}`,
-                method: 'GET',
-                headers
-            });
-            const response = await this.requestManager.schedule(request, 1);
-            this.CloudFlareError(response.status);
-            const $ = this.cheerio.load(response.data);
-            manga = CrunchyScanParser_1.parseViewMore($);
-            metadata = !CrunchyScanParser_1.isLastPage($) ? { page: page + 1 } : undefined;
+            for (let tag of query.includedTags) {
+                switch (tag.label) {
+                    case "OU (ayant l'un des genres sélectionnés)":
+                    case "ET (avoir tous les genres sélectionnés)":
+                        url += `&op=${tag.id}`;
+                        break;
+                    case "All":
+                    case "Aucun contenu adulte":
+                    case "Contenu pour adultes uniquement":
+                        url += `&adult=${tag.id}`;
+                        break;
+                    case "En Cours":
+                    case "Terminé":
+                    case "Annulé":
+                    case "En attente":
+                        url += `&status%5B%5D=${tag.id}`;
+                        break;
+                    case "Tout":
+                    case "Webcomic":
+                    case "Manga":
+                        url += `&type%5B%5D=${tag.id}`;
+                        break;
+                    default:
+                        url += `&genre%5B%5D=${tag.id}`;
+                        break;
+                }
+            }
         }
-        else {
-            const request = createRequestObject({
-                url: `${CRUNCHYSCAN_DOMAIN}/wp-admin/admin-ajax.php`,
-                method: 'POST',
-                headers: headers_search,
-                data: `action=ajaxsearchpro_search&aspp=${encodeURI(search)}&asid=1&asp_inst_id=1_2&options=current_page_id%3D793%26qtranslate_lang%3D0%26filters_changed%3D0%26filters_initial%3D1%26asp_gen%255B%255D%3Dtitle%26asp_gen%255B%255D%3Dcontent%26asp_gen%255B%255D%3Dexcerpt%26customset%255B%255D%3Dwp-manga`
-            });
-            const response = await this.requestManager.schedule(request, 1);
-            this.CloudFlareError(response.status);
-            const $ = this.cheerio.load(response.data);
-            manga = CrunchyScanParser_1.parseSearch($);
-            metadata = undefined;
-        }
+        const request = createRequestObject({
+            url,
+            method,
+            headers
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        manga = CrunchyScanParser_1.parseSearch($);
+        metadata = !CrunchyScanParser_1.isLastPage($) ? { page: page + 1 } : undefined;
         return createPagedResults({
             results: manga,
             metadata
@@ -523,9 +562,9 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
     /////    HOME SECTION    /////
     //////////////////////////////
     async getHomePageSections(sectionCallback) {
-        const section1 = createHomeSection({ id: 'latest_updated', title: 'Dernières Mise à jour', view_more: true });
-        const section2 = createHomeSection({ id: 'most_viewed', title: 'Mangas avec le plus de vues' });
-        const section3 = createHomeSection({ id: 'random_mangas', title: 'Mangas Aléatoires' });
+        const section1 = createHomeSection({ id: 'hot_manga', title: 'HOT', type: paperback_extensions_common_1.HomeSectionType.featured });
+        const section2 = createHomeSection({ id: 'latest_updated', title: 'Dernières Sorties', view_more: true });
+        const section3 = createHomeSection({ id: 'trends', title: 'Tendances', view_more: true });
         const request = createRequestObject({
             url: `${CRUNCHYSCAN_DOMAIN}`,
             method,
@@ -546,6 +585,9 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
             case 'latest_updated':
                 param = `liste-manga/page/${page}?m_orderby=latest`;
                 break;
+            case 'trends':
+                param = `liste-manga/page/${page}?m_orderby=trending`;
+                break;
         }
         const request = createRequestObject({
             url: `${CRUNCHYSCAN_DOMAIN}/${param}`,
@@ -562,12 +604,37 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
             metadata
         });
     }
+    //////////////////////////////////////
+    /////    FILTER UPDATED MANGA    /////
+    //////////////////////////////////////
+    async filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
+        let page = 1;
+        let updatedManga = {
+            ids: [],
+            loadMore: true
+        };
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/?m_orderby=latest&page=${page++}`,
+                method,
+                headers
+            });
+            const response = await this.requestManager.schedule(request, 1);
+            const $ = this.cheerio.load(response.data);
+            updatedManga = CrunchyScanParser_1.parseUpdatedManga($, time, ids);
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
+    }
     //////////////////////
     /////    TAGS    /////
     //////////////////////
     async getSearchTags() {
         const request = createRequestObject({
-            url: `${CRUNCHYSCAN_DOMAIN}/liste-manga`,
+            url: `${CRUNCHYSCAN_DOMAIN}/?s=&post_type=wp-manga`,
             method,
             headers
         });
@@ -579,32 +646,25 @@ class CrunchyScan extends paperback_extensions_common_1.Source {
     ///////////////////////////////////
     /////    CLOUDFLARE BYPASS    /////
     ///////////////////////////////////
-    CloudFlareError(status) {
-        if (status == 503) {
-            throw new Error('CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass');
-        }
-    }
     getCloudflareBypassRequest() {
         return createRequestObject({
-            url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/les-techniques-celestes-du-dieu-guerrier/chapitre-19/`,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "Host": "crunchyscan.fr",
-                "Origin": "https://crunchyscan.fr",
-                "Referer": "https://crunchyscan.fr/",
-                "X-Requested-With": "XMLHttpRequest"
-            },
-            data: "g-recaptcha-response=03AGdBq271pcGFYFPqGn9sl29SDdx-i3YVeTOxUUdehMrYQaxE2kX4MYQz6KmmjwClAhgKDXIg17gi_4Pf0UR_kA8H_Ogc1Pjo5hIConU-NnkyNRKQN9v-O9euApCd0xVANXsY0c6Ca9LklrxCOi5ExqqN2I9ZwPR5XzRnSk6J79xK81AHiZo48KTx3dONWnuPHQa5wOKBCVMvkUST7ts9lBW_oIEDFha1XTr7WzLvlcYiSVyzoL590S8vqgRq_UKbkCHXzZnl-MBur3__CuaFhYERS_fJMeasPlkUJU2hgOJ5rBmuB_TeDHb5k-Z94a1fOlvjJyL2fyKMzY6JZZPRyokupaF9upCNbXr7ddSKC0jeLklIR6M6uIfzyyWVBHWk6UI-cB23z7dwKz40hvfxQR3R_vOSljaEUiPNEMPc92wYfTeA8sc8HJYB11DwnAnWjy0SgqFk5aIhhY7HYaySjGR18N_YRYDMO8Y3MLuKmMCig2f3yxE14UsLXx4X8LpTa32fKXTBQTPxqkgqiERQ-pbm_yQu0X731A&submitpost=Valider"
+            url: `${CRUNCHYSCAN_DOMAIN}`,
+            method,
+            headers
         });
+    }
+    CloudFlareError(status) {
+        if (status == 503) {
+            throw new Error('CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > CrunchyScan and press Cloudflare Bypass');
+        }
     }
 }
 exports.CrunchyScan = CrunchyScan;
 
-},{"./CrunchyScanParser":49,"paperback-extensions-common":5}],49:[function(require,module,exports){
+},{"./Common":48,"./CrunchyScanParser":50,"./Settings":51,"paperback-extensions-common":5}],50:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDate = exports.parseTags = exports.isLastPage = exports.parseViewMore = exports.parseHomeSections = exports.parseSearch = exports.parseCrunchyScanChapterDetails = exports.parseCrunchyScanChapters = exports.parseCrunchyScanDetails = void 0;
+exports.parseDate = exports.parseUpdatedManga = exports.parseTags = exports.isLastPage = exports.parseViewMore = exports.parseHomeSections = exports.parseSearch = exports.parseCrunchyScanChapterDetails = exports.parseCrunchyScanChapters = exports.parseCrunchyScanDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 ///////////////////////////////
 /////    MANGA DETAILS    /////
@@ -612,27 +672,25 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 const parseCrunchyScanDetails = ($, mangaId) => {
     const panel = $('.container .tab-summary');
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())];
-    const image = $('.summary_image img', panel).attr('data-src') ?? "";
+    const image = $('.summary_image img', panel).attr('data-src') ?? '';
+    const author = $('.post-content_item:contains("Author(s)") .summary-content', panel).text().trim() ?? undefined;
+    const artist = $('.post-content_item:contains("Artist(s)") .summary-content', panel).text().trim() ?? undefined;
     const rating = Number($('.post-total-rating .score', panel).text().trim());
-    const arrayTags = [];
-    let author = $('.post-content_item:contains("Author(s)") .summary-content', panel).text().trim() ?? "Unknown";
-    let artist = $('.post-content_item:contains("Artist(s)") .summary-content', panel).text().trim() ?? "Unknown";
+    const views = convertNbViews($('.post-content_item:contains("Rank") .summary-content', panel).text().trim().match(/(\d+\.?\d*\w?) /gm)[0]?.trim() ?? '');
     let hentai = false;
-    let views = convertNbViews(($('.post-content_item:contains("Rank") .summary-content', panel).text().trim().match(/(\d+\.?\d*\w?) /gm) ?? '')[0].trim() ?? '');
-    let otherTitles = $('.post-content_item:contains("Alternative") .summary-content', panel).text().trim().split('/');
-    for (let title of otherTitles) {
+    for (let title of $('.post-content_item:contains("Alternative") .summary-content', panel).text().trim().split('/')) {
         titles.push(decodeHTMLEntity(title.trim()));
     }
-    const tags = $('.post-content_item:contains("Genre(s)") .summary-content a', panel).toArray();
-    for (const tag of tags) {
+    const arrayTags = [];
+    for (const tag of $('a[href*=manga-genre]', panel).toArray()) {
         const label = $(tag).text();
         const id = $(tag).attr('href')?.split("/").slice(-2, -1)[0] ?? label;
         if (['Hentai'].includes(label) || ['Erotique'].includes(label) || ['Mature'].includes(label)) {
             hentai = true;
         }
-        arrayTags.push({ id: id, label: label });
+        arrayTags.push({ id, label });
     }
-    const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
+    const tags = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
     let status = paperback_extensions_common_1.MangaStatus.UNKNOWN;
     switch ($('.post-content_item:contains("Status") .summary-content', panel).text().trim()) {
         case "Terminé":
@@ -642,7 +700,7 @@ const parseCrunchyScanDetails = ($, mangaId) => {
             status = paperback_extensions_common_1.MangaStatus.ONGOING;
             break;
     }
-    let summary = decodeHTMLEntity($('.container .summary__content').text().trim());
+    let desc = decodeHTMLEntity($('.container .summary__content').text().trim());
     return createManga({
         id: mangaId,
         titles,
@@ -652,8 +710,8 @@ const parseCrunchyScanDetails = ($, mangaId) => {
         rating,
         views,
         status,
-        tags: tagSections,
-        desc: summary,
+        tags,
+        desc,
         hentai
     });
 };
@@ -662,13 +720,12 @@ exports.parseCrunchyScanDetails = parseCrunchyScanDetails;
 /////    CHAPTERS LIST    /////
 ///////////////////////////////
 const parseCrunchyScanChapters = ($, mangaId) => {
-    const allChapters = $('.main .wp-manga-chapter');
     const chapters = [];
-    for (let chapter of allChapters.toArray()) {
-        const id = $('a', chapter).attr('href') ?? '';
-        const name = $('a', chapter).text().trim();
-        const chapNum = Number((name.match(/(\d+)(\.?)(\d*)/gm) ?? '')[0]);
-        const time = new Date();
+    for (let chapter of $('.main .wp-manga-chapter').toArray()) {
+        const id = $('a', chapter).attr('href') + "?style=list" ?? '';
+        const name = $('a', chapter).text().trim().split('-')[1]?.trim();
+        const chapNum = Number($('a', chapter).text().trim().split('-')[0]?.trim().split(' ')[1]?.trim());
+        const time = parseDate($('.chapter-release-date i', chapter).text().trim());
         chapters.push(createChapter({
             id,
             mangaId,
@@ -701,17 +758,19 @@ const parseCrunchyScanChapterDetails = (data, mangaId, chapterId) => {
 };
 exports.parseCrunchyScanChapterDetails = parseCrunchyScanChapterDetails;
 ////////////////////////
-/////    Search    /////
+/////    SEARCH    /////
 ////////////////////////
 const parseSearch = ($) => {
     const manga = [];
-    for (const item of $('.item').toArray()) {
-        const url = $('.asp_res_url', item).attr('href')?.split('/').slice(-2, -1)[0] ?? '';
-        const title = $('.asp_res_url', item).text().trim() ?? '';
-        const image = $('.asp_image', item).attr("data-src") ?? '';
+    for (const item of $('.row .c-tabs-item__content').toArray()) {
+        const id = $('h3 a', item).attr('href')?.split('/')[4] ?? '';
+        const title = decodeHTMLEntity($('h3 a', item).text()) ?? '';
+        const image = getURLImage($, item);
         const subtitle = '';
+        if (typeof id === 'undefined' || typeof image === 'undefined')
+            continue;
         manga.push(createMangaTile({
-            id: url,
+            id,
             image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle })
@@ -720,68 +779,66 @@ const parseSearch = ($) => {
     return manga;
 };
 exports.parseSearch = parseSearch;
+/////////////////////
+/////    HOT    /////
+/////////////////////
+const parseHotManga = ($) => {
+    const hotManga = [];
+    for (const item of $('.wrap #manga-slider-3 .slider__item').toArray()) {
+        let id = $('h4 a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = encodeURI($('img', item).attr('src') ?? "");
+        let title = $('h4 a', item).text().trim();
+        if (typeof id === 'undefined' || typeof image === 'undefined')
+            continue;
+        hotManga.push(createMangaTile({
+            id,
+            image,
+            title: createIconText({ text: title })
+        }));
+    }
+    return hotManga;
+};
 ////////////////////////////////
 /////    LATEST UPDATED    /////
 ////////////////////////////////
 const parseLatestUpdatedManga = ($) => {
     const latestUpdatedManga = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
-        let url = $('h3 a', item).attr('href')?.split("/").slice(-2, -1)[0];
-        let image = ($('img', item).attr('data-src') ?? "");
-        let title = $('h3 a', item).text().trim();
+        let id = $('h3 a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = getURLImage($, item);
+        let title = decodeHTMLEntity($('h3 a', item).text().trim());
         let subtitle = $('.chapter-item .chapter.font-meta', item).eq(0).text().trim();
-        if (typeof url === 'undefined' || typeof image === 'undefined')
+        if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
         latestUpdatedManga.push(createMangaTile({
-            id: url,
-            image: image,
+            id,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle })
         }));
     }
     return latestUpdatedManga;
 };
-/////////////////////////////
-/////    MOST VIEWED    /////
-/////////////////////////////
-const parseMostViewedManga = ($) => {
-    const mostViewedManga = [];
-    for (const item of $('.wrap #manga-slider-3 .slider__item').toArray()) {
-        let url = $('h4 a', item).attr('href')?.split("/").slice(-2, -1)[0];
-        let image = ($('img', item).attr('src') ?? "");
-        let title = $('h4 a', item).text().trim();
-        let subtitle = '';
-        if (typeof url === 'undefined' || typeof image === 'undefined')
+////////////////////////
+/////    TRENDS    /////
+////////////////////////
+const parseTrendsManga = ($) => {
+    const trendsManga = [];
+    for (const item of $('#manga-recent-3 .popular-item-wrap').toArray()) {
+        let id = $('h5 a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = getURLImage($, item).replace('-75x106', '-175x238');
+        let title = $('h5 a', item).text().trim();
+        let subtitle = $('.chapter-item .chapter.font-meta', item).eq(0).text().trim();
+        if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
-        mostViewedManga.push(createMangaTile({
-            id: url,
-            image: image,
+        trendsManga.push(createMangaTile({
+            id,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle })
         }));
     }
-    return mostViewedManga;
-};
-///////////////////////////////
-/////    RANDOM MANGAS    /////
-///////////////////////////////
-const parseRandomManga = ($) => {
-    const randomManga = [];
-    for (const item of $('.wrap #manga-popular-slider-3 .slider__item').toArray()) {
-        let url = $('h4 a', item).attr('href')?.split("/").slice(-2, -1)[0];
-        let image = ($('img', item).attr('src') ?? "");
-        let title = $('h4 a', item).text().trim();
-        let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim();
-        if (typeof url === 'undefined' || typeof image === 'undefined')
-            continue;
-        randomManga.push(createMangaTile({
-            id: url,
-            image: image,
-            title: createIconText({ text: title }),
-            subtitleText: createIconText({ text: subtitle })
-        }));
-    }
-    return randomManga;
+    return trendsManga;
 };
 //////////////////////////////
 /////    HOME SECTION    /////
@@ -789,12 +846,12 @@ const parseRandomManga = ($) => {
 const parseHomeSections = ($, sections, sectionCallback) => {
     for (const section of sections)
         sectionCallback(section);
+    const hotManga = parseHotManga($);
     const latestUpdatedManga = parseLatestUpdatedManga($);
-    const mostViewedManga = parseMostViewedManga($);
-    const randomManga = parseRandomManga($);
-    sections[0].items = latestUpdatedManga;
-    sections[1].items = mostViewedManga;
-    sections[2].items = randomManga;
+    const trendsManga = parseTrendsManga($);
+    sections[0].items = hotManga;
+    sections[1].items = latestUpdatedManga;
+    sections[2].items = trendsManga;
     for (const section of sections)
         sectionCallback(section);
 };
@@ -805,15 +862,15 @@ exports.parseHomeSections = parseHomeSections;
 const parseViewMore = ($) => {
     const viewMore = [];
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
-        let url = $('h3 a', item).attr('href')?.split("/").pop();
-        let image = $('img', item).attr('data-src');
-        let title = $('h3 a', item).text().trim();
+        let id = $('h3 a', item).attr('href')?.split("/").slice(-2, -1)[0];
+        let image = getURLImage($, item);
+        let title = decodeHTMLEntity($('h3 a', item).text().trim());
         let subtitle = $('.chapter-item .chapter', item).eq(0).text().trim();
-        if (typeof url === 'undefined' || typeof image === 'undefined')
+        if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
         viewMore.push(createMangaTile({
-            id: url,
-            image: image,
+            id,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle })
         }));
@@ -832,31 +889,111 @@ exports.isLastPage = isLastPage;
 /////    TAGS    /////
 //////////////////////
 const parseTags = ($) => {
-    const arrayTags = [];
-    for (let item of $('.row.genres li').toArray()) {
-        let id = $('a', item).attr('href')?.split('/').pop() ?? '';
-        let label = $('a', item).text().trim().replace(/(\s+)\([^()]+\)/gm, '');
-        let nb_manga = ($('a', item).text().trim().match(/(\d+)/gm) ?? "")[0];
-        if (parseInt(nb_manga) > 0)
-            arrayTags.push({ id: id, label: label });
+    const arrayGenres = [];
+    const arrayGenresConditions = [];
+    const arrayAdultContent = [];
+    const arrayStatutManga = [];
+    const arrayTypeManga = [];
+    // Genres
+    for (let item of $('#search-advanced .checkbox-group .checkbox').toArray()) {
+        let id = $('input', item).attr('value') ?? '';
+        let label = decodeHTMLEntity($('label', item).text().trim());
+        arrayGenres.push({ id, label });
     }
-    const tagSections = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
-    return tagSections;
+    // Genres Conditions
+    for (let item of $('#search-advanced .form-group .form-control').eq(0).children().toArray()) {
+        let id = $(item).attr('value') ?? '';
+        let label = decodeHTMLEntity($(item).text().trim());
+        arrayGenresConditions.push({ id, label });
+    }
+    // Adult Content
+    for (let item of $('#search-advanced .form-group .form-control').eq(2).children().toArray()) {
+        let id = $(item).attr('value') ?? '';
+        let label = decodeHTMLEntity($(item).text().trim());
+        arrayAdultContent.push({ id, label });
+    }
+    // Statut
+    for (let item of $('#search-advanced .form-group').eq(4).children('.checkbox-inline').toArray()) {
+        let id = $('input', item).attr('value') ?? '';
+        let label = decodeHTMLEntity($('label', item).text().trim());
+        arrayStatutManga.push({ id, label });
+    }
+    // Type
+    for (let item of $('#search-advanced .form-group .form-control').eq(3).children().toArray()) {
+        let id = $(item).attr('value') ?? '';
+        let label = decodeHTMLEntity($(item).text().trim());
+        arrayTypeManga.push({ id, label });
+    }
+    return [
+        createTagSection({ id: '0', label: 'Genres', tags: arrayGenres.map(x => createTag(x)) }),
+        createTagSection({ id: '1', label: 'Genres Conditions', tags: arrayGenresConditions.map(x => createTag(x)) }),
+        createTagSection({ id: '2', label: 'Contenu pour adulte', tags: arrayAdultContent.map(x => createTag(x)) }),
+        createTagSection({ id: '3', label: 'Statut', tags: arrayStatutManga.map(x => createTag(x)) }),
+        createTagSection({ id: '4', label: 'Type', tags: arrayTypeManga.map(x => createTag(x)) })
+    ];
 };
 exports.parseTags = parseTags;
+const parseUpdatedManga = ($, time, ids) => {
+    const manga = [];
+    let loadMore = true;
+    for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
+        let id = $('h3 a', item).attr('href')?.split('/').slice(-2, -1)[0];
+        let mangaTime = parseDate($('.post-on.font-meta', item).eq(0).text() ?? '');
+        if (mangaTime > time)
+            if (ids.includes(id))
+                manga.push(id);
+            else
+                loadMore = false;
+    }
+    return {
+        ids: manga,
+        loadMore,
+    };
+};
+exports.parseUpdatedManga = parseUpdatedManga;
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
 function decodeHTMLEntity(str) {
-    return str.replace(/&#(\d+);/g, function (match, dec) {
+    return str.replace(/&#(\d+);/g, function (_match, dec) {
         return String.fromCharCode(dec);
     });
 }
 function parseDate(str) {
     str = str.trim();
-    if (str.length == 0)
-        new Date();
-    return new Date(str);
+    if (str.length == 0) {
+        let date = new Date();
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+    if (/^(\d){1,2} (\D)+ (\d){4}$/.test(str)) {
+        let date = str.split(' ');
+        let year = date[2];
+        let months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+        let month = months.findIndex((element) => element == date[1]).toString();
+        let day = date[0];
+        return new Date(parseInt(year), parseInt(month), parseInt(day));
+    }
+    else {
+        let date = str.split(' ');
+        let date_today = new Date();
+        switch (date[1].slice(0, 2)) {
+            case "s":
+                return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes(), date_today.getSeconds() - parseInt(date[0]));
+            case "mi":
+                return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes() - parseInt(date[0]));
+            case "he":
+                return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate(), date_today.getHours() - parseInt(date[0]), date_today.getMinutes());
+            case "jo":
+                return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - parseInt(date[0]), date_today.getHours(), date_today.getMinutes());
+            case "se":
+                return new Date(date_today.getFullYear(), date_today.getMonth(), date_today.getDate() - (parseInt(date[0]) * 7), date_today.getHours(), date_today.getMinutes());
+            case "mo":
+                return new Date(date_today.getFullYear(), date_today.getMonth() - parseInt(date[0]), date_today.getDate(), date_today.getHours(), date_today.getMinutes());
+            case "an":
+                return new Date(date_today.getFullYear() - parseInt(date[0]), date_today.getMonth(), date_today.getDate(), date_today.getHours(), date_today.getMinutes());
+        }
+        return date_today;
+    }
 }
 exports.parseDate = parseDate;
 function convertNbViews(str) {
@@ -876,6 +1013,67 @@ function convertNbViews(str) {
     }
     return Number(views);
 }
+function getURLImage($, item) {
+    let image = undefined;
+    if ($('img', item).attr('srcset') != undefined) {
+        image = encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+    }
+    else if ($('img', item).attr('data-srcset') != undefined) {
+        image = encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+    }
+    else if ($('img', item).attr('data-src') != undefined) {
+        image = encodeURI(($('img', item).attr('data-src') ?? "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+    }
+    else {
+        image = encodeURI(($('img', item).attr('src') ?? "").trim().replace(/-[75]+x(\w)+[.]{1}/gm, '.'));
+    }
+    return image;
+}
 
-},{"paperback-extensions-common":5}]},{},[48])(48)
+},{"paperback-extensions-common":5}],51:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.serverSettingsMenu = void 0;
+const Common_1 = require("./Common");
+const serverSettingsMenu = (stateManager) => {
+    return createNavigationButton({
+        id: "server_settings",
+        value: "",
+        label: "Server Settings",
+        form: createForm({
+            onSubmit: async (values) => Common_1.setStateData(stateManager, values),
+            validate: async () => true,
+            sections: async () => [
+                createSection({
+                    id: "information",
+                    header: undefined,
+                    rows: async () => [
+                        createMultilineLabel({
+                            label: "Scrap Server",
+                            value: "Download and deploy the project :\n\nhttps://github.com/Moomooo95/shadow-of-babel\n\nRead README.md to know how to deploy the server.\n\nNote: The use of this server is MANDATORY otherwise the images of the chapters cannot be recovered",
+                            id: "description",
+                        }),
+                    ],
+                }),
+                createSection({
+                    id: "serverSettings",
+                    header: "Server Settings",
+                    footer: undefined,
+                    rows: async () => Common_1.retrieveStateData(stateManager).then((values) => [
+                        createInputField({
+                            id: "serverAddress",
+                            label: "Server URL",
+                            placeholder: "http://127.0.0.1:3000",
+                            value: values.serverURL,
+                            maskInput: false,
+                        }),
+                    ]),
+                }),
+            ],
+        }),
+    });
+};
+exports.serverSettingsMenu = serverSettingsMenu;
+
+},{"./Common":48}]},{},[49])(49)
 });

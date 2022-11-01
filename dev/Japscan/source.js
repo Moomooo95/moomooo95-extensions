@@ -529,7 +529,7 @@ class Japscan extends paperback_extensions_common_1.Source {
     /////    HOME SECTION    /////
     //////////////////////////////
     async getHomePageSections(sectionCallback) {
-        const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernières Sorties', view_more: true });
+        const section1 = createHomeSection({ id: 'latest_updated', title: 'Dernières Sorties', view_more: true });
         const section2 = createHomeSection({ id: 'top_mangas_today', title: 'Tendances : Journalières' });
         const section3 = createHomeSection({ id: 'top_mangas_week', title: 'Tendances : Hebdomadaires' });
         const section4 = createHomeSection({ id: 'top_mangas_all_time', title: 'Tendances : Année' });

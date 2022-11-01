@@ -1,24 +1,19 @@
-# Extensions Française pour Paperback 
+# French Extensions for Paperback
 
-## Sources en cours de développement
+## Sources under development
 
-|                   |                  |
-| ---               | ---              |
-| Japscan           | [Site Web](https://japscan.ws/) | *
-| Scan Manga        | [Site Web](https://www.scan-manga.com/) | *
-| CrunchyScan       | [Site Web](https://crunchyscan.fr/) | *
+|       Name        |              URL               |   External server required   |
+| :---------------: | :----------------------------: | :--------------------------: |
+| Japscan           | https://japscan.me/            |              YES             |
+| CrunchyScan       | https://crunchyscan.fr/        |              YES             |
+| Scan Manga        | https://www.scan-manga.com/    |              YES             |
 
-## Sources à venir
+## Sources to come
 
-|                   |                  |
-| ---               | ---              |
-| LegacyScans       | [Site Web](https://legacy-scans.com/) |
-| Manga Scantrad      | [Site Web](https://www.mangascantrad.fr/) |
-| BananaScan        | [Site Web](https://banana-scan.com/) |
-| Mangakawaii       | [Site Web](https://www.mangakawaii.net/) | *
-| Neo Scantrad      | [Site Web](https://neo-scantrad.xyz/) |
-
-
-
-
-
+|       Name        |              URL               |   External server required   |
+| :---------------: | :----------------------------: | :--------------------------: |
+| LegacyScans       | https://legacy-scans.com/      |              NO              |
+| Manga Scantrad    | https://www.mangascantrad.fr/  |              NO              |
+| BananaScan        | https://banana-scan.com/       |              NO              |
+| Mangakawaii       | https://www.mangakawaii.net/   |              YES             |
+| Neo Scantrad      | https://neo-scantrad.xyz/      |              NO              |

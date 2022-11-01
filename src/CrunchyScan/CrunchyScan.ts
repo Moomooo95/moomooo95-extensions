@@ -7,12 +7,14 @@ import {
     SearchRequest,
     PagedResults,
     SourceInfo,
-    MangaUpdates,
     TagType,
     ContentRating,
     RequestManager,
     TagSection,
-    MangaTile
+    MangaTile,
+    Section,
+    HomeSectionType,
+    MangaUpdates
 } from "paperback-extensions-common"
 
 import {
@@ -23,26 +25,27 @@ import {
     parseHomeSections,
     parseSearch,
     parseTags,
-    parseViewMore
+    parseUpdatedManga,
+    parseViewMore,
+    UpdatedManga
 } from "./CrunchyScanParser";
 
+import {
+    serverSettingsMenu
+} from "./Settings";
+
+import {
+    getScrapServerURL
+} from "./Common";
+
 const CRUNCHYSCAN_DOMAIN = "https://crunchyscan.fr";
-const SHADOWOFBABEL_DOMAIN = "https://shadow-of-babel.herokuapp.com";
 const method = 'GET'
 const headers = {
     'Host': 'crunchyscan.fr',
 }
-const headers_search = {
-    "Host": "crunchyscan.fr",
-    "accept": "text/plain, */*; q=0.01",
-    "accept-encoding": "gzip, deflate, br",
-    "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-    "Content-Length": "275"
-}
 
 export const CrunchyScanInfo: SourceInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'CrunchyScan',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -71,26 +74,40 @@ export const CrunchyScanInfo: SourceInfo = {
 }
 
 export class CrunchyScan extends Source {
+    stateManager = createSourceStateManager({});
+
     requestManager: RequestManager = createRequestManager({
         requestsPerSecond: 3,
-        requestTimeout: 50000
+        requestTimeout: 100000
     });
 
+    /////////////////////////////
+    /////    SOURCE MENU    /////
+    /////////////////////////////
+
+    override async getSourceMenu(): Promise<Section> {
+        return createSection({
+            id: "main",
+            header: "Source Settings",
+            rows: async () => [
+                serverSettingsMenu(this.stateManager),
+            ],
+        });
+    }
 
     /////////////////////////////////
     /////    MANGA SHARE URL    /////
     /////////////////////////////////
 
-    getMangaShareUrl(mangaId: string): string {
+    override getMangaShareUrl(mangaId: string): string {
         return `${CRUNCHYSCAN_DOMAIN}/liste-manga/${mangaId}`
     }
-
 
     ///////////////////////////////
     /////    MANGA DETAILS    /////
     ///////////////////////////////
 
-    async getMangaDetails(mangaId: string): Promise<Manga> {
+    override async getMangaDetails(mangaId: string): Promise<Manga> {
         const request = createRequestObject({
             url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/${mangaId}`,
             method,
@@ -100,91 +117,97 @@ export class CrunchyScan extends Source {
         const response = await this.requestManager.schedule(request, 1);
         this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseCrunchyScanDetails($, mangaId);
     }
-
 
     //////////////////////////
     /////    CHAPTERS    /////
     //////////////////////////
 
-    async getChapters(mangaId: string): Promise<Chapter[]> {
+    override async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = createRequestObject({
             url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/${mangaId}/ajax/chapters/`,
             method: 'POST',
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "Host": "crunchyscan.fr",
-                "Origin": "https://crunchyscan.fr",
-                "Referer": "https://crunchyscan.fr/",
-                "X-Requested-With": "XMLHttpRequest"
-            },
+            headers,
         })
 
         const response = await this.requestManager.schedule(request, 1);
         this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data);
-        
+
         return await parseCrunchyScanChapters($, mangaId);
     }
-
 
     //////////////////////////////////
     /////    CHAPTERS DETAILS    /////
     //////////////////////////////////
 
-    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
+    override async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
+        const SHADOWOFBABEL_DOMAIN = await getScrapServerURL(this.stateManager)
+
         const request = createRequestObject({
             url: `${SHADOWOFBABEL_DOMAIN}/crunchyscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
             method
         })
 
         const response = await this.requestManager.schedule(request, 1);
-        
+
         return await parseCrunchyScanChapterDetails(response.data, mangaId, chapterId);
     }
-
-
 
     ////////////////////////////////
     /////    SEARCH REQUEST    /////
     ////////////////////////////////
 
-    async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
+    override async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page: number = metadata?.page ?? 1
         const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? ''
         let manga: MangaTile[] = []
 
-        if (query.includedTags && query.includedTags?.length != 0) {
-            const request = createRequestObject({
-                url: `${CRUNCHYSCAN_DOMAIN}/archives/manga-genre/${query.includedTags[0].id}/page/${page}?s=${search}`,
-                method : 'GET',
-                headers
-            })
-        
-            const response = await this.requestManager.schedule(request, 1)
-            this.CloudFlareError(response.status)
-            const $ = this.cheerio.load(response.data)
-            
-            manga = parseViewMore($)
-            metadata = !isLastPage($) ? { page: page + 1 } : undefined
-        }
-        else {
-            const request = createRequestObject({
-                url: `${CRUNCHYSCAN_DOMAIN}/wp-admin/admin-ajax.php`,
-                method : 'POST',
-                headers: headers_search,
-                data: `action=ajaxsearchpro_search&aspp=${encodeURI(search)}&asid=1&asp_inst_id=1_2&options=current_page_id%3D793%26qtranslate_lang%3D0%26filters_changed%3D0%26filters_initial%3D1%26asp_gen%255B%255D%3Dtitle%26asp_gen%255B%255D%3Dcontent%26asp_gen%255B%255D%3Dexcerpt%26customset%255B%255D%3Dwp-manga`
-            })
+        let url = `${CRUNCHYSCAN_DOMAIN}/?post_type=wp-manga&s=${search}&paged=${page}`
 
-            const response = await this.requestManager.schedule(request, 1)
-            this.CloudFlareError(response.status)
-            const $ = this.cheerio.load(response.data)
-            
-            manga = parseSearch($)
-            metadata = undefined
+        if (query.includedTags && query.includedTags?.length != 0) {
+            for (let tag of query.includedTags) {
+                switch (tag.label) {
+                    case "OU (ayant l'un des genres sélectionnés)":
+                    case "ET (avoir tous les genres sélectionnés)":
+                        url += `&op=${tag.id}`
+                        break;
+                    case "All":
+                    case "Aucun contenu adulte":
+                    case "Contenu pour adultes uniquement":
+                        url += `&adult=${tag.id}`
+                        break;
+                    case "En Cours":
+                    case "Terminé":
+                    case "Annulé":
+                    case "En attente":
+                        url += `&status%5B%5D=${tag.id}`
+                        break;
+                    case "Tout":
+                    case "Webcomic":
+                    case "Manga":
+                        url += `&type%5B%5D=${tag.id}`
+                        break;
+                    default:
+                        url += `&genre%5B%5D=${tag.id}`
+                        break;
+                }
+            }
         }
+
+        const request = createRequestObject({
+            url,
+            method,
+            headers
+        })
+
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data)
+
+        manga = parseSearch($)
+        metadata = !isLastPage($) ? { page: page + 1 } : undefined
 
         return createPagedResults({
             results: manga,
@@ -192,15 +215,14 @@ export class CrunchyScan extends Source {
         })
     }
 
-
     //////////////////////////////
     /////    HOME SECTION    /////
     //////////////////////////////
 
-    async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const section1 = createHomeSection({ id: 'latest_updated', title: 'Dernières Mise à jour', view_more: true })
-        const section2 = createHomeSection({ id: 'most_viewed', title: 'Mangas avec le plus de vues' })
-        const section3 = createHomeSection({ id: 'random_mangas', title: 'Mangas Aléatoires' })
+    override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+        const section1 = createHomeSection({ id: 'hot_manga', title: 'HOT', type: HomeSectionType.featured })
+        const section2 = createHomeSection({ id: 'latest_updated', title: 'Dernières Sorties', view_more: true })
+        const section3 = createHomeSection({ id: 'trends', title: 'Tendances', view_more: true })
 
         const request = createRequestObject({
             url: `${CRUNCHYSCAN_DOMAIN}`,
@@ -211,7 +233,7 @@ export class CrunchyScan extends Source {
         const response = await this.requestManager.schedule(request, 1)
         this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data)
-        
+
         parseHomeSections($, [section1, section2, section3], sectionCallback)
     }
 
@@ -219,13 +241,16 @@ export class CrunchyScan extends Source {
     /////    VIEW MORE ITEMS    /////
     /////////////////////////////////
 
-    async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
+    override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         let page: number = metadata?.page ?? 1
         let param = ''
 
         switch (homepageSectionId) {
             case 'latest_updated':
                 param = `liste-manga/page/${page}?m_orderby=latest`
+                break;
+            case 'trends':
+                param = `liste-manga/page/${page}?m_orderby=trending`
                 break;
         }
 
@@ -248,17 +273,43 @@ export class CrunchyScan extends Source {
         })
     }
 
+    //////////////////////////////////////
+    /////    FILTER UPDATED MANGA    /////
+    //////////////////////////////////////
 
+    override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+        let page = 1
+        let updatedManga: UpdatedManga = {
+            ids: [],
+            loadMore: true
+        }
 
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/?m_orderby=latest&page=${page++}`,
+                method,
+                headers
+            })
 
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data)
+
+            updatedManga = parseUpdatedManga($, time, ids)
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
+    }
 
     //////////////////////
     /////    TAGS    /////
     //////////////////////
 
-    async getSearchTags(): Promise<TagSection[]> {
+    override async getSearchTags(): Promise<TagSection[]> {
         const request = createRequestObject({
-            url: `${CRUNCHYSCAN_DOMAIN}/liste-manga`,
+            url: `${CRUNCHYSCAN_DOMAIN}/?s=&post_type=wp-manga`,
             method,
             headers
         })
@@ -266,7 +317,7 @@ export class CrunchyScan extends Source {
         const response = await this.requestManager.schedule(request, 1)
         this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data)
-        
+
         return parseTags($)
     }
 
@@ -274,24 +325,17 @@ export class CrunchyScan extends Source {
     /////    CLOUDFLARE BYPASS    /////
     ///////////////////////////////////
 
-    CloudFlareError(status: any) {
-        if(status == 503) {
-            throw new Error('CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass')
-        }
-    }
-    
-    getCloudflareBypassRequest() {
+    override getCloudflareBypassRequest() {
         return createRequestObject({
-            url: `${CRUNCHYSCAN_DOMAIN}/liste-manga/les-techniques-celestes-du-dieu-guerrier/chapitre-19/`,
-            method : "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "Host": "crunchyscan.fr",
-                "Origin": "https://crunchyscan.fr",
-                "Referer": "https://crunchyscan.fr/",
-                "X-Requested-With": "XMLHttpRequest"
-            },
-            data: "g-recaptcha-response=03AGdBq271pcGFYFPqGn9sl29SDdx-i3YVeTOxUUdehMrYQaxE2kX4MYQz6KmmjwClAhgKDXIg17gi_4Pf0UR_kA8H_Ogc1Pjo5hIConU-NnkyNRKQN9v-O9euApCd0xVANXsY0c6Ca9LklrxCOi5ExqqN2I9ZwPR5XzRnSk6J79xK81AHiZo48KTx3dONWnuPHQa5wOKBCVMvkUST7ts9lBW_oIEDFha1XTr7WzLvlcYiSVyzoL590S8vqgRq_UKbkCHXzZnl-MBur3__CuaFhYERS_fJMeasPlkUJU2hgOJ5rBmuB_TeDHb5k-Z94a1fOlvjJyL2fyKMzY6JZZPRyokupaF9upCNbXr7ddSKC0jeLklIR6M6uIfzyyWVBHWk6UI-cB23z7dwKz40hvfxQR3R_vOSljaEUiPNEMPc92wYfTeA8sc8HJYB11DwnAnWjy0SgqFk5aIhhY7HYaySjGR18N_YRYDMO8Y3MLuKmMCig2f3yxE14UsLXx4X8LpTa32fKXTBQTPxqkgqiERQ-pbm_yQu0X731A&submitpost=Valider"
-        }) 
+            url: `${CRUNCHYSCAN_DOMAIN}`,
+            method,
+            headers
+        })
+    }
+
+    CloudFlareError(status: any) {
+        if (status == 503) {
+            throw new Error('CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > CrunchyScan and press Cloudflare Bypass')
+        }
     }
 }

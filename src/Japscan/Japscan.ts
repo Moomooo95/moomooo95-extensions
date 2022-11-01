@@ -10,7 +10,8 @@ import {
     MangaUpdates,
     TagType,
     ContentRating,
-    RequestManager
+    RequestManager,
+    Section
 } from "paperback-extensions-common"
 
 import {
@@ -20,26 +21,34 @@ import {
     parseSearch,
     parseHomeSections,
     parseViewMore,
-    parseDate
+    UpdatedManga,
+    parseUpdatedManga
 } from "./JapscanParser";
 
-const JAPSCAN_DOMAIN = "https://www.japscan.ws";
-const SHADOWOFBABEL_DOMAIN = "https://shadow-of-babel.herokuapp.com";
+import { 
+    serverSettingsMenu
+} from "./Settings";
+
+import {
+    getScrapServerURL
+} from "./Common";
+
+const JAPSCAN_DOMAIN = "https://www.japscan.me";
 const method = 'GET'
 const headers = {
-    "Host": "www.japscan.ws",
+    "Host": "www.japscan.me",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
 }
 
 const headers_search = {
-    "Host": "www.japscan.ws",
+    "Host": "www.japscan.me",
     "Content-Type": "application/x-www-form-urlencoded",
     "Content-Length": "11",
     "X-Requested-With": "XMLHttpRequest",
 }
 
 export const JapscanInfo: SourceInfo = {
-    version: '1.0',
+    version: '1.1',
     name: 'Japscan',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -64,16 +73,32 @@ export const JapscanInfo: SourceInfo = {
 }
 
 export class Japscan extends Source {
+    stateManager = createSourceStateManager({});
+    
     requestManager: RequestManager = createRequestManager({
         requestsPerSecond: 3,
         requestTimeout: 100000
     });
 
+    /////////////////////////////
+    /////    SOURCE MENU    /////
+    /////////////////////////////
+
+    override async getSourceMenu(): Promise<Section> {
+        return createSection({
+            id: "main",
+            header: "Source Settings",
+            rows: async () => [
+                serverSettingsMenu(this.stateManager),
+            ],
+        });
+    }
+
     /////////////////////////////////
     /////    MANGA SHARE URL    /////
     /////////////////////////////////
 
-    getMangaShareUrl(mangaId: string): string {
+    override getMangaShareUrl(mangaId: string): string {
         return `${JAPSCAN_DOMAIN}/manga/${mangaId}`
     }
 
@@ -82,7 +107,7 @@ export class Japscan extends Source {
     /////    MANGA DETAILS    /////
     ///////////////////////////////
 
-    async getMangaDetails(mangaId: string): Promise<Manga> {
+    override async getMangaDetails(mangaId: string): Promise<Manga> {
         const request = createRequestObject({
             url: `${JAPSCAN_DOMAIN}/manga/${mangaId}/`,
             method,
@@ -100,7 +125,7 @@ export class Japscan extends Source {
     /////    CHAPTERS    /////
     //////////////////////////
 
-    async getChapters(mangaId: string): Promise<Chapter[]> {
+    override async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = createRequestObject({
             url: `${JAPSCAN_DOMAIN}/manga/${mangaId}/`,
             method,
@@ -118,7 +143,8 @@ export class Japscan extends Source {
     /////    CHAPTERS DETAILS    /////
     //////////////////////////////////
 
-    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {    
+    override async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
+        const SHADOWOFBABEL_DOMAIN = await getScrapServerURL(this.stateManager)
         
         const request = createRequestObject({
             url: `${SHADOWOFBABEL_DOMAIN}/japscan/chapters/${mangaId}/${chapterId.split('/').filter(Boolean).pop()}`,
@@ -135,7 +161,7 @@ export class Japscan extends Source {
     /////    SEARCH REQUEST    /////
     ////////////////////////////////
 
-    async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
+    override async getSearchResults(query: SearchRequest, _metadattrackera: any): Promise<PagedResults> {
         const search = query.title
         const request = createRequestObject({
             url: `${JAPSCAN_DOMAIN}/live-search/`,
@@ -157,11 +183,11 @@ export class Japscan extends Source {
     /////    HOME SECTION    /////
     //////////////////////////////
 
-    async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernier Manga Sorti', view_more: true })
-        const section2 = createHomeSection({ id: 'top_mangas_today', title: 'TOP MANGAS 24H' })
-        const section3 = createHomeSection({ id: 'top_mangas_week', title: 'TOP MANGAS Semaine' })
-        const section4 = createHomeSection({ id: 'top_mangas_all_time', title: 'TOP MANGAS 2021' })
+    override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+        const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernières Sorties', view_more: true })
+        const section2 = createHomeSection({ id: 'top_mangas_today', title: 'Tendances : Journalières' })
+        const section3 = createHomeSection({ id: 'top_mangas_week', title: 'Tendances : Hebdomadaires' })
+        const section4 = createHomeSection({ id: 'top_mangas_all_time', title: 'Tendances : Année' })
 
         const request = createRequestObject({
             url: `${JAPSCAN_DOMAIN}/`,
@@ -179,7 +205,7 @@ export class Japscan extends Source {
     /////    VIEW MORE ITEMS    /////
     /////////////////////////////////
     
-    async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
+    override async getViewMoreItems(_homepageSectionId: string, metadata: any): Promise<PagedResults> {
         let page: number = metadata?.page ?? 1
         
         const request = createRequestObject({
@@ -205,29 +231,28 @@ export class Japscan extends Source {
     /////    FILTER UPDATED MANGA    /////
     //////////////////////////////////////
 
-    async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-        const request = createRequestObject({
-            url: `${JAPSCAN_DOMAIN}`,
-            method,
-            headers
-        })
-  
-        const response = await this.requestManager.schedule(request, 1)
-        const $ = this.cheerio.load(response.data)
-  
-        const updatedManga: string[] = []
-        for (const manga of $('#tab-1 h3').toArray()) {
-            let id = "https://www.japscan.ws" + $('a', manga).attr('href')
-            let mangaDate = new Date()
+    override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+        let updatedManga: UpdatedManga = {
+            ids: [],
+            loadMore: true
+        }
 
-            if (!id) continue
-            if (mangaDate > time) {
-                if (ids.includes(id)) {
-                    updatedManga.push(id)
-                }
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${JAPSCAN_DOMAIN}`,
+                method,
+                headers
+            })
+
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data)
+
+            updatedManga = parseUpdatedManga($, time, ids)
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
             }
         }
-  
-        mangaUpdatesFoundCallback(createMangaUpdates({ids: updatedManga}))
     }
 }

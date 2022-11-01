@@ -1,4 +1,3 @@
-import cheerio from "cheerio";
 import {
     Chapter,
     ChapterDetails,
@@ -11,6 +10,7 @@ import {
     TagSection 
 } from "paperback-extensions-common";
 
+const JAPSCAN_DOMAIN = "https://www.japscan.me";
 
 ///////////////////////////////
 /////    MANGA DETAILS    /////
@@ -19,8 +19,8 @@ import {
 export const parseJapscanMangaDetails = ($: CheerioStatic, mangaId: string): Manga => {
     const panel = $('#main>.card').first()
 
-    let titles = [decodeHTMLEntity($('h1', panel).text().trim().split(/ (.+)/)[1])]
-    const image = "https://www.japscan.ws" + $('img', panel).attr('src')
+    let titles = [decodeHTMLEntity($('h1', panel).text().trim().split(/ (.+)/)[1] ?? "")]
+    const image = `${JAPSCAN_DOMAIN}${$('img', panel).attr('src')}`
     const author = $('span:contains("Auteur(s)")', panel).parent().clone().children().remove().end().text().trim() ?? "Unknown"
     const artist = $('span:contains("Artiste(s):")', panel).parent().clone().children().remove().end().text().trim() ?? "Unknown"
    
@@ -69,20 +69,18 @@ export const parseJapscanMangaDetails = ($: CheerioStatic, mangaId: string): Man
     })
 }
 
-
 //////////////////////////
 /////    CHAPTERS    /////
 //////////////////////////
 
 export const parseJapscanChapters = ($: CheerioStatic, mangaId: string): Chapter[] => {
-    const allChapters = $('#chapters_list')
     const chapters: Chapter[] = []
 
-    for (let chapter of $('.chapters_list.text-truncate', allChapters).toArray()) {
-        const id = "https://japscan.ws" + $('a', chapter).attr('href') ?? ''
-        const name = "Chapitre " + decodeHTMLEntity($('a', chapter).text().replace(/\s\s+/g, '').replace(/^.* (?=\d)/g, '')) ?? ''
-        const chapNum = Number(($('a', chapter).attr('href') ?? '').split('/')[3].replace(/[^0-9]+/g, ''))
-        const volume = Number(($(chapter).parent().prev().text().trim().match(/^Volume \d{1,3}/g) ?? ["Nan"])[0].split(" ").pop())
+    for (let chapter of $('#chapters_list .chapters_list.text-truncate').toArray()) {
+        const id = `${JAPSCAN_DOMAIN}${$('a', chapter).attr('href')}`
+        const name = decodeHTMLEntity(($('a', chapter).text().split('VF:')[1] ?? '').trim())  ?? ''
+        const chapNum = Number(($('a', chapter).attr('href') ?? '').split('/')[3])
+        const volume = Number(($(chapter).parent().prev().text().trim().match(/^Volume \d{1,3}/g) ?? ["Nan"])[0]?.split(" ").pop())
         const time = new Date($('span', chapter).text() ?? '')
 
         if (isNaN(volume)) {
@@ -111,7 +109,6 @@ export const parseJapscanChapters = ($: CheerioStatic, mangaId: string): Chapter
     return chapters
 }
 
-
 /////////////////////////////////
 /////    CHAPTER DETAILS    /////
 /////////////////////////////////
@@ -136,7 +133,6 @@ export const parseJapscanChapterDetails = (data: any, mangaId: string, chapterId
     })
 }
 
-
 ////////////////////////
 /////    SEARCH    /////
 ////////////////////////
@@ -147,8 +143,8 @@ export const parseSearch = (data: string): MangaTile[] => {
 
     for(let item of items) {
         let id = item.url.split('/')[2]
-        let image = `https://www.japscan.ws/imgs/mangas/${id}.jpg`
-        let title = item.name
+        let image = `${JAPSCAN_DOMAIN}/imgs/mangas/${id}.jpg`
+        let title = decodeHTMLEntity(item.name)
 
         manga.push(createMangaTile({
             id: id,
@@ -159,7 +155,6 @@ export const parseSearch = (data: string): MangaTile[] => {
   
     return manga
 }
-
 
 //////////////////////////////////////
 /////    DERNIERS MANGA SORTI    /////
@@ -172,17 +167,17 @@ const parseLatestManga = ($: CheerioStatic, num_tab?: number): MangaTile[] => {
         num_tab = 1
     }
 
-    for (const item of $('#tab-'+ num_tab +' .chapters_list .text-truncate').toArray()) {
-        const url = $('a', item).attr('href')?.split('/')[2] ?? ''
-        const title = $('a', item).text().trim().split(" ").slice(0, -2).join(" ")
-        const image = "https://www.japscan.ws/imgs/mangas/"+ url +".jpg"
-        const subtitle = "Chapitre " + $('a', item).text().trim().split(" ").slice(-2, -1).join(" ")
+    for (const item of $('#tab-'+ num_tab +' .chapters_list .text-truncate:first-child').toArray()) {
+        const id = $('a', item).attr('href')?.split('/')[2] ?? ''
+        const title = decodeHTMLEntity($('a', item).text().trim().split(" ").slice(0, -2).join(" "))
+        const image = `${JAPSCAN_DOMAIN}/imgs/mangas/${id}.jpg`
+        const subtitle = "Chapitre " + (($('a', item).text().trim().match(/\d*[.]?\d+\s{1}VF/gm) ?? '')[0] ?? '').split(/\s{1}/gm)[0]
 
-        if (typeof url === 'undefined' || typeof image === 'undefined') 
+        if (typeof id === 'undefined' || typeof image === 'undefined') 
             continue
 
         latestManga.push(createMangaTile({
-            id: url,
+            id,
             image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle }),
@@ -200,17 +195,17 @@ const parseTopManga = ($: CheerioStatic, period: string): MangaTile[] => {
     const topManga: MangaTile[] = []
 
     for (const item of $('#'+ period +" li").toArray()) {
-        const url = $('a', item).first().attr('href')?.split('/')[2] ?? ''
-        const title = $('a', item).first().text()
-        const image = "https://www.japscan.ws/imgs/mangas/"+ url +".jpg"
+        const id = $('a', item).first().attr('href')?.split('/')[2] ?? ''
+        const title = decodeHTMLEntity($('a', item).first().text())
+        const image = `${JAPSCAN_DOMAIN}/imgs/mangas/${id}.jpg`
         const subtitle = $('a', item).eq(1).text().replace("Chap", "Chapitre")
 
-        if (typeof url === 'undefined' || typeof image === 'undefined') 
+        if (typeof id === 'undefined' || typeof image === 'undefined') 
             continue
 
         topManga.push(createMangaTile({
-            id: url,
-            image: image,
+            id,
+            image,
             title: createIconText({ text: title }),
             subtitleText: createIconText({ text: subtitle }),
         }))
@@ -225,15 +220,19 @@ const parseTopManga = ($: CheerioStatic, period: string): MangaTile[] => {
 
 export const parseHomeSections = ($: CheerioStatic, sections: HomeSection[], sectionCallback: (section: HomeSection) => void): void => {
     for (const section of sections) sectionCallback(section)
-    const latestManga: MangaTile[] = parseLatestManga($)
-    const topMangaToday: MangaTile[] = parseTopManga($, sections[1].id)
-    const topMangaWeek: MangaTile[] = parseTopManga($, sections[2].id)
-    const topMangaAllTime: MangaTile[] = parseTopManga($, sections[3].id)
 
-    sections[0].items = latestManga
-    sections[1].items = topMangaToday
-    sections[2].items = topMangaWeek
-    sections[3].items = topMangaAllTime
+    if (sections[0] != undefined && sections[1] != undefined && sections[2] != undefined && sections[3] != undefined) {
+        const latestManga: MangaTile[] = parseLatestManga($)
+        const topMangaToday: MangaTile[] = parseTopManga($, sections[1].id)
+        const topMangaWeek: MangaTile[] = parseTopManga($, sections[2].id)
+        const topMangaAllTime: MangaTile[] = parseTopManga($, sections[3].id)
+    
+        sections[0].items = latestManga
+        sections[1].items = topMangaToday
+        sections[2].items = topMangaWeek
+        sections[3].items = topMangaAllTime
+    }
+    
 
     for (const section of sections) sectionCallback(section)
 }
@@ -246,36 +245,53 @@ export const parseViewMore = ($: CheerioStatic, page: number): MangaTile[] => {
     return parseLatestManga($, page)
 }
 
+///////////////////////////////
+/////    UPDATED MANGA    /////
+///////////////////////////////
 
+export interface UpdatedManga {
+    ids: string[];
+    loadMore: boolean;
+}
 
+export const parseUpdatedManga = ($: CheerioStatic, time: Date, ids: string[]): UpdatedManga => {
+    let page = 1
+    let loadMore = true
+    const updatedManga: string[] = []
+
+    while (page <= 8) {
+        for (const item of $('#tab-' + page + ' .chapters_list .text-truncate:first-child').toArray()) {
+            let id = $('a', item).attr('href')?.split('/')[2] ?? ''
+            let date = new Date()
+            date = new Date(date.getFullYear(), date.getMonth(), date.getDate() - (page - 1))
+    
+            if (typeof id === 'undefined' || typeof date === 'undefined')
+                continue
+    
+            if (date > time) {
+                if (ids.includes(id)) {
+                    updatedManga.push(id)
+                }
+            } else {
+                loadMore = false
+            }
+        }
+        page++
+    }
+    
+
+    return {
+        ids: updatedManga,
+        loadMore,
+    }
+}
 
 /////////////////////////////////
 /////    ADDED FUNCTIONS    /////
 /////////////////////////////////
 
 function decodeHTMLEntity(str: string) {
-    return str.replace(/&#(\d+);/g, function (match, dec) {
+    return str.replace(/&#(\d+);/g, function (_match, dec) {
         return String.fromCharCode(dec);
     })
-}
-  
-export function parseDate(str: string) {
-    if (str.length == 0) {
-        let date = new Date()
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-    }
-
-    switch (str.trim()) {
-        case "Aujourd'hui":
-        let today = new Date()
-        return new Date(today.getFullYear(), today.getMonth(), today.getDate())
-        
-        case "Hier":
-        let yesterday = new Date()
-        return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()-1)
-
-        default:
-        let date = str.split("/")
-        return new Date(parseInt(date[2]), parseInt(date[1])-1, parseInt(date[0]))
-    }
 }

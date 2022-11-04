@@ -396,13 +396,13 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.7.2',
+    version: '1.7.3',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
     authorWebsite: 'https://github.com/Moomooo95',
     description: 'Source française MangasOrigines',
-    contentRating: paperback_extensions_common_1.ContentRating.ADULT,
+    contentRating: paperback_extensions_common_1.ContentRating.MATURE,
     websiteBaseURL: MANGASORIGINES_DOMAIN,
     sourceTags: [
         {
@@ -439,6 +439,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return yield MangasOriginesParser_1.parseMangasOriginesDetails($, mangaId);
         });
@@ -454,6 +455,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return yield MangasOriginesParser_1.parseMangasOriginesChapters($, mangaId);
         });
@@ -469,6 +471,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return yield MangasOriginesParser_1.parseMangasOriginesChapterDetails($, mangaId, chapterId);
         });
@@ -514,6 +517,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             manga = MangasOriginesParser_1.parseSearch($);
             metadata = !MangasOriginesParser_1.isLastPage($) ? { page: page + 1 } : undefined;
@@ -538,6 +542,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             MangasOriginesParser_1.parseHomeSections($, [section1, section2, section3, section4], sectionCallback);
         });
@@ -564,6 +569,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             const manga = MangasOriginesParser_1.parseViewMore($);
             metadata = !MangasOriginesParser_1.isLastPage($) ? { page: page + 1 } : undefined;
@@ -590,6 +596,7 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
                     headers
                 });
                 const response = yield this.requestManager.schedule(request, 1);
+                this.CloudFlareError(response.status);
                 const $ = this.cheerio.load(response.data);
                 updatedManga = MangasOriginesParser_1.parseUpdatedManga($, time, ids);
                 if (updatedManga.ids.length > 0) {
@@ -611,8 +618,24 @@ class MangasOrigines extends paperback_extensions_common_1.Source {
                 headers
             });
             const response = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status);
             const $ = this.cheerio.load(response.data);
             return MangasOriginesParser_1.parseTags($);
+        });
+    }
+    ///////////////////////////////////
+    /////    CLOUDFLARE BYPASS    /////
+    ///////////////////////////////////
+    CloudFlareError(status) {
+        if (status == 503) {
+            throw new Error('CLOUDFLARE BYPASS ERROR:\nVeuillez aller dans les Paramètres > Sources > MangasOrigines et appuyez sur Cloudflare Bypass');
+        }
+    }
+    getCloudflareBypassRequest() {
+        return createRequestObject({
+            url: `${MANGASORIGINES_DOMAIN}/manga/the-beginning-after-the-end`,
+            method,
+            headers
         });
     }
 }
@@ -627,14 +650,14 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 /////    MANGA DETAILS    /////
 ///////////////////////////////
 const parseMangasOriginesDetails = ($, mangaId) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f;
     const panel = $('.container .tab-summary');
     const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())];
-    const image = $('img', panel).attr('data-src') == undefined ? encodeURI(((_a = $('img', panel).attr('src')) !== null && _a !== void 0 ? _a : "").trim().replace(/-[75]+x(\w)+/gm, '')) : encodeURI(((_b = $('img', panel).attr('data-src')) !== null && _b !== void 0 ? _b : "").trim().replace(/-[75]+x(\w)+/gm, ''));
-    const author = (_c = $('[href*=manga-author]', panel).text().trim()) !== null && _c !== void 0 ? _c : undefined;
-    const artist = (_d = $('[href*=manga-artist]', panel).text().trim()) !== null && _d !== void 0 ? _d : undefined;
+    const image = getURLImage($, panel.toArray()[0]);
+    const author = (_a = $('[href*=manga-author]', panel).text().trim()) !== null && _a !== void 0 ? _a : undefined;
+    const artist = (_b = $('[href*=manga-artist]', panel).text().trim()) !== null && _b !== void 0 ? _b : undefined;
     const rating = Number($('.post-total-rating .score', panel).text().trim());
-    const views = (_f = convertNbViews(((_e = $('.post-content_item .summary-heading:contains("Rang")', panel).next().text().trim().match(/(\d+\.?\d*\w?) /gm)) !== null && _e !== void 0 ? _e : '')[0].trim())) !== null && _f !== void 0 ? _f : undefined;
+    const views = (_d = convertNbViews(((_c = $('.post-content_item .summary-heading:contains("Rang")', panel).next().text().trim().match(/(\d+\.?\d*\w?) /gm)) !== null && _c !== void 0 ? _c : '')[0].trim())) !== null && _d !== void 0 ? _d : undefined;
     let hentai = false;
     let otherTitles = $('.post-content_item .summary-heading:contains("Autre")', panel).next().text().trim().split(',');
     for (let title of otherTitles) {
@@ -643,7 +666,7 @@ const parseMangasOriginesDetails = ($, mangaId) => {
     const arrayTags = [];
     for (const tag of $('[href*=manga-genre]', panel).toArray()) {
         const label = decodeHTMLEntity($(tag).text());
-        const id = (_h = (_g = $(tag).attr('href')) === null || _g === void 0 ? void 0 : _g.split("/")[4]) !== null && _h !== void 0 ? _h : label;
+        const id = (_f = (_e = $(tag).attr('href')) === null || _e === void 0 ? void 0 : _e.split("/")[4]) !== null && _f !== void 0 ? _f : label;
         if (['Adulte'].includes(label) || ['Hentai'].includes(label) || ['Sexe'].includes(label) || ['Uncensored'].includes(label)) {
             hentai = true;
         }
@@ -746,11 +769,11 @@ exports.parseSearch = parseSearch;
 /////    HOT    /////
 /////////////////////
 const parseHotManga = ($) => {
-    var _a, _b;
+    var _a;
     const hotManga = [];
     for (const item of $('.container .manga-slider .slider__container .slider__item').toArray()) {
         let id = (_a = $('h4 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = encodeURI(((_b = $('img', item).attr('src')) !== null && _b !== void 0 ? _b : "").trim());
+        let image = getURLImage($, item);
         let title = decodeHTMLEntity($('h4', item).text().trim());
         if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
@@ -773,6 +796,7 @@ const parseLatestUpdatedManga = ($) => {
         let image = getURLImage($, item);
         let title = decodeHTMLEntity($('h3 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim());
+        console.log(image);
         if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
         latestUpdatedManga.push(createMangaTile({
@@ -993,21 +1017,25 @@ function convertNbViews(str) {
     return Number(views);
 }
 function getURLImage($, item) {
-    var _a, _b, _c, _d, _e, _f;
-    let image = undefined;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     if ($('img', item).attr('srcset') != undefined) {
-        image = encodeURI(((_b = ((_a = $('img', item).attr('srcset')) !== null && _a !== void 0 ? _a : "").split(',').pop()) !== null && _b !== void 0 ? _b : "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+        return encodeURI(((_b = ((_a = $('img', item).attr('srcset')) !== null && _a !== void 0 ? _a : "").split(',').pop()) !== null && _b !== void 0 ? _b : "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
     }
     else if ($('img', item).attr('data-srcset') != undefined) {
-        image = encodeURI(((_d = ((_c = $('img', item).attr('data-srcset')) !== null && _c !== void 0 ? _c : "").split(',').pop()) !== null && _d !== void 0 ? _d : "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+        return encodeURI(((_d = ((_c = $('img', item).attr('data-srcset')) !== null && _c !== void 0 ? _c : "").split(',').pop()) !== null && _d !== void 0 ? _d : "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+    }
+    else if ($('img', item).attr('data-lazy-srcset') != undefined) {
+        return encodeURI(((_f = ((_e = $('img', item).attr('data-lazy-srcset')) !== null && _e !== void 0 ? _e : "").split(',').pop()) !== null && _f !== void 0 ? _f : "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
     }
     else if ($('img', item).attr('data-src') != undefined) {
-        image = encodeURI(((_e = $('img', item).attr('data-src')) !== null && _e !== void 0 ? _e : "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+        return encodeURI(((_g = $('img', item).attr('data-src')) !== null && _g !== void 0 ? _g : "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+    }
+    else if ($('img', item).attr('data-lazy-src') != undefined) {
+        return encodeURI(((_h = $('img', item).attr('data-lazy-src')) !== null && _h !== void 0 ? _h : "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
     }
     else {
-        image = encodeURI(((_f = $('img', item).attr('src')) !== null && _f !== void 0 ? _f : "").trim().replace(/-[75]+x(\w)+[.]{1}/gm, '.'));
+        return encodeURI(((_j = $('img', item).attr('src')) !== null && _j !== void 0 ? _j : "").trim().replace(/-[75]+x(\w)+[.]{1}/gm, '.'));
     }
-    return image;
 }
 
 },{"paperback-extensions-common":5}]},{},[48])(48)

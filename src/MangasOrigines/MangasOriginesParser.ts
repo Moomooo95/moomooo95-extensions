@@ -87,7 +87,7 @@ export const parseMangasOriginesChapters = ($: CheerioStatic, mangaId: string): 
   for (let chapter of $('.wp-manga-chapter').toArray()) {
     const id = $('a', chapter).first().attr('href') + "?style=list" ?? ''
     const chapNum = Number(($('a', chapter).first().text().trim().match(/(\d+)(\.?)(\d*)/gm) ?? '')[0])
-    const time = parseDate($('.chapter-release-date i', chapter).text() != '' ? $('.c-new-tag', chapter).attr('title') ?? '' : $('.chapter-release-date i', chapter).text())
+    const time = parseDate($('.chapter-release-date i', chapter).text() == "" ? $('.chapter-release-date a', chapter).attr('title') ?? '' : $('.chapter-release-date i', chapter).text())
 
     chapters.push(createChapter({
       id,
@@ -369,7 +369,7 @@ export const parseUpdatedManga = ($: CheerioStatic, time: Date, ids: string[]): 
 
   for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
     let id = ($('h3 a', item).attr('href') ?? '').split('/').slice(-2, -1)[0]
-    let mangaTime = parseDate($('.post-on.font-meta', item).eq(0).find('a').attr('title') ?? '')
+    let mangaTime = parseDate($('.post-on.font-meta', item).eq(0).find('a').attr('title') == "" ? $('.post-on.font-meta', item).text() : $('.post-on.font-meta', item).eq(0).find('a').attr('title') ?? "")
 
     if (mangaTime > time)
       if (ids.includes(id))
@@ -401,14 +401,9 @@ function parseDate(str: string) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate())
   }
 
-  if (/^(\d){1,2} (\D)+ (\d){4}$/.test(str)) {
-    let date = str.split(' ')
-    let year = date[2]
-    let months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
-    let month = months.findIndex((element) => element == date[1]).toString()
-    let day = date[0]
-
-    return new Date(parseInt(year), parseInt(month), parseInt(day))
+  if (/^(\d){1,2}\/(\d){2}\/(\d){4}$/.test(str)) {
+    let date = str.split('/')
+    return new Date(parseInt(date[2]), parseInt(date[1])-1, parseInt(date[0]))
   }
   else {
     let date = str.split(' ')
@@ -453,23 +448,27 @@ function convertNbViews(str: string) {
 }
 
 function getURLImage($ : CheerioStatic, item: CheerioElement) {
+  let image = ""
+  
   if ($('img', item).attr('srcset') != undefined) {
-    return encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+    image = (($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim()
   }
   else if ($('img', item).attr('data-srcset') != undefined) {
-    return encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+    image = (($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0]
   } 
   else if ($('img', item).attr('data-lazy-srcset') != undefined) {
-    return encodeURI((($('img', item).attr('data-lazy-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+    image = (($('img', item).attr('data-lazy-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0]
   }
   else if ($('img', item).attr('data-src') != undefined) {
-    return encodeURI(($('img', item).attr('data-src') ?? "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+    image = ($('img', item).attr('data-src') ?? "").trim()
   }
   else if ($('img', item).attr('data-lazy-src') != undefined) {
-    return encodeURI(($('img', item).attr('data-lazy-src') ?? "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+    image = ($('img', item).attr('data-lazy-src') ?? "").trim()
   }
   else {
-    return encodeURI(($('img', item).attr('src') ?? "").trim().replace(/-[75]+x(\w)+[.]{1}/gm, '.'))
+    image = ($('img', item).attr('src') ?? "").trim()
   }
+
+  return encodeURI(image.replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.').replace(/-[75]+x(\w)+[.]{1}/gm, '.'))
 }
 

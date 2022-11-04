@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.7.3',
+    version: '1.7.4',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -713,7 +713,7 @@ const parseMangasOriginesChapters = ($, mangaId) => {
     for (let chapter of $('.wp-manga-chapter').toArray()) {
         const id = (_a = $('a', chapter).first().attr('href') + "?style=list") !== null && _a !== void 0 ? _a : '';
         const chapNum = Number(((_b = $('a', chapter).first().text().trim().match(/(\d+)(\.?)(\d*)/gm)) !== null && _b !== void 0 ? _b : '')[0]);
-        const time = parseDate($('.chapter-release-date i', chapter).text() != '' ? (_c = $('.c-new-tag', chapter).attr('title')) !== null && _c !== void 0 ? _c : '' : $('.chapter-release-date i', chapter).text());
+        const time = parseDate($('.chapter-release-date i', chapter).text() == "" ? (_c = $('.chapter-release-date a', chapter).attr('title')) !== null && _c !== void 0 ? _c : '' : $('.chapter-release-date i', chapter).text());
         chapters.push(createChapter({
             id,
             mangaId,
@@ -941,7 +941,7 @@ const parseUpdatedManga = ($, time, ids) => {
     let loadMore = true;
     for (const item of $('.page-content-listing.item-default .page-item-detail.manga').toArray()) {
         let id = ((_a = $('h3 a', item).attr('href')) !== null && _a !== void 0 ? _a : '').split('/').slice(-2, -1)[0];
-        let mangaTime = parseDate((_b = $('.post-on.font-meta', item).eq(0).find('a').attr('title')) !== null && _b !== void 0 ? _b : '');
+        let mangaTime = parseDate($('.post-on.font-meta', item).eq(0).find('a').attr('title') == "" ? $('.post-on.font-meta', item).text() : (_b = $('.post-on.font-meta', item).eq(0).find('a').attr('title')) !== null && _b !== void 0 ? _b : "");
         if (mangaTime > time)
             if (ids.includes(id))
                 manga.push(id);
@@ -968,13 +968,9 @@ function parseDate(str) {
         let date = new Date();
         return new Date(date.getFullYear(), date.getMonth(), date.getDate());
     }
-    if (/^(\d){1,2} (\D)+ (\d){4}$/.test(str)) {
-        let date = str.split(' ');
-        let year = date[2];
-        let months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-        let month = months.findIndex((element) => element == date[1]).toString();
-        let day = date[0];
-        return new Date(parseInt(year), parseInt(month), parseInt(day));
+    if (/^(\d){1,2}\/(\d){2}\/(\d){4}$/.test(str)) {
+        let date = str.split('/');
+        return new Date(parseInt(date[2]), parseInt(date[1]) - 1, parseInt(date[0]));
     }
     else {
         let date = str.split(' ');
@@ -1018,24 +1014,26 @@ function convertNbViews(str) {
 }
 function getURLImage($, item) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    let image = "";
     if ($('img', item).attr('srcset') != undefined) {
-        return encodeURI(((_b = ((_a = $('img', item).attr('srcset')) !== null && _a !== void 0 ? _a : "").split(',').pop()) !== null && _b !== void 0 ? _b : "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+        image = ((_b = ((_a = $('img', item).attr('srcset')) !== null && _a !== void 0 ? _a : "").split(',').pop()) !== null && _b !== void 0 ? _b : "").trim();
     }
     else if ($('img', item).attr('data-srcset') != undefined) {
-        return encodeURI(((_d = ((_c = $('img', item).attr('data-srcset')) !== null && _c !== void 0 ? _c : "").split(',').pop()) !== null && _d !== void 0 ? _d : "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+        image = ((_d = ((_c = $('img', item).attr('data-srcset')) !== null && _c !== void 0 ? _c : "").split(',').pop()) !== null && _d !== void 0 ? _d : "").trim().split(' ')[0];
     }
     else if ($('img', item).attr('data-lazy-srcset') != undefined) {
-        return encodeURI(((_f = ((_e = $('img', item).attr('data-lazy-srcset')) !== null && _e !== void 0 ? _e : "").split(',').pop()) !== null && _f !== void 0 ? _f : "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+        image = ((_f = ((_e = $('img', item).attr('data-lazy-srcset')) !== null && _e !== void 0 ? _e : "").split(',').pop()) !== null && _f !== void 0 ? _f : "").trim().split(' ')[0];
     }
     else if ($('img', item).attr('data-src') != undefined) {
-        return encodeURI(((_g = $('img', item).attr('data-src')) !== null && _g !== void 0 ? _g : "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+        image = ((_g = $('img', item).attr('data-src')) !== null && _g !== void 0 ? _g : "").trim();
     }
     else if ($('img', item).attr('data-lazy-src') != undefined) {
-        return encodeURI(((_h = $('img', item).attr('data-lazy-src')) !== null && _h !== void 0 ? _h : "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'));
+        image = ((_h = $('img', item).attr('data-lazy-src')) !== null && _h !== void 0 ? _h : "").trim();
     }
     else {
-        return encodeURI(((_j = $('img', item).attr('src')) !== null && _j !== void 0 ? _j : "").trim().replace(/-[75]+x(\w)+[.]{1}/gm, '.'));
+        image = ((_j = $('img', item).attr('src')) !== null && _j !== void 0 ? _j : "").trim();
     }
+    return encodeURI(image.replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.').replace(/-[75]+x(\w)+[.]{1}/gm, '.'));
 }
 
 },{"paperback-extensions-common":5}]},{},[48])(48)

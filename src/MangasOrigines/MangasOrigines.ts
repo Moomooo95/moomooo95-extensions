@@ -36,13 +36,13 @@ const headers = {
 }
 
 export const MangasOriginesInfo: SourceInfo = {
-  version: '1.7.2',
+  version: '1.7.3',
   name: 'MangasOrigines',
   icon: 'logo.png',
   author: 'Moomooo95',
   authorWebsite: 'https://github.com/Moomooo95',
   description: 'Source française MangasOrigines',
-  contentRating: ContentRating.ADULT,
+  contentRating: ContentRating.MATURE,
   websiteBaseURL: MANGASORIGINES_DOMAIN,
   sourceTags: [
     {
@@ -71,7 +71,6 @@ export class MangasOrigines extends Source {
     return `${MANGASORIGINES_DOMAIN}/manga/${mangaId}`
   }
 
-
   ///////////////////////////////
   /////    MANGA DETAILS    /////
   ///////////////////////////////
@@ -84,6 +83,7 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1);
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
 
     return await parseMangasOriginesDetails($, mangaId);
@@ -102,6 +102,7 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1);
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
 
     return await parseMangasOriginesChapters($, mangaId);
@@ -120,6 +121,7 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1);
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data);
 
     return await parseMangasOriginesChapterDetails($, mangaId, chapterId);
@@ -170,6 +172,7 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
 
     manga = parseSearch($)
@@ -199,6 +202,7 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
 
     parseHomeSections($, [section1, section2, section3, section4], sectionCallback)
@@ -227,6 +231,7 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
 
     const manga = parseViewMore($)
@@ -258,6 +263,7 @@ export class MangasOrigines extends Source {
       })
 
       const response = await this.requestManager.schedule(request, 1)
+      this.CloudFlareError(response.status)
       const $ = this.cheerio.load(response.data)
 
       updatedManga = parseUpdatedManga($, time, ids)
@@ -282,8 +288,27 @@ export class MangasOrigines extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
+    this.CloudFlareError(response.status)
     const $ = this.cheerio.load(response.data)
 
     return parseTags($)
+  }
+
+  ///////////////////////////////////
+  /////    CLOUDFLARE BYPASS    /////
+  ///////////////////////////////////
+
+  CloudFlareError(status: any) {
+    if (status == 503) {
+      throw new Error('CLOUDFLARE BYPASS ERROR:\nVeuillez aller dans les Paramètres > Sources > MangasOrigines et appuyez sur Cloudflare Bypass')
+    }
+  }
+
+  getCloudflareBypassRequest() {
+    return createRequestObject({
+      url: `${MANGASORIGINES_DOMAIN}/manga/the-beginning-after-the-end`,
+      method,
+      headers
+    })
   }
 }

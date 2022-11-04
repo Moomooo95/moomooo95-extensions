@@ -19,7 +19,7 @@ export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): M
   const panel = $('.container .tab-summary')
 
   const titles = [decodeHTMLEntity($('.container .post-title h1').text().trim())]
-  const image = $('img', panel).attr('data-src') == undefined ? encodeURI(($('img', panel).attr('src') ?? "").trim().replace(/-[75]+x(\w)+/gm, '')) : encodeURI(($('img', panel).attr('data-src') ?? "").trim().replace(/-[75]+x(\w)+/gm, ''))
+  const image = getURLImage($, panel.toArray()[0])
   const author = $('[href*=manga-author]', panel).text().trim() ?? undefined
   const artist = $('[href*=manga-artist]', panel).text().trim() ?? undefined
 
@@ -160,7 +160,7 @@ const parseHotManga = ($: CheerioStatic): MangaTile[] => {
 
   for (const item of $('.container .manga-slider .slider__container .slider__item').toArray()) {
     let id = $('h4 a', item).attr('href')?.split("/")[4]
-    let image = encodeURI(($('img', item).attr('src') ?? "").trim())
+    let image = getURLImage($, item)
     let title = decodeHTMLEntity($('h4', item).text().trim())
 
     if (typeof id === 'undefined' || typeof image === 'undefined')
@@ -188,6 +188,7 @@ const parseLatestUpdatedManga = ($: CheerioStatic): MangaTile[] => {
     let image = getURLImage($, item)
     let title = decodeHTMLEntity($('h3 a', item).text().trim())
     let subtitle = decodeHTMLEntity($('.chapter-item .chapter.font-meta', item).eq(0).text().trim())
+    console.log(image)
 
     if (typeof id === 'undefined' || typeof image === 'undefined')
       continue
@@ -452,20 +453,23 @@ function convertNbViews(str: string) {
 }
 
 function getURLImage($ : CheerioStatic, item: CheerioElement) {
-  let image = undefined
   if ($('img', item).attr('srcset') != undefined) {
-    image = encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+    return encodeURI((($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
   }
   else if ($('img', item).attr('data-srcset') != undefined) {
-    image = encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+    return encodeURI((($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+  } 
+  else if ($('img', item).attr('data-lazy-srcset') != undefined) {
+    return encodeURI((($('img', item).attr('data-lazy-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0].replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
   }
   else if ($('img', item).attr('data-src') != undefined) {
-    image = encodeURI(($('img', item).attr('data-src') ?? "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+    return encodeURI(($('img', item).attr('data-src') ?? "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
+  }
+  else if ($('img', item).attr('data-lazy-src') != undefined) {
+    return encodeURI(($('img', item).attr('data-lazy-src') ?? "").trim().replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.'))
   }
   else {
-    image = encodeURI(($('img', item).attr('src') ?? "").trim().replace(/-[75]+x(\w)+[.]{1}/gm, '.'))
+    return encodeURI(($('img', item).attr('src') ?? "").trim().replace(/-[75]+x(\w)+[.]{1}/gm, '.'))
   }
-
-  return image
 }
 

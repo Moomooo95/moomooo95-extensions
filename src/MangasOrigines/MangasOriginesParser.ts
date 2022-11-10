@@ -44,7 +44,7 @@ export const parseMangasOriginesDetails = ($: CheerioStatic, mangaId: string): M
   const tags: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
 
   let status = MangaStatus.UNKNOWN
-  switch ($('.post-content_item .summary-heading:contains("STATUS")', panel).next().text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')) {
+  switch ($('.post-content_item .summary-heading:contains("Statut")', panel).next().text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')) {
     case "Complété":
       status = MangaStatus.COMPLETED
       break;
@@ -451,7 +451,7 @@ function getURLImage($ : CheerioStatic, item: CheerioElement) {
   let image = ""
   
   if ($('img', item).attr('srcset') != undefined) {
-    image = (($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim()
+    image = (($('img', item).attr('srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0]
   }
   else if ($('img', item).attr('data-srcset') != undefined) {
     image = (($('img', item).attr('data-srcset') ?? "").split(',').pop() ?? "").trim().split(' ')[0]

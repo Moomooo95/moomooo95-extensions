@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.7.4',
+    version: '1.7.5',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -674,7 +674,7 @@ const parseMangasOriginesDetails = ($, mangaId) => {
     }
     const tags = [createTagSection({ id: '0', label: 'genres', tags: arrayTags.length > 0 ? arrayTags.map(x => createTag(x)) : [] })];
     let status = paperback_extensions_common_1.MangaStatus.UNKNOWN;
-    switch ($('.post-content_item .summary-heading:contains("STATUS")', panel).next().text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')) {
+    switch ($('.post-content_item .summary-heading:contains("Statut")', panel).next().text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')) {
         case "Complété":
             status = paperback_extensions_common_1.MangaStatus.COMPLETED;
             break;
@@ -1016,7 +1016,7 @@ function getURLImage($, item) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     let image = "";
     if ($('img', item).attr('srcset') != undefined) {
-        image = ((_b = ((_a = $('img', item).attr('srcset')) !== null && _a !== void 0 ? _a : "").split(',').pop()) !== null && _b !== void 0 ? _b : "").trim();
+        image = ((_b = ((_a = $('img', item).attr('srcset')) !== null && _a !== void 0 ? _a : "").split(',').pop()) !== null && _b !== void 0 ? _b : "").trim().split(' ')[0];
     }
     else if ($('img', item).attr('data-srcset') != undefined) {
         image = ((_d = ((_c = $('img', item).attr('data-srcset')) !== null && _c !== void 0 ? _c : "").split(',').pop()) !== null && _d !== void 0 ? _d : "").trim().split(' ')[0];

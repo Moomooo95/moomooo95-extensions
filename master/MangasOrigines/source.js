@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.7.5',
+    version: '1.7.6',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -1013,25 +1013,21 @@ function convertNbViews(str) {
     return Number(views);
 }
 function getURLImage($, item) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    let all_attrs = Object.keys($('img', item).get(0).attribs).map(name => ({ name, value: $('img', item).get(0).attribs[name] }));
+    let all_attrs_srcset = all_attrs.filter(el => el.name.includes('srcset'));
+    let all_attrs_src = all_attrs.filter(el => el.name.includes('src') && !el.name.includes('srcset') && !el.value.includes('data:image/svg+xml'));
     let image = "";
-    if ($('img', item).attr('srcset') != undefined) {
-        image = ((_b = ((_a = $('img', item).attr('srcset')) !== null && _a !== void 0 ? _a : "").split(',').pop()) !== null && _b !== void 0 ? _b : "").trim().split(' ')[0];
-    }
-    else if ($('img', item).attr('data-srcset') != undefined) {
-        image = ((_d = ((_c = $('img', item).attr('data-srcset')) !== null && _c !== void 0 ? _c : "").split(',').pop()) !== null && _d !== void 0 ? _d : "").trim().split(' ')[0];
-    }
-    else if ($('img', item).attr('data-lazy-srcset') != undefined) {
-        image = ((_f = ((_e = $('img', item).attr('data-lazy-srcset')) !== null && _e !== void 0 ? _e : "").split(',').pop()) !== null && _f !== void 0 ? _f : "").trim().split(' ')[0];
-    }
-    else if ($('img', item).attr('data-src') != undefined) {
-        image = ((_g = $('img', item).attr('data-src')) !== null && _g !== void 0 ? _g : "").trim();
-    }
-    else if ($('img', item).attr('data-lazy-src') != undefined) {
-        image = ((_h = $('img', item).attr('data-lazy-src')) !== null && _h !== void 0 ? _h : "").trim();
+    if (all_attrs_srcset.length) {
+        let all_srcset = all_attrs_srcset.map(el => el.value.split(',').sort(function (a, b) { return /\d+[w]/.exec(a)[0] < /\d+[w]/.exec(b)[0]; })[0]);
+        image = all_srcset
+            .filter(function (element, index, self) { return index === self.indexOf(element); })
+        // .sort(function(a, b) { return /\d+[w]/.exec(a)![0] > /\d+[w]/.exec(b)![0] })
+        [0].trim()
+            .split(' ')[0].trim();
     }
     else {
-        image = ((_j = $('img', item).attr('src')) !== null && _j !== void 0 ? _j : "").trim();
+        let all_src = all_attrs_src.map(el => el.value);
+        image = all_src[0];
     }
     return encodeURI(image.replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.').replace(/-[75]+x(\w)+[.]{1}/gm, '.'));
 }

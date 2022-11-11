@@ -396,7 +396,7 @@ const headers = {
     'Host': 'manga-scantrad.net'
 };
 exports.MangaScantradInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'MangaScantrad',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -603,10 +603,10 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 /////    MANGA DETAILS    /////
 ///////////////////////////////
 const parseMangaScantradDetails = ($, mangaId) => {
-    var _a, _b;
+    var _a;
     const panel = $('.profile-manga  .summary_content');
     const titles = [decodeHTMLEntity($('.site-content .post-title h1').text().trim())];
-    const image = (_a = $('.site-content .summary_image img').attr('data-src')) !== null && _a !== void 0 ? _a : '';
+    const image = getURLImage($, $('.site-content .summary_image').toArray()[0]);
     const author = $('a[href*=author]', panel).text().trim();
     const artist = $('a[href*=artist]', panel).text().trim();
     const rating = Number($('.post-total-rating .score', panel).text().trim());
@@ -620,7 +620,7 @@ const parseMangaScantradDetails = ($, mangaId) => {
     const tags = $('a[href*=manga-genre]', panel).toArray();
     for (const tag of tags) {
         const label = decodeHTMLEntity($(tag).text());
-        const id = (_b = $(tag).attr('href')) === null || _b === void 0 ? void 0 : _b.split("/")[4];
+        const id = (_a = $(tag).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
         if (['Adulte'].includes(label) || ['Mature'].includes(label) || ['Hentai'].includes(label)) {
             hentai = true;
         }
@@ -669,7 +669,7 @@ const parseMangaScantradChapters = ($, mangaId) => {
     for (let chapter of $('ul .wp-manga-chapter').toArray()) {
         let id = (_a = $('a', chapter).attr('href')) !== null && _a !== void 0 ? _a : '';
         let name = (_b = $('a', chapter).text().trim().split('-')[1]) !== null && _b !== void 0 ? _b : undefined;
-        let chapNum = Number(((_d = ((_c = $('a', chapter).text().trim().match(/(Ch(\s?)[.](\s?)(\d)+)|(Chap(\s?)[.](\s?)(\d)+)|(Chapitre\s{1}(\d)+)|(Chapter\s{1}(\d)+)/gm)) !== null && _c !== void 0 ? _c : "")[0].match(/\d+/gm)) !== null && _d !== void 0 ? _d : "")[0]);
+        let chapNum = Number(((_d = ((_c = $('a', chapter).text().trim().match(/(Ch(\s?)[.](\s?)(\d)+)|(Chap(\s?)[.](\s?)(\d)+)|(Chapitre\s{1}(\d)+)|(Chapter\s{1}(\d)+)|(Episode\s{1}(\d)+)/gm)) !== null && _c !== void 0 ? _c : "")[0].match(/\d+/gm)) !== null && _d !== void 0 ? _d : "")[0]);
         let time = parseDate($('.chapter-release-date', chapter).text().trim());
         chapters.push(createChapter({
             id,
@@ -707,11 +707,11 @@ exports.parseMangaScantradChapterDetails = parseMangaScantradChapterDetails;
 /////    SEARCH    /////
 ////////////////////////
 const parseSearch = ($) => {
-    var _a, _b, _c, _d;
+    var _a, _b;
     const manga = [];
     for (const item of $('.c-tabs-item .row.c-tabs-item__content').toArray()) {
         let id = (_b = (_a = $('.tab-thumb.c-image-hover a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4]) !== null && _b !== void 0 ? _b : '';
-        let image = (_d = (_c = $('.tab-thumb.c-image-hover a img', item).attr('data-src')) === null || _c === void 0 ? void 0 : _c.replace('-193x278', '')) !== null && _d !== void 0 ? _d : '';
+        let image = getURLImage($, item);
         let title = decodeHTMLEntity(($('.tab-summary .post-title h3', item).text().trim()));
         let subtitle = decodeHTMLEntity($('.tab-meta .meta-item.latest-chap a', item).text().trim());
         manga.push(createMangaTile({
@@ -732,7 +732,7 @@ const parseLastUpdated = ($) => {
     const lastUpdated = [];
     for (const item of $('#loop-content .page-item-detail').toArray()) {
         let id = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = $('img', item).attr('data-src');
+        let image = getURLImage($, item);
         let title = decodeHTMLEntity($('h3 a', item).text().trim());
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter a', item).first().text().trim());
         if (typeof id === 'undefined' || typeof image === 'undefined')
@@ -750,11 +750,11 @@ const parseLastUpdated = ($) => {
 /////    POPULAR MANGA    /////
 ///////////////////////////////
 const parsePopularManga = ($) => {
-    var _a, _b;
+    var _a;
     const popularManga = [];
     for (var item of $('#manga-popular-slider-5 .slider__container .slider__item').toArray()) {
         var id = (_a = $('.slider__thumb_item a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        var image = (_b = $('img', item).attr('data-src')) === null || _b === void 0 ? void 0 : _b.replace('125x180', '193x278');
+        var image = getURLImage($, item);
         var title = $('.post-title h4', item).text().trim();
         var subtitle = $('.chapter-item .chapter a', item).first().text().trim();
         if (typeof id === 'undefined' || typeof image === 'undefined')
@@ -776,7 +776,7 @@ const parseProjectsPartners = ($) => {
     const projectsPartners = [];
     for (const item of $('#block-18 .page-item-detail').toArray()) {
         let id = (_a = $('h3 a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = $('img', item).attr('data-src');
+        let image = getURLImage($, item);
         let title = decodeHTMLEntity($('h3 a', item).text().trim());
         if (typeof id === 'undefined' || typeof image === 'undefined')
             continue;
@@ -810,7 +810,7 @@ const parseViewMore = ($) => {
     const viewMore = [];
     for (const item of $('.tab-content-wrap .c-tabs-item__content').toArray()) {
         let id = (_a = $('.tab-thumb a', item).attr('href')) === null || _a === void 0 ? void 0 : _a.split("/")[4];
-        let image = $('.tab-thumb a img', item).attr('data-src');
+        let image = getURLImage($, item);
         let title = ($('.post-title h3', item).text().trim());
         let subtitle = ($('.latest-chap .chapter a', item).text().trim());
         if (typeof id === 'undefined' || typeof image === 'undefined')
@@ -917,6 +917,25 @@ function parseDate(str) {
         }
         return date_today;
     }
+}
+function getURLImage($, item) {
+    let all_attrs = Object.keys($('img', item).get(0).attribs).map(name => ({ name, value: $('img', item).get(0).attribs[name] }));
+    let all_attrs_srcset = all_attrs.filter(el => el.name.includes('srcset'));
+    let all_attrs_src = all_attrs.filter(el => el.name.includes('src') && !el.name.includes('srcset') && !el.value.includes('data:image/svg+xml'));
+    let image = "";
+    if (all_attrs_srcset.length) {
+        let all_srcset = all_attrs_srcset.map(el => el.value.split(',').sort(function (a, b) { return /\d+[w]/.exec(a)[0] < /\d+[w]/.exec(b)[0]; })[0]);
+        image = all_srcset
+            .filter(function (element, index, self) { return index === self.indexOf(element); })
+        // .sort(function(a, b) { return /\d+[w]/.exec(a)![0] > /\d+[w]/.exec(b)![0] })
+        [0].trim()
+            .split(' ')[0].trim();
+    }
+    else {
+        let all_src = all_attrs_src.map(el => el.value);
+        image = all_src[0];
+    }
+    return encodeURI(image.replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.').replace(/-[75]+x(\w)+[.]{1}/gm, '.'));
 }
 
 },{"paperback-extensions-common":5}]},{},[48])(48)

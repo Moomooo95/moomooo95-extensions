@@ -1,32 +1,16 @@
-# Extensions Française pour Paperback 
+# French Extensions for Paperback
 
-## Sources Disponibles
+## Sources available
 
-|                   |                  |
-| ---               | ---              |
-| Le Cercle du Scan | [Site Web](https://lel.lecercleduscan.com/) |
-| FRScan            | [Site Web](https://frscan.cc/) |
-| LelscanVF         | [Site Web](https://lelscanvf.com/) |
-| MangaScantrad     | [Site Web](https://manga-scantrad.net/) |
-| ReaperScansFR     | [Site Web](https://reaperscans.fr/) |
-| MangasOrigines    | [Site Web](https://mangas-origines.fr/) |
-| FuryoSquad        | [Site Web](https://furyosquad.com/) |
-| Scantrad Union    | [Site Web](https://scantrad-union.com/) |
-| Scantrad          | [Site Web](https://scantrad.net/) |
-| Japanread         | [Site Web](https://www.japanread.cc/) |
-
-## Sources en cours de développement
-
-|                   |                  |
-| ---               | ---              |
-| Japscan           | [Site Web](https://japscan.ws/) | *
-| Scan Manga        | [Site Web](https://www.scan-manga.com/) | *
-| CrunchyScan       | [Site Web](https://crunchyscan.fr/) | *
-
-## Sources à venir
-
-|                   |                  |
-| ---               | ---              |
-| Neo Scantrad      | [Site Web](https://neo-scantrad.xyz/) |
-| Mangakawaii       | [Site Web](https://www.mangakawaii.net/) | *
-
+|       Name        |               URL               |
+| :---------------: | :-----------------------------: |
+| MangasOrigines    | https://mangas-origines.fr/     |
+| MangasScantrad    | https://manga-scantrad.net/     |
+| ReaperScansFR     | https://reaperscans.fr/         |
+| LelscanVF         | https://lelscanvf.com/          |
+| FRScan            | https://frscan.cc/              |
+| Le Cercle du Scan | https://lel.lecercleduscan.com/ |
+| FuryoSquad        | https://furyosquad.com/         |
+| Scantrad          | https://scantrad.net/           |
+| Scantrad Union    | https://scantrad-union.com/     |
+| Japanread         | https://www.japanread.cc/       |

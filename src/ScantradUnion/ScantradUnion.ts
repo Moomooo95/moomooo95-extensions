@@ -11,8 +11,6 @@ import {
     TagType,
     ContentRating,
     RequestManager,
-    HomeSectionType,
-    MangaTile,
     TagSection
 } from "paperback-extensions-common"
 
@@ -35,13 +33,13 @@ const headers = {
 }
 
 export const ScantradUnionInfo: SourceInfo = {
-    version: '1.1',
+    version: '1.2.0',
     name: 'Scantrad Union',
     icon: 'logo.png',
     author: 'Moomooo95',
     authorWebsite: 'https://github.com/Moomooo95',
     description: 'Source française Scantrad Union',
-    contentRating: ContentRating.MATURE,
+    contentRating: ContentRating.ADULT,
     websiteBaseURL: SCANTRADUNION_DOMAIN,
     sourceTags: [
         {
@@ -51,10 +49,6 @@ export const ScantradUnionInfo: SourceInfo = {
         {
             text: 'Notifications',
             type: TagType.GREEN
-        },
-        {
-            text: 'Slow',
-            type: TagType.YELLOW
         }
     ]
 }
@@ -135,38 +129,34 @@ export class ScantradUnion extends Source {
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page: number = metadata?.page ?? 1
         const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? ''
-        let manga: MangaTile[] = []
+
+        let param = "current_page_id=9387&qtranslate_lang=0&asp_gen%5B%5D=title&customset%5B%5D=manga"
 
         if (query.includedTags && query.includedTags?.length != 0) {
-            const request = createRequestObject({
-                url: `${SCANTRADUNION_DOMAIN}/tag/${query.includedTags[0].id}/page/${page}`,
-                method,
-                headers
-            })
+            for (let tag of query.includedTags) {
 
-            const response = await this.requestManager.schedule(request, 1)
-            const $ = this.cheerio.load(response.data)
-
-            manga = parseSearch($)
-            metadata = !isLastPage($) ? { page: page + 1 } : undefined
+                if (tag.id.includes('Teams')) {
+                    param += `&termset%5Bteam%5D%5B%5D=${tag.id.split('-')[0]}`
+                } else {
+                    param += `&post_tag_set%5B%5D=${tag.id}`
+                }
+            }
         }
-        else {
-            const request = createRequestObject({
-                url: `${SCANTRADUNION_DOMAIN}/?s=${search}`,
-                method,
-                headers
-            })
 
-            const response = await this.requestManager.schedule(request, 1)
-            const $ = this.cheerio.load(response.data)
+        let url = `${SCANTRADUNION_DOMAIN}/page/${page}/?s=${search}&asp_active=1&p_asid=1&p_asp_data=${Buffer.from(param, 'binary').toString('base64')}`
 
-            manga = parseSearch($)
-            metadata = undefined
-        }
+        const request = createRequestObject({
+            url,
+            method,
+            headers
+        })
+
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data)
 
         return createPagedResults({
-            results: manga,
-            metadata
+            results: parseSearch($),
+            metadata: !isLastPage($) ? { page: page + 1 } : undefined
         })
     }
 
@@ -176,8 +166,8 @@ export class ScantradUnion extends Source {
     //////////////////////////////
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const section1 = createHomeSection({ id: 'series_forward', title: 'Séries en Avant', type: HomeSectionType.featured })
-        const section2 = createHomeSection({ id: 'latest_updates', title: 'Dernières sorties' })
+        const section1 = createHomeSection({ id: 'latest_updates', title: 'Dernières Sorties' })
+        const section2 = createHomeSection({ id: 'series_forward', title: 'Séries en Avant' })
 
         const request1 = createRequestObject({
             url: `${SCANTRADUNION_DOMAIN}`,
@@ -214,26 +204,26 @@ export class ScantradUnion extends Source {
 
     async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
         let updatedManga: UpdatedManga = {
-          ids: [],
-          loadMore: true
+            ids: [],
+            loadMore: true
         }
-    
+
         while (updatedManga.loadMore) {
-          const request = createRequestObject({
-            url: `${SCANTRADUNION_DOMAIN}`,
-            method,
-            headers
-          })
-    
-          const response = await this.requestManager.schedule(request, 1)
-          const $ = this.cheerio.load(response.data)
-    
-          updatedManga = parseUpdatedManga($, time, ids)
-          if (updatedManga.ids.length > 0) {
-            mangaUpdatesFoundCallback(createMangaUpdates({
-              ids: updatedManga.ids
-            }));
-          }
+            const request = createRequestObject({
+                url: `${SCANTRADUNION_DOMAIN}`,
+                method,
+                headers
+            })
+
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data)
+
+            updatedManga = parseUpdatedManga($, time, ids)
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
         }
-      }
+    }
 }

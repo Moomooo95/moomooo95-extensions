@@ -282,7 +282,7 @@ export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
 /////////////////////////////////
 
 export const isLastPage = ($: CheerioStatic): boolean => {
-    return $('.wp-pagenavi .last').length == 0
+    return $('.wp-pagenavi .nextpostslink') == undefined 
 }
 
 
@@ -291,18 +291,46 @@ export const isLastPage = ($: CheerioStatic): boolean => {
 //////////////////////
 
 export const parseTags = ($: CheerioStatic): TagSection[] => {
-    const arrayTags: Tag[] = []
-    for (let item of $('#search-advanced .checkbox-group .checkbox').toArray()) {
-        let id = $('input', item).attr('value')
-        let label = decodeHTMLEntity($('label', item).text().trim())
+    const arrayGenres: Tag[] = []
+  const arrayGenresConditions: Tag[] = []
+  const arrayAdultContent: Tag[] = []
+  const arrayStatutManga: Tag[] = []
 
-        if (typeof id === 'undefined')
-            continue
+  // Genres
+  for (let item of $('#search-advanced .checkbox-group .checkbox').toArray()) {
+    let id = $('input', item).attr('value') ?? ''
+    let label = decodeHTMLEntity($('label', item).text().trim())
 
-        arrayTags.push({ id, label })
-    }
+    arrayGenres.push({ id, label })
+  }
+  // Genres Conditions
+  for (let item of $('#search-advanced .form-group .form-control').eq(0).children().toArray()) {
+    let id = $(item).attr('value') ?? ''
+    let label = decodeHTMLEntity($(item).text().trim())
 
-    return [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })]
+    arrayGenresConditions.push({ id, label })
+  }
+  // Adult Content
+  for (let item of $('#search-advanced .form-group .form-control').eq(4).children().toArray()) {
+    let id = $(item).attr('value') ?? ''
+    let label = decodeHTMLEntity($(item).text().trim())
+
+    arrayAdultContent.push({ id, label })
+  }
+  // Statut
+  for (let item of $('#search-advanced .form-group').eq(6).children('.checkbox-inline').toArray()) {
+    let id = $('input', item).attr('value') ?? ''
+    let label = decodeHTMLEntity($('label', item).text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, ''))
+
+    arrayStatutManga.push({ id, label })
+  }
+
+  return [
+    createTagSection({ id: '0', label: 'Genres', tags: arrayGenres.map(x => createTag(x)) }),
+    createTagSection({ id: '1', label: 'Genres Conditions', tags: arrayGenresConditions.map(x => createTag(x)) }),
+    createTagSection({ id: '2', label: 'Contenu pour adulte', tags: arrayAdultContent.map(x => createTag(x)) }),
+    createTagSection({ id: '3', label: 'Statut', tags: arrayStatutManga.map(x => createTag(x)) })
+  ]
 }
 
 
@@ -396,6 +424,10 @@ function parseDate(str: string) {
 
 
 function getURLImage($: CheerioStatic, item: CheerioElement) {
+    if ($('img', item).get(0) == undefined) {
+        return ""
+    }
+
     let all_attrs = Object.keys($('img', item).get(0).attribs).map(name => ({ name, value: $('img', item).get(0).attribs[name] }))
     let all_attrs_srcset = all_attrs.filter(el => el.name.includes('srcset') )
     let all_attrs_src = all_attrs.filter(el => el.name.includes('src') && !el.name.includes('srcset') && !el.value.includes('data:image/svg+xml') )

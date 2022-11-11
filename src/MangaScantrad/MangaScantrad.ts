@@ -35,7 +35,7 @@ const headers = {
 }
 
 export const MangaScantradInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'MangaScantrad',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -130,15 +130,33 @@ export class MangaScantrad extends Source {
     ////////////////////////////////
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
-        const page: number = metadata?.page ?? 1
         const search = query.title?.replace(/ /g, '+').replace(/[’'´]/g, '%27') ?? ''
-        let manga: MangaTile[] = []
+        let page: number = metadata?.page ?? 1
 
         let url = `${MANGASCANTRAD_DOMAIN}/?post_type=wp-manga&s=${search}&paged=${page}`
 
         if (query.includedTags && query.includedTags?.length != 0) {
             for (let tag of query.includedTags) {
-                url += `&genre[]=${tag.id}`
+                switch (tag.label) {
+                    case "OU (ayant un des genres sélectionnés)":
+                    case "ET (ayant tous les genres sélectionnés)":
+                        url += `&op=${tag.id}`
+                        break;
+                    case "Tout":
+                    case "Aucun Contenu pour Adulte":
+                    case "Uniquement du Contenu pour Adulte":
+                        url += `&adult=${tag.id}`
+                        break;
+                    case "En Cours":
+                    case "Terminé":
+                    case "Annulé":
+                    case "En Pause":
+                        url += `&status%5B%5D=${tag.id}`
+                        break;
+                    default:
+                        url += `&genre%5B%5D=${tag.id}`
+                        break;
+                }
             }
         }
 
@@ -151,7 +169,7 @@ export class MangaScantrad extends Source {
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data)
 
-        manga = parseSearch($)
+        const manga = parseSearch($)
         metadata = !isLastPage($) ? { page: page + 1 } : undefined
 
         return createPagedResults({

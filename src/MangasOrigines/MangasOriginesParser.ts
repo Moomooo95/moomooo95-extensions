@@ -448,23 +448,27 @@ function convertNbViews(str: string) {
 }
 
 function getURLImage($: CheerioStatic, item: CheerioElement) {
-    let all_attrs = Object.keys($('img', item).get(0).attribs).map(name => ({ name, value: $('img', item).get(0).attribs[name] }))
-    let all_attrs_srcset = all_attrs.filter(el => el.name.includes('srcset') )
-    let all_attrs_src = all_attrs.filter(el => el.name.includes('src') && !el.name.includes('srcset') && !el.value.includes('data:image/svg+xml') )
+  if ($('img', item).get(0) == undefined) {
+    return ""
+  }
 
-    let image = ""
-    if (all_attrs_srcset.length) {
-        let all_srcset = all_attrs_srcset.map(el => el.value.split(',').sort(function(a: string, b: string) { return /\d+[w]/.exec(a)![0] < /\d+[w]/.exec(b)![0] })[0])
-        image = all_srcset
-            .filter(function(element, index, self) { return index === self.indexOf(element) })
-            // .sort(function(a, b) { return /\d+[w]/.exec(a)![0] > /\d+[w]/.exec(b)![0] })
-            [0].trim()
-            .split(' ')[0].trim()
-    } else {
-        let all_src = all_attrs_src.map(el => el.value)  
-        image = all_src[0]
-    }
+  let all_attrs = Object.keys($('img', item).get(0).attribs).map(name => ({ name, value: $('img', item).get(0).attribs[name] }))
+  let all_attrs_srcset = all_attrs.filter(el => el.name.includes('srcset') )
+  let all_attrs_src = all_attrs.filter(el => el.name.includes('src') && !el.name.includes('srcset') && !el.value.includes('data:image/svg+xml') )
 
-    return encodeURI(image.replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.').replace(/-[75]+x(\w)+[.]{1}/gm, '.'))
+  let image = ""
+  if (all_attrs_srcset.length) {
+      let all_srcset = all_attrs_srcset.map(el => el.value.split(',').sort(function(a: string, b: string) { return /\d+[w]/.exec(a)![0] < /\d+[w]/.exec(b)![0] })[0])
+      image = all_srcset
+          .filter(function(element, index, self) { return index === self.indexOf(element) })
+          // .sort(function(a, b) { return /\d+[w]/.exec(a)![0] > /\d+[w]/.exec(b)![0] })
+          [0].trim()
+          .split(' ')[0].trim()
+  } else {
+      let all_src = all_attrs_src.map(el => el.value)  
+      image = all_src[0]
+  }
+
+  return encodeURI(image.replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.').replace(/-[75]+x(\w)+[.]{1}/gm, '.'))
 }
 

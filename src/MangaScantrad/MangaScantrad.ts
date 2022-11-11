@@ -12,8 +12,7 @@ import {
     TagType,
     MangaTile,
     ContentRating,
-    RequestManager,
-    HomeSectionType
+    RequestManager
 } from "paperback-extensions-common"
 
 import {
@@ -36,7 +35,7 @@ const headers = {
 }
 
 export const MangaScantradInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'MangaScantrad',
     icon: 'logo.png',
     author: 'Moomooo95',

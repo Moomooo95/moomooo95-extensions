@@ -18,7 +18,7 @@ export const parseMangaScantradDetails = ($: CheerioStatic, mangaId: string): Ma
     const panel = $('.profile-manga  .summary_content')
 
     const titles = [decodeHTMLEntity($('.site-content .post-title h1').text().trim())]
-    const image = $('.site-content .summary_image img').attr('data-src') ?? ''
+    const image = getURLImage($, $('.site-content .summary_image').toArray()[0])
     const author = $('a[href*=author]', panel).text().trim()
     const artist = $('a[href*=artist]', panel).text().trim()
 
@@ -89,7 +89,7 @@ export const parseMangaScantradChapters = ($: CheerioStatic, mangaId: string): C
     for (let chapter of $('ul .wp-manga-chapter').toArray()) {
         let id = $('a', chapter).attr('href') ?? ''
         let name = $('a', chapter).text().trim().split('-')[1] ?? undefined
-        let chapNum = Number((($('a', chapter).text().trim().match(/(Ch(\s?)[.](\s?)(\d)+)|(Chap(\s?)[.](\s?)(\d)+)|(Chapitre\s{1}(\d)+)|(Chapter\s{1}(\d)+)/gm) ?? "")[0].match(/\d+/gm) ?? "")[0])
+        let chapNum = Number((($('a', chapter).text().trim().match(/(Ch(\s?)[.](\s?)(\d)+)|(Chap(\s?)[.](\s?)(\d)+)|(Chapitre\s{1}(\d)+)|(Chapter\s{1}(\d)+)|(Episode\s{1}(\d)+)/gm) ?? "")[0].match(/\d+/gm) ?? "")[0])
         let time = parseDate($('.chapter-release-date', chapter).text().trim())
 
         chapters.push(createChapter({
@@ -139,7 +139,7 @@ export const parseSearch = ($: CheerioStatic): MangaTile[] => {
 
     for (const item of $('.c-tabs-item .row.c-tabs-item__content').toArray()) {
         let id = $('.tab-thumb.c-image-hover a', item).attr('href')?.split("/")[4] ?? ''
-        let image = $('.tab-thumb.c-image-hover a img', item).attr('data-src')?.replace('-193x278', '') ?? ''
+        let image = getURLImage($, item)
         let title = decodeHTMLEntity(($('.tab-summary .post-title h3', item).text().trim()))
         let subtitle = decodeHTMLEntity($('.tab-meta .meta-item.latest-chap a', item).text().trim())
 
@@ -164,7 +164,7 @@ const parseLastUpdated = ($: CheerioStatic): MangaTile[] => {
 
     for (const item of $('#loop-content .page-item-detail').toArray()) {
         let id = $('h3 a', item).attr('href')?.split("/")[4]
-        let image = $('img', item).attr('data-src')
+        let image = getURLImage($, item)
         let title = decodeHTMLEntity($('h3 a', item).text().trim())
         let subtitle = decodeHTMLEntity($('.chapter-item .chapter a', item).first().text().trim())
 
@@ -191,7 +191,7 @@ const parsePopularManga = ($: CheerioStatic): MangaTile[] => {
 
     for (var item of $('#manga-popular-slider-5 .slider__container .slider__item').toArray()) {
         var id = $('.slider__thumb_item a', item).attr('href')?.split("/")[4]
-        var image = $('img', item).attr('data-src')?.replace('125x180', '193x278')
+        var image = getURLImage($, item)
         var title = $('.post-title h4', item).text().trim()
         var subtitle = $('.chapter-item .chapter a', item).first().text().trim()
 
@@ -218,7 +218,7 @@ const parseProjectsPartners = ($: CheerioStatic): MangaTile[] => {
 
     for (const item of $('#block-18 .page-item-detail').toArray()) {
         let id = $('h3 a', item).attr('href')?.split("/")[4]
-        let image = $('img', item).attr('data-src')
+        let image = getURLImage($, item)
         let title = decodeHTMLEntity($('h3 a', item).text().trim())
 
         if (typeof id === 'undefined' || typeof image === 'undefined')
@@ -258,7 +258,7 @@ export const parseViewMore = ($: CheerioStatic): MangaTile[] => {
 
     for (const item of $('.tab-content-wrap .c-tabs-item__content').toArray()) {
         let id = $('.tab-thumb a', item).attr('href')?.split("/")[4]
-        let image = $('.tab-thumb a img', item).attr('data-src')
+        let image = getURLImage($, item)
         let title = ($('.post-title h3', item).text().trim())
         let subtitle = ($('.latest-chap .chapter a', item).text().trim())
 
@@ -392,4 +392,26 @@ function parseDate(str: string) {
         }
         return date_today
     }
+}
+
+
+function getURLImage($: CheerioStatic, item: CheerioElement) {
+    let all_attrs = Object.keys($('img', item).get(0).attribs).map(name => ({ name, value: $('img', item).get(0).attribs[name] }))
+    let all_attrs_srcset = all_attrs.filter(el => el.name.includes('srcset') )
+    let all_attrs_src = all_attrs.filter(el => el.name.includes('src') && !el.name.includes('srcset') && !el.value.includes('data:image/svg+xml') )
+
+    let image = ""
+    if (all_attrs_srcset.length) {
+        let all_srcset = all_attrs_srcset.map(el => el.value.split(',').sort(function(a: string, b: string) { return /\d+[w]/.exec(a)![0] < /\d+[w]/.exec(b)![0] })[0])
+        image = all_srcset
+            .filter(function(element, index, self) { return index === self.indexOf(element) })
+            // .sort(function(a, b) { return /\d+[w]/.exec(a)![0] > /\d+[w]/.exec(b)![0] })
+            [0].trim()
+            .split(' ')[0].trim()
+    } else {
+        let all_src = all_attrs_src.map(el => el.value)  
+        image = all_src[0]
+    }
+
+    return encodeURI(image.replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.').replace(/-[75]+x(\w)+[.]{1}/gm, '.'))
 }

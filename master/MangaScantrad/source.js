@@ -396,7 +396,7 @@ const headers = {
     'Host': 'manga-scantrad.net'
 };
 exports.MangaScantradInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'MangaScantrad',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -479,13 +479,31 @@ class MangaScantrad extends paperback_extensions_common_1.Source {
     getSearchResults(query, metadata) {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
-            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            const search = (_c = (_b = query.title) === null || _b === void 0 ? void 0 : _b.replace(/ /g, '+').replace(/[’'´]/g, '%27')) !== null && _c !== void 0 ? _c : '';
-            let manga = [];
+            const search = (_b = (_a = query.title) === null || _a === void 0 ? void 0 : _a.replace(/ /g, '+').replace(/[’'´]/g, '%27')) !== null && _b !== void 0 ? _b : '';
+            let page = (_c = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _c !== void 0 ? _c : 1;
             let url = `${MANGASCANTRAD_DOMAIN}/?post_type=wp-manga&s=${search}&paged=${page}`;
             if (query.includedTags && ((_d = query.includedTags) === null || _d === void 0 ? void 0 : _d.length) != 0) {
                 for (let tag of query.includedTags) {
-                    url += `&genre[]=${tag.id}`;
+                    switch (tag.label) {
+                        case "OU (ayant un des genres sélectionnés)":
+                        case "ET (ayant tous les genres sélectionnés)":
+                            url += `&op=${tag.id}`;
+                            break;
+                        case "Tout":
+                        case "Aucun Contenu pour Adulte":
+                        case "Uniquement du Contenu pour Adulte":
+                            url += `&adult=${tag.id}`;
+                            break;
+                        case "En Cours":
+                        case "Terminé":
+                        case "Annulé":
+                        case "En Pause":
+                            url += `&status%5B%5D=${tag.id}`;
+                            break;
+                        default:
+                            url += `&genre%5B%5D=${tag.id}`;
+                            break;
+                    }
                 }
             }
             const request = createRequestObject({
@@ -495,7 +513,7 @@ class MangaScantrad extends paperback_extensions_common_1.Source {
             });
             const response = yield this.requestManager.schedule(request, 1);
             const $ = this.cheerio.load(response.data);
-            manga = MangaScantradParser_1.parseSearch($);
+            const manga = MangaScantradParser_1.parseSearch($);
             metadata = !MangaScantradParser_1.isLastPage($) ? { page: page + 1 } : undefined;
             return createPagedResults({
                 results: manga,
@@ -829,22 +847,48 @@ exports.parseViewMore = parseViewMore;
 /////    CHECK LAST PAGE    /////
 /////////////////////////////////
 const isLastPage = ($) => {
-    return $('.wp-pagenavi .last').length == 0;
+    return $('.wp-pagenavi .nextpostslink') == undefined;
 };
 exports.isLastPage = isLastPage;
 //////////////////////
 /////    TAGS    /////
 //////////////////////
 const parseTags = ($) => {
-    const arrayTags = [];
+    var _a, _b, _c, _d;
+    const arrayGenres = [];
+    const arrayGenresConditions = [];
+    const arrayAdultContent = [];
+    const arrayStatutManga = [];
+    // Genres
     for (let item of $('#search-advanced .checkbox-group .checkbox').toArray()) {
-        let id = $('input', item).attr('value');
+        let id = (_a = $('input', item).attr('value')) !== null && _a !== void 0 ? _a : '';
         let label = decodeHTMLEntity($('label', item).text().trim());
-        if (typeof id === 'undefined')
-            continue;
-        arrayTags.push({ id, label });
+        arrayGenres.push({ id, label });
     }
-    return [createTagSection({ id: '0', label: 'genres', tags: arrayTags.map(x => createTag(x)) })];
+    // Genres Conditions
+    for (let item of $('#search-advanced .form-group .form-control').eq(0).children().toArray()) {
+        let id = (_b = $(item).attr('value')) !== null && _b !== void 0 ? _b : '';
+        let label = decodeHTMLEntity($(item).text().trim());
+        arrayGenresConditions.push({ id, label });
+    }
+    // Adult Content
+    for (let item of $('#search-advanced .form-group .form-control').eq(4).children().toArray()) {
+        let id = (_c = $(item).attr('value')) !== null && _c !== void 0 ? _c : '';
+        let label = decodeHTMLEntity($(item).text().trim());
+        arrayAdultContent.push({ id, label });
+    }
+    // Statut
+    for (let item of $('#search-advanced .form-group').eq(6).children('.checkbox-inline').toArray()) {
+        let id = (_d = $('input', item).attr('value')) !== null && _d !== void 0 ? _d : '';
+        let label = decodeHTMLEntity($('label', item).text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, ''));
+        arrayStatutManga.push({ id, label });
+    }
+    return [
+        createTagSection({ id: '0', label: 'Genres', tags: arrayGenres.map(x => createTag(x)) }),
+        createTagSection({ id: '1', label: 'Genres Conditions', tags: arrayGenresConditions.map(x => createTag(x)) }),
+        createTagSection({ id: '2', label: 'Contenu pour adulte', tags: arrayAdultContent.map(x => createTag(x)) }),
+        createTagSection({ id: '3', label: 'Statut', tags: arrayStatutManga.map(x => createTag(x)) })
+    ];
 };
 exports.parseTags = parseTags;
 const parseUpdatedManga = ($, time, ids) => {
@@ -919,6 +963,9 @@ function parseDate(str) {
     }
 }
 function getURLImage($, item) {
+    if ($('img', item).get(0) == undefined) {
+        return "";
+    }
     let all_attrs = Object.keys($('img', item).get(0).attribs).map(name => ({ name, value: $('img', item).get(0).attribs[name] }));
     let all_attrs_srcset = all_attrs.filter(el => el.name.includes('srcset'));
     let all_attrs_src = all_attrs.filter(el => el.name.includes('src') && !el.name.includes('srcset') && !el.value.includes('data:image/svg+xml'));

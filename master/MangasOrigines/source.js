@@ -396,7 +396,7 @@ const headers = {
     'Host': 'mangas-origines.fr'
 };
 exports.MangasOriginesInfo = {
-    version: '1.7.6',
+    version: '1.7.7',
     name: 'MangasOrigines',
     icon: 'logo.png',
     author: 'Moomooo95',
@@ -1013,6 +1013,9 @@ function convertNbViews(str) {
     return Number(views);
 }
 function getURLImage($, item) {
+    if ($('img', item).get(0) == undefined) {
+        return "";
+    }
     let all_attrs = Object.keys($('img', item).get(0).attribs).map(name => ({ name, value: $('img', item).get(0).attribs[name] }));
     let all_attrs_srcset = all_attrs.filter(el => el.name.includes('srcset'));
     let all_attrs_src = all_attrs.filter(el => el.name.includes('src') && !el.name.includes('srcset') && !el.value.includes('data:image/svg+xml'));

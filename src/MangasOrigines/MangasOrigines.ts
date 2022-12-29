@@ -13,7 +13,9 @@ import {
   MangaTile,
   ContentRating,
   RequestManager,
-  HomeSectionType
+  HomeSectionType,
+  Request,
+  Response
 } from "paperback-extensions-common"
 
 import {
@@ -36,7 +38,7 @@ const headers = {
 }
 
 export const MangasOriginesInfo: SourceInfo = {
-  version: '1.7.7',
+  version: '1.7.8',
   name: 'MangasOrigines',
   icon: 'logo.png',
   author: 'Moomooo95',
@@ -59,7 +61,18 @@ export const MangasOriginesInfo: SourceInfo = {
 export class MangasOrigines extends Source {
 
   requestManager: RequestManager = createRequestManager({
-    requestsPerSecond: 3
+    requestsPerSecond: 3,
+    interceptor: {
+        interceptRequest: async (request: Request): Promise<Request> => {
+            request.headers = {
+                'Referer': 'https://mangas-origines.fr/'
+            }
+            return request
+        },
+        interceptResponse: async (response: Response): Promise<Response> => {
+            return response
+        }
+    }
   });
 
 

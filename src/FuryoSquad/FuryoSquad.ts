@@ -25,7 +25,7 @@ import {
     parseUpdatedManga
 } from "./FuryoSquadParser";
 
-const FURYOSQUAD_DOMAIN = "https://www.furyosquad.com";
+const FURYOSQUAD_DOMAIN = "https://furyosociety.com/";
 const method = 'GET'
 const headers = {
     'Host': 'www.furyosquad.com',

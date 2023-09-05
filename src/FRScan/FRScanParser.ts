@@ -10,7 +10,7 @@ import {
   TagSection
 } from "paperback-extensions-common";
 
-const FRSCAN_DOMAIN = "https://frscan.ws";
+const FRSCAN_DOMAIN = "https://fr-scan.cc";
 
 ///////////////////////////////
 /////    MANGA DETAILS    /////

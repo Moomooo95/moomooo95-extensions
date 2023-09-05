@@ -29,10 +29,10 @@ import {
   parseUpdatedManga
 } from "./FRScanParser";
 
-const FRSCAN_DOMAIN = "https://frscan.ws/";
+const FRSCAN_DOMAIN = "https://fr-scan.cc/";
 const method = 'GET'
 const headers = {
-  'Host': 'frscan.ws'
+  'Host': 'fr-scan.cc'
 }
 
 export const FRScanInfo: SourceInfo = {
@@ -63,7 +63,7 @@ export class FRScan extends Source {
     interceptor: {
         interceptRequest: async (request: Request): Promise<Request> => {
             request.headers = {
-                'Referer': 'https://frscan.ws/'
+                'Referer': 'https://fr-scan.cc/'
             }
             return request
         },

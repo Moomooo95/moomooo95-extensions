@@ -31,7 +31,7 @@ import {
     UpdatedManga
 } from "./LelscanVFParser";
 
-const LELSCANVF_DOMAIN = "https://lelscanvf.com";
+const LELSCANVF_DOMAIN = "https://lelscanvf.cc/";
 const method = 'GET'
 const headers = {
     'Host': 'www.lelscanvf.com',

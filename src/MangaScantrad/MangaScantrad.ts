@@ -28,7 +28,7 @@ import {
     parseUpdatedManga
 } from "./MangaScantradParser";
 
-const MANGASCANTRAD_DOMAIN = "https://manga-scantrad.net";
+const MANGASCANTRAD_DOMAIN = "https://manga-scantrad.io";
 const method = 'GET'
 const headers = {
     'Host': 'manga-scantrad.net'

@@ -10,7 +10,7 @@ import {
     TagSection
 } from "paperback-extensions-common";
 
-const LELSCANVF_DOMAIN = "https://lelscanvf.com";
+const LELSCANVF_DOMAIN = "https://lelscanvf.cc/";
 
 ///////////////////////////////
 /////    MANGA DETAILS    /////

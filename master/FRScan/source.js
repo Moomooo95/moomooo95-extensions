@@ -390,10 +390,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FRScan = exports.FRScanInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const FRScanParser_1 = require("./FRScanParser");
-const FRSCAN_DOMAIN = "https://frscan.ws/";
+const FRSCAN_DOMAIN = "https://fr-scan.cc/";
 const method = 'GET';
 const headers = {
-    'Host': 'frscan.ws'
+    'Host': 'fr-scan.cc'
 };
 exports.FRScanInfo = {
     version: '1.2.1',
@@ -423,7 +423,7 @@ class FRScan extends paperback_extensions_common_1.Source {
             interceptor: {
                 interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
                     request.headers = {
-                        'Referer': 'https://frscan.ws/'
+                        'Referer': 'https://fr-scan.cc/'
                     };
                     return request;
                 }),
@@ -587,7 +587,7 @@ exports.FRScan = FRScan;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseUpdatedManga = exports.isLastPage = exports.parseTags = exports.parseHomeSections = exports.parseSearch = exports.parseFRScanChapterDetails = exports.parseFRScanChapters = exports.parseFRScanMangaDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
-const FRSCAN_DOMAIN = "https://frscan.ws";
+const FRSCAN_DOMAIN = "https://fr-scan.cc";
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////

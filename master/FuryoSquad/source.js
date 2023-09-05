@@ -390,7 +390,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FuryoSquad = exports.FuryoSquadInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const FuryoSquadParser_1 = require("./FuryoSquadParser");
-const FURYOSQUAD_DOMAIN = "https://www.furyosquad.com";
+const FURYOSQUAD_DOMAIN = "https://furyosociety.com/";
 const method = 'GET';
 const headers = {
     'Host': 'www.furyosquad.com',

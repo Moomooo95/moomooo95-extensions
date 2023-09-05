@@ -390,7 +390,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LelscanVF = exports.LelscanVFInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const LelscanVFParser_1 = require("./LelscanVFParser");
-const LELSCANVF_DOMAIN = "https://lelscanvf.com";
+const LELSCANVF_DOMAIN = "https://lelscanvf.cc/";
 const method = 'GET';
 const headers = {
     'Host': 'www.lelscanvf.com',
@@ -585,7 +585,7 @@ exports.LelscanVF = LelscanVF;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseDate = exports.parseUpdatedManga = exports.isLastPage = exports.parseTags = exports.parseMangaSectionOthers = exports.parseHomeSections = exports.parseSearch = exports.parseLelscanVFChapterDetails = exports.parseLelscanVFChapters = exports.parseLelscanVFMangaDetails = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
-const LELSCANVF_DOMAIN = "https://lelscanvf.com";
+const LELSCANVF_DOMAIN = "https://lelscanvf.cc/";
 ///////////////////////////////
 /////    MANGA DETAILS    /////
 ///////////////////////////////

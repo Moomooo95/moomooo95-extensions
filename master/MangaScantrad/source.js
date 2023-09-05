@@ -390,7 +390,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MangaScantrad = exports.MangaScantradInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const MangaScantradParser_1 = require("./MangaScantradParser");
-const MANGASCANTRAD_DOMAIN = "https://manga-scantrad.net";
+const MANGASCANTRAD_DOMAIN = "https://manga-scantrad.io";
 const method = 'GET';
 const headers = {
     'Host': 'manga-scantrad.net'

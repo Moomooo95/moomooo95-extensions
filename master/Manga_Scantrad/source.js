@@ -6268,19 +6268,19 @@ __exportStar(require("./compat/DyamicUI"), exports);
 },{}],64:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MangaScantrad = exports.MangaScantradInfo = void 0;
+exports.Manga_Scantrad = exports.Manga_ScantradInfo = void 0;
 const types_1 = require("@paperback/types");
 const Madara_1 = require("../templates/Madara/Madara");
-const DOMAIN = 'https://manga-scantrad.io';
-exports.MangaScantradInfo = {
-    version: "2.0",
+const DOMAIN = 'https://www.mangascantrad.fr';
+exports.Manga_ScantradInfo = {
+    version: "1.0",
     language: "FR",
-    name: 'MangaScantrad',
+    name: 'Manga_Scantrad',
     icon: 'icon.png',
     description: `Extension that pulls mangas from ${DOMAIN}`,
     author: 'Moomooo95',
     authorWebsite: 'https://github.com/Moomooo95',
-    contentRating: types_1.ContentRating.EVERYONE,
+    contentRating: types_1.ContentRating.MATURE,
     websiteBaseURL: DOMAIN,
     sourceTags: [
         {
@@ -6290,24 +6290,21 @@ exports.MangaScantradInfo = {
     ],
     intents: types_1.SourceIntents.MANGA_CHAPTERS | types_1.SourceIntents.HOMEPAGE_SECTIONS | types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
 };
-class MangaScantrad extends Madara_1.Madara {
+class Manga_Scantrad extends Madara_1.Madara {
     base_url = DOMAIN;
-    lang_code = exports.MangaScantradInfo.language;
-    date_format = "DD MMMM YYYY";
+    lang_code = exports.Manga_ScantradInfo.language;
     alt_ajax = true;
-    cloudflare_domain = false;
-    description_selector = "div.description-summary";
-    genres_condition_filter_or = "OU (ayant un des genres sélectionnés)";
-    genres_condition_filter_and = "ET (ayant tous les genres sélectionnés)";
-    adult_filter_all = "Tout";
-    adult_filter_none = "Aucun Contenu pour Adulte";
-    adult_filter_only = "Uniquement du Contenu pour Adulte";
-    status_filter_ongoing = "En Cours";
+    genres_condition_filter_or = "OU (ayant un de certains genres)";
+    genres_condition_filter_and = "ET (avoir tous les genres)";
+    adult_filter_all = "Tous";
+    adult_filter_none = "Aucun contenu adulte";
+    adult_filter_only = "Seuls les contenus pour adultes";
+    status_filter_ongoing = "En cours";
     status_filter_completed = "Terminé";
     status_filter_cancelled = "Annulé";
-    status_filter_on_hold = "En Pause";
+    status_filter_on_hold = "En Attente";
 }
-exports.MangaScantrad = MangaScantrad;
+exports.Manga_Scantrad = Manga_Scantrad;
 
 },{"../templates/Madara/Madara":65,"@paperback/types":61}],65:[function(require,module,exports){
 "use strict";

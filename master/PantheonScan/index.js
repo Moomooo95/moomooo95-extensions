@@ -6268,14 +6268,14 @@ __exportStar(require("./compat/DyamicUI"), exports);
 },{}],64:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MangaScantrad = exports.MangaScantradInfo = void 0;
+exports.PantheonScan = exports.PantheonScanInfo = void 0;
 const types_1 = require("@paperback/types");
 const Madara_1 = require("../templates/Madara/Madara");
-const DOMAIN = 'https://manga-scantrad.io';
-exports.MangaScantradInfo = {
-    version: "2.0",
+const DOMAIN = 'https://pantheon-scan.com';
+exports.PantheonScanInfo = {
+    version: "1.0",
     language: "FR",
-    name: 'MangaScantrad',
+    name: 'PantheonScan',
     icon: 'icon.png',
     description: `Extension that pulls mangas from ${DOMAIN}`,
     author: 'Moomooo95',
@@ -6290,24 +6290,19 @@ exports.MangaScantradInfo = {
     ],
     intents: types_1.SourceIntents.MANGA_CHAPTERS | types_1.SourceIntents.HOMEPAGE_SECTIONS | types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
 };
-class MangaScantrad extends Madara_1.Madara {
+class PantheonScan extends Madara_1.Madara {
     base_url = DOMAIN;
-    lang_code = exports.MangaScantradInfo.language;
+    lang_code = exports.PantheonScanInfo.language;
     date_format = "DD MMMM YYYY";
     alt_ajax = true;
-    cloudflare_domain = false;
-    description_selector = "div.description-summary";
-    genres_condition_filter_or = "OU (ayant un des genres sélectionnés)";
-    genres_condition_filter_and = "ET (ayant tous les genres sélectionnés)";
+    genres_condition_filter_or = "OU (ayant l'un des genres sélectionnés)";
+    genres_condition_filter_and = "ET (avoir tous les genres sélectionnés)";
     adult_filter_all = "Tout";
-    adult_filter_none = "Aucun Contenu pour Adulte";
-    adult_filter_only = "Uniquement du Contenu pour Adulte";
-    status_filter_ongoing = "En Cours";
-    status_filter_completed = "Terminé";
-    status_filter_cancelled = "Annulé";
-    status_filter_on_hold = "En Pause";
+    adult_filter_none = "Aucun contenu pour adultes";
+    adult_filter_only = "Inclus des scènes pour adultes";
+    status_filter_ongoing = "OnGoing";
 }
-exports.MangaScantrad = MangaScantrad;
+exports.PantheonScan = PantheonScan;
 
 },{"../templates/Madara/Madara":65,"@paperback/types":61}],65:[function(require,module,exports){
 "use strict";

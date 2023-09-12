@@ -2,7 +2,7 @@ import {
     ContentRating,
     SourceInfo,
     BadgeColor,
-    SourceIntents    
+    SourceIntents
 } from '@paperback/types'
 
 import {
@@ -10,12 +10,12 @@ import {
 } from '../templates/Madara/Madara'
 
 
-const DOMAIN: string = 'https://reaperscans.fr'
+const DOMAIN: string = 'https://pantheon-scan.com'
 
-export const ReaperScansFRInfo: SourceInfo = {
-    version: "2.0",
+export const PantheonScanInfo: SourceInfo = {
+    version: "1.0",
     language: "FR",
-    name: 'ReaperScansFR',
+    name: 'PantheonScan',
     icon: 'icon.png',
     description: `Extension that pulls mangas from ${DOMAIN}`,
     author: 'Moomooo95',
@@ -31,18 +31,18 @@ export const ReaperScansFRInfo: SourceInfo = {
     intents: SourceIntents.MANGA_CHAPTERS | SourceIntents.HOMEPAGE_SECTIONS | SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
 }
 
-export class ReaperScansFR extends Madara {
+export class PantheonScan extends Madara {
     base_url = DOMAIN
-    lang_code = ReaperScansFRInfo.language!
-    override source_path: string = "serie"
+    lang_code = PantheonScanInfo.language!
+    override date_format: string = "DD MMMM YYYY"
     override alt_ajax: boolean = true
 
-    override adult_filter_all: string = "Tout"
-    override adult_filter_none: string = "Aucun contenu adulte"
-    override adult_filter_only: string = "Contenu pour adultes uniquement"
+    override genres_condition_filter_or: string = "OU (ayant l'un des genres sélectionnés)"
+    override genres_condition_filter_and: string = "ET (avoir tous les genres sélectionnés)"
 
-    override status_filter_ongoing: string = "En Cours"
-    override status_filter_completed: string = "Terminé"
-    override status_filter_cancelled: string = "Annulé"
-    override status_filter_on_hold: string = "En pause"
+    override adult_filter_all: string = "Tout"
+    override adult_filter_none: string = "Aucun contenu pour adultes"
+    override adult_filter_only: string = "Inclus des scènes pour adultes"
+
+    override status_filter_ongoing: string = "OnGoing"
 }

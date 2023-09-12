@@ -2,6 +2,7 @@
 node_modules
 dist
 bundles
+package-lock.json
 
 #compiled sources
 reference
@@ -13,6 +14,7 @@ docs
 
 .idea
 .run
+.vscode
 
 # mac stuff
 .DS_Store

@@ -10,12 +10,12 @@ import {
 } from '../templates/Madara/Madara'
 
 
-const DOMAIN: string = 'https://mangas-origines.fr'
+const DOMAIN: string = 'https://scantrad-vf.co'
 
-export const MangasOriginesInfo: SourceInfo = {
-    version: "2.0",
+export const ScantradVFInfo: SourceInfo = {
+    version: "1.0",
     language: "FR",
-    name: 'MangasOrigines',
+    name: 'ScantradVF',
     icon: 'icon.png',
     description: `Extension that pulls mangas from ${DOMAIN}`,
     author: 'Moomooo95',
@@ -31,11 +31,10 @@ export const MangasOriginesInfo: SourceInfo = {
     intents: SourceIntents.MANGA_CHAPTERS | SourceIntents.HOMEPAGE_SECTIONS | SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
 }
 
-export class MangasOrigines extends Madara {
+export class ScantradVF extends Madara {
     base_url = DOMAIN
-    lang_code = MangasOriginesInfo.language!
-    override source_path: string = "oeuvre"
+    lang_code = ScantradVFInfo.language!
+    override date_format: string = "DD MMMM YYYY"
     override alt_ajax: boolean = true
-    override cloudflare_domain: boolean = false
-    override description_selector: string = ".summary__content p"
+    override status_filter_ongoing: string = "OnGoing"
 }

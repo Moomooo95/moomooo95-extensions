@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://scantrad-vf.co'
 
 export const ScantradVFInfo: SourceInfo = {
-    version: "1.0",
+    version: "1.1",
     language: "FR",
     name: 'ScantradVF',
     icon: 'icon.png',
@@ -36,5 +36,4 @@ export class ScantradVF extends Madara {
     lang_code = ScantradVFInfo.language!
     override date_format: string = "DD MMMM YYYY"
     override alt_ajax: boolean = true
-    override status_filter_ongoing: string = "OnGoing"
 }

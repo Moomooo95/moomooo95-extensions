@@ -9,7 +9,7 @@ import {
 } from '@paperback/types'
 
 import { Madara } from './Madara'
-import { decodeHtmlEntity, parseDate, getImageUrl } from './MadaraHelper'
+import { decodeHtmlEntity, parseDate, getImageUrl } from '../TemplateHelper'
 
 
 export const parseMangaDetails = async ($: CheerioStatic, mangaId: string, data: Madara): Promise<SourceManga> => {
@@ -62,20 +62,26 @@ export const parseChapters = ($: CheerioStatic, mangaId: string, data: Madara): 
         if ($('a', chapter).text().trim() == "") continue
 
         const chapterId = $("a", chapter).attr('href')?.trim().replace(new RegExp(`${data.base_url+ "/"}|${data.source_path+ "/"}`, 'g'), '')
-        const title = $('a', chapter).text().trim().split('-')[1] ?? ''
+        let title = $('a', chapter).text().trim().split('-')[1]?.trim()
+        
+        let volNum = 0
+        let chapNum = 0
+        let match_num = chapterId.match(/(?:v\w*-(\d+)-?)?(?:c\w*-(\d+(?:-\d+)?))/)
+        if (match_num) {
+            volNum = Number(match_num[1]) 
+            chapNum = Number(match_num[2].replace('-', '.'))
+        } else {
+            title = $('a', chapter).text().trim()
+        }
+        
+        const date = parseDate($('span.chapter-release-date', chapter).text().trim(), data.date_format, data.date_lang)
 
-        const chapter_details = $('a', chapter).text().trim().match(/(?:(V\s?[.]\s?|Vol\s?[.]\s?|Volume\s+)(\d*).)?(Ch\s?[.]\s?|Chap\s?[.]\s?|Chapitre\s+|chapitre\s+|Chapter\s+|Episode\s+)(\d*)/)
-        const volNum = Number(chapter_details[2])
-        const chapNum = Number(chapter_details[4])
-        
-        const date = parseDate($('span.chapter-release-date', chapter).text().trim(), data.date_format)
-        
         chapters.push(App.createChapter({
             id: chapterId,
             name: title,
             langCode: data.lang_code,
-            chapNum: isNaN(chapNum) ? 0 : chapNum,
             volume: isNaN(volNum) ? 0 : volNum,
+            chapNum: isNaN(chapNum) ? 0 : chapNum,
             time: date
         }))
     }
@@ -128,46 +134,46 @@ export const parseSearchResults = ($: CheerioStatic, data: Madara): PartialSourc
     return mangaItems
 }
 
-export const parseSearchTags = ($: CheerioStatic, data: Madara): TagSection[] => {
+export const parseSearchTags = ($: CheerioStatic): TagSection[] => {
     const arrayGenres: Tag[] = []
     const arrayGenresConditions: Tag[] = []
     const arrayAdultContent: Tag[] = []
     const arrayStatutManga: Tag[] = []
 
     // Genres
-    for (let item of $('#search-advanced .checkbox-group .checkbox').toArray()) {
-        let id = $('input', item).attr('value') ?? ''
+    for (let item of $('#search-advanced .checkbox-group div:has([name*=genre])').toArray()) {
+        let id = `${$('input', item).attr('name')}=${$('input', item).attr('value')}`
         let label = decodeHtmlEntity($('label', item).text().trim())
 
         arrayGenres.push({ id, label })
     }
     // Genres Conditions
-    for (let item of $('#search-advanced .form-group .form-control').eq(0).children().toArray()) {
-        let id = $(item).attr('value') ?? ''
+    for (let item of $('#search-advanced .form-group:has([name*=op]) option').toArray()) {
+        let id = `${$(item).parent().attr('name')}=${$(item).attr('value')}`
         let label = decodeHtmlEntity($(item).text().trim())
 
         arrayGenresConditions.push({ id, label })
     }
     // Adult Content
-    for (let item of $('#search-advanced .form-group .form-control').eq(4).children().toArray()) {
-        let id = $(item).attr('value') ?? ''
+    for (let item of $('#search-advanced .form-group:has([name*=adult]) option').toArray()) {
+        let id = `${$(item).parent().attr('name')}=${$(item).attr('value')}`
         let label = decodeHtmlEntity($(item).text().trim())
 
         arrayAdultContent.push({ id, label })
     }
     // Statut
-    for (let item of $('#search-advanced .form-group').eq(6).children('.checkbox-inline').toArray()) {
-        let id = $('input', item).attr('value') ?? ''
+    for (let item of $('#search-advanced .checkbox-inline:has([name*=statu])').toArray()) {
+        let id = `${$('input', item).attr('name')}=${$('input', item).attr('value')}`
         let label = decodeHtmlEntity($('label', item).text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, ''))
 
         arrayStatutManga.push({ id, label })
     }
 
     return [
-        App.createTagSection({ id: '0', label: data.genres_filter_string, tags: arrayGenres.map(x => App.createTag(x)) }),
-        App.createTagSection({ id: '1', label: data.genres_condition_filter_string, tags: arrayGenresConditions.map(x => App.createTag(x)) }),
-        App.createTagSection({ id: '2', label: data.adult_filter_string, tags: arrayAdultContent.map(x => App.createTag(x)) }),
-        App.createTagSection({ id: '3', label: data.statut_filter_string, tags: arrayStatutManga.map(x => App.createTag(x)) })
+        App.createTagSection({ id: '0', label: "Genres", tags: arrayGenres.map(x => App.createTag(x)) }),
+        App.createTagSection({ id: '1', label: "Condition sur les genres", tags: arrayGenresConditions.map(x => App.createTag(x)) }),
+        App.createTagSection({ id: '2', label: "Contenu pour adulte", tags: arrayAdultContent.map(x => App.createTag(x)) }),
+        App.createTagSection({ id: '3', label: "Statut", tags: arrayStatutManga.map(x => App.createTag(x)) })
     ]
 }
 
@@ -206,7 +212,7 @@ export const parseHomePageSections = ($: CheerioStatic, data: Madara): PartialSo
     return mangaItems
 }
 
-export const parseViewMoreItems = ($: CheerioStatic, homepageSectionId: string, data: Madara): PartialSourceManga[] => {
+export const parseViewMoreItems = ($: CheerioStatic, data: Madara): PartialSourceManga[] => {
     const mangaItems: PartialSourceManga[] = []
     const collectedIds: string[] = []
 

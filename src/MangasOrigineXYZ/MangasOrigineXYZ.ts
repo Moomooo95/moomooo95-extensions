@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://mangas-origines.xyz'
 
 export const MangasOrigineXYZInfo: SourceInfo = {
-    version: "1.0",
+    version: "1.1",
     language: "FR",
     name: 'MangasOrigineXYZ',
     icon: 'icon.png',
@@ -37,13 +37,4 @@ export class MangasOrigineXYZ extends Madara {
     override alt_ajax: boolean = true
     override cloudflare_domain: boolean = false
     override description_selector: string = "div.manga-excerpt p"
-
-    override adult_filter_all: string = "Tous"
-    override adult_filter_none: string = "None adult content"
-    override adult_filter_only: string = "Only adult content"
-
-    override status_filter_ongoing: string = "En cours"
-    override status_filter_completed: string = "Terminé"
-    override status_filter_cancelled: string = "Abandonné"
-    override status_filter_on_hold: string = "En Pause"
 }

@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://mangas-origines.fr'
 
 export const MangasOriginesInfo: SourceInfo = {
-    version: "2.0",
+    version: "2.1",
     language: "FR",
     name: 'MangasOrigines',
     icon: 'icon.png',

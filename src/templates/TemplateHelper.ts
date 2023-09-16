@@ -1,6 +1,4 @@
-import moment from 'moment'
-import localization from 'moment/locale/fr';
-moment.updateLocale('fr', localization);
+import moment from 'moment/min/moment-with-locales';
 
 export function decodeHtmlEntity(str: string) {
   return str.replace(/&#(\d+);/g, function (match, dec) {
@@ -8,22 +6,29 @@ export function decodeHtmlEntity(str: string) {
   })
 }
 
-export function parseDate(date_str: string, date_format: string) : Date {
+export function isEncoded(uri: string) {
+  uri = uri || '';
+  return uri !== decodeURIComponent(uri);
+}
+
+export function parseDate(date_str: string, date_format: string, date_lang: string) : Date {
+  moment.locale(date_lang)
+  
   date_str = decodeHtmlEntity(date_str)
 
   let date = moment(date_str, date_format)
-
-  let match = date_str.match(/(\d+) (\w*)/)
-  if (match) {
-      let unit = match[2]![0]
-      if (unit == "j") unit = "d"
-      if (unit == "s") unit = "w"
-
-      date = moment().subtract(match[1], unit)
-  }
- 
+  
   if (!date.isValid()) {
+    let match = date_str.match(/(\d+) (\w*)/)
+    if (match) {
+        let unit = match[2]![0]
+        if (unit == "j") unit = "d"
+        if (unit == "s") unit = "w"
+
+        date = moment().subtract(match[1], unit)
+    } else {
       date = moment().startOf("day")
+    }
   }    
 
   return date.toDate()
@@ -49,6 +54,8 @@ export function getImageUrl($: CheerioStatic, item: CheerioElement) {
       image = all_src[0]
   }
 
-  return encodeURI(image.replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.').replace(/-[75]+x(\w)+[.]{1}/gm, '.').replace(/(\r\n|\n|\r)/gm, "").replace("http:", "https:").trim())
+  let uri = image.replace(/-[1,3](\w){2}x(\w){3}[.]{1}/gm, '.').replace(/-[75]+x(\w)+[.]{1}/gm, '.').replace(/(\r\n|\n|\r)/gm, "").replace("http:", "https:").trim()
+
+  return isEncoded(uri) ? uri : encodeURI(uri)
 }
 

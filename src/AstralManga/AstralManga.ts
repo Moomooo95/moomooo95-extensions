@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://astral-manga.fr'
 
 export const AstralMangaInfo: SourceInfo = {
-    version: "1.0",
+    version: "1.1",
     language: "FR",
     name: 'AstralManga',
     icon: 'icon.png',
@@ -36,17 +36,4 @@ export class AstralManga extends Madara {
     lang_code = AstralMangaInfo.language!
     override alt_ajax: boolean = true
     override description_selector: string = "div.manga-excerpt p"
-
-    override genres_condition_filter_or: string = "OU (avoir un des genres sélectionnés)"
-    override genres_condition_filter_and: string = "ET (avoir tous les genres sélectionnés)"
-
-    override adult_filter_all: string = "Tous"
-    override adult_filter_none: string = "Aucun contenu adulte"
-    override adult_filter_only: string = "Contenu pour adultes uniquement"
-
-    override status_filter_ongoing: string = "En cours"
-    override status_filter_completed: string = "Terminé"
-    override status_filter_cancelled: string = "Annulé"
-    override status_filter_on_hold: string = "En attente"
-    override status_filter_upcoming: string = "Prochainement"
 }

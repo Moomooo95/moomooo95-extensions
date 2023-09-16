@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://pantheon-scan.com'
 
 export const PantheonScanInfo: SourceInfo = {
-    version: "1.0",
+    version: "1.1",
     language: "FR",
     name: 'PantheonScan',
     icon: 'icon.png',
@@ -36,13 +36,4 @@ export class PantheonScan extends Madara {
     lang_code = PantheonScanInfo.language!
     override date_format: string = "DD MMMM YYYY"
     override alt_ajax: boolean = true
-
-    override genres_condition_filter_or: string = "OU (ayant l'un des genres sélectionnés)"
-    override genres_condition_filter_and: string = "ET (avoir tous les genres sélectionnés)"
-
-    override adult_filter_all: string = "Tout"
-    override adult_filter_none: string = "Aucun contenu pour adultes"
-    override adult_filter_only: string = "Inclus des scènes pour adultes"
-
-    override status_filter_ongoing: string = "OnGoing"
 }

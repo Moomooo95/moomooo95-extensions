@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://manga-scantrad.io'
 
 export const MangaScantradInfo: SourceInfo = {
-    version: "2.0",
+    version: "2.1",
     language: "FR",
     name: 'MangaScantrad',
     icon: 'icon.png',
@@ -36,18 +36,7 @@ export class MangaScantrad extends Madara {
     lang_code = MangaScantradInfo.language!
     override date_format: string = "DD MMMM YYYY"
     override alt_ajax: boolean = true
+    override status_string : string = "État"
     override cloudflare_domain: boolean = false
     override description_selector: string = "div.description-summary"
-
-    override genres_condition_filter_or: string = "OU (ayant un des genres sélectionnés)"
-    override genres_condition_filter_and: string = "ET (ayant tous les genres sélectionnés)"
-
-    override adult_filter_all: string = "Tout"
-    override adult_filter_none: string = "Aucun Contenu pour Adulte"
-    override adult_filter_only: string = "Uniquement du Contenu pour Adulte"
-
-    override status_filter_ongoing: string = "En Cours"
-    override status_filter_completed: string = "Terminé"
-    override status_filter_cancelled: string = "Annulé"
-    override status_filter_on_hold: string = "En Pause"
 }

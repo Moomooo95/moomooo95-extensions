@@ -40,6 +40,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
     search_cookies: string = "wpmanga-adault=1"
     post_type: string = "wp-manga"
     date_format: string = "DD/MM/YYYY"
+    date_lang: string = "fr"
     genres_selector: string = "div.genres-content > a"
     description_selector: string = "div.description-summary div p"
     search_selector: string = "div.c-tabs-item__content"
@@ -47,6 +48,10 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
     chapter_selector: string = "li.wp-manga-chapter"
     chapter_details_selector: string = "div.page-break > img"
     alt_ajax: boolean = false
+    cloudflare_domain: boolean = true
+    latest: string = "Dernières Sorties"
+    trending: string = "Tendance"
+    status_string : string = "Statu"
     viewer = ($: CheerioStatic, categories: any): string => {
         let series_type = $("div.post-content_item:contains(Type) div.summary-content").text().trim().toLowerCase()
         let webtoon_tags = ["manhwa", "manhua", "webtoon", "vertical", "korean", "chinese"]
@@ -81,11 +86,11 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         return "unknown"
     }
     status = ($: CheerioStatic): string => {
-        let status_str = $("div.post-content_item:contains(Statu) div.summary-content").text().trim().toLowerCase()
+        let status_str = $(`div.post-content_item:contains(${this.status_string}) div.summary-content`).text().trim().toLowerCase()
         if (status_str != "") {
             return status_str.charAt(0).toUpperCase() + status_str.slice(1).replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
         } else {
-            return "Unknown"
+            return "Inconnu"
         }
     }
     nsfw = ($: CheerioStatic, categories: any): boolean => {
@@ -110,29 +115,6 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
             return false
         }
     }
-
-    genres_condition_filter_or: string = "OR (having one of selected genres)"
-    genres_condition_filter_and: string = "AND (having all selected genres)"
-
-    adult_filter_all: string = "All"
-    adult_filter_none: string = "None adult content"
-    adult_filter_only: string = "Only adult content"
-
-    status_filter_ongoing: string = "Ongoing"
-    status_filter_completed: string = "Completed"
-    status_filter_cancelled: string = "Canceled"
-    status_filter_on_hold: string = "On Hold"
-    status_filter_upcoming: string = "Upcoming"
-
-    genres_filter_string: string = "Genres"
-    genres_condition_filter_string: string = "Genres Condition"
-    adult_filter_string: string = "Adult Content"
-    statut_filter_string: string = "Statut"
-
-    latest: string = "Dernières Sorties"
-    trending: string = "Tendance"
-
-    cloudflare_domain: boolean = true
 
 
     constructor(private cheerio: CheerioAPI) { }
@@ -177,6 +159,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         })
 
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
         return parseMangaDetails($, mangaId, this);
@@ -204,6 +187,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         })
 
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
         return parseChapters($, mangaId, this);
@@ -216,6 +200,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         })
 
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
         return parseChapterDetails($, mangaId, chapterId, this);
@@ -233,32 +218,8 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
 
         let url = `${this.base_url}/?post_type=${this.post_type}&s=${search}&paged=${page}`
 
-
         if (query.includedTags && query.includedTags?.length != 0) {
-            console.log(JSON.stringify(query.includedTags))
-            for (let tag of query.includedTags) {
-                switch (tag.label) {
-                    case this.genres_condition_filter_or:
-                    case this.genres_condition_filter_and:
-                        url += `&op=${tag.id}`
-                        break;
-                    case this.adult_filter_all:
-                    case this.adult_filter_none:
-                    case this.adult_filter_only:
-                        url += `&adult=${tag.id}`
-                        break;
-                    case this.status_filter_ongoing:
-                    case this.status_filter_completed:
-                    case this.status_filter_cancelled:
-                    case this.status_filter_on_hold:
-                    case this.status_filter_upcoming:
-                        url += `&status%5B%5D=${tag.id}`
-                        break;
-                    default:
-                        url += `&genre%5B%5D=${tag.id}`
-                        break;
-                }
-            }
+            for (let tag of query.includedTags) url += `&${tag.id}`
         }
 
         if (query.parameters && query.includedTags?.length != 0) {
@@ -274,6 +235,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         })
 
         const response = await this.requestManager.schedule(request, 1)
+        this.CloudFlareError(response.status)
 
         const $ = this.cheerio.load(response.data as string)
         const manga = parseSearchResults($, this)
@@ -292,9 +254,10 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         })
 
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
-        return await parseSearchTags($, this);
+        return await parseSearchTags($);
     }
 
     async getSearchFields?(): Promise<SearchField[]> {
@@ -304,6 +267,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         })
 
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
         return await parseSearchFields($);
@@ -328,6 +292,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
             })
     
             const response = await this.requestManager.schedule(request, 1);
+            this.CloudFlareError(response.status)
             const $ = this.cheerio.load(response.data as string)
 
             section.items = parseHomePageSections($, this)
@@ -358,10 +323,11 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         })
 
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
         return await App.createPagedResults({
-            results: parseViewMoreItems($, homepageSectionId, this),
+            results: parseViewMoreItems($, this),
             metadata: { page: page + 1 }
         })
     }
@@ -386,6 +352,11 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         }
     }
 
+    CloudFlareError(status: any) {
+        if (status == 403) {
+            throw new Error("Contourner Cloudflare avant d'utiliser la source !")
+        }
+    }
 
     async getIntMangaId(mangaId: string) : Promise<String> {
         const request = App.createRequest({
@@ -394,6 +365,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         })
 
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
         return $('script#wp-manga-js-extra').html()!.match(/"manga_id":"(\d*)"/)![1]!

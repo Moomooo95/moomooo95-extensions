@@ -63,7 +63,7 @@ export const parseChapters = ($: CheerioStatic, mangaId: string, data: MangaRead
         let title = $('span.chapternum', chapter).text().split(/(\d+) /)[2]?.trim().replace('-', '').trim() ?? undefined
 
         let chapNum = 0
-        let match_num = chapterId.match(/-(\d+(?:-\d+)?) /)
+        let match_num = chapterId.match(/-(\d+(?:-\d+)?)/)
         if (match_num) {
             chapNum = Number(match_num[1].replace('-', '.'))
         } else {

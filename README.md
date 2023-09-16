@@ -14,3 +14,7 @@
 | ReaderGen         | https://fr.readergen.fr/        |
 | ReaperScansFR     | https://reaperscans.fr/         |
 | ScantradVF        | https://scantrad-vf.co/         |
+| LelManga          | https://www.lelmanga.com/       |
+| PhenixScans       | https://phenixscans.fr/         |
+| SushiScan         | https://sushiscan.net/          |
+| SushiScans        | https://sushiscan.fr/           |

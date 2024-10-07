@@ -18706,7 +18706,7 @@ const types_1 = require("@paperback/types");
 const MangaReader_1 = require("../templates/MangaReader/MangaReader");
 const DOMAIN = 'https://sushiscan.fr';
 exports.SushiScansInfo = {
-    version: "1.0",
+    version: "1.1",
     language: "FR",
     name: 'SushiScans',
     icon: 'icon.png',
@@ -18726,6 +18726,7 @@ exports.SushiScansInfo = {
 class SushiScans extends MangaReader_1.MangaReader {
     base_url = DOMAIN;
     lang_code = exports.SushiScansInfo.language;
+    source_path = "catalogue";
 }
 exports.SushiScans = SushiScans;
 
@@ -18799,6 +18800,7 @@ class MangaReader {
         }
         return false;
     };
+    user_agent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.6668.69 Mobile/15E148 Safari/604.1";
     constructor(cheerio) {
         this.cheerio = cheerio;
     }
@@ -18813,7 +18815,8 @@ class MangaReader {
                 request.headers = {
                     ...(request.headers ?? {}),
                     ...{
-                        'referer': this.base_url
+                        'referer': this.base_url,
+                        'user-agent': this.user_agent
                     }
                 };
                 return request;
@@ -18830,7 +18833,8 @@ class MangaReader {
     async getMangaDetails(mangaId) {
         const request = App.createRequest({
             url: `${this.base_url}/${this.source_path}/${mangaId}`,
-            method: 'GET'
+            method: 'GET',
+            headers: { "User-Agent": this.user_agent }
         });
         const response = await this.requestManager.schedule(request, 1);
         this.CloudFlareError(response.status);
@@ -18843,7 +18847,8 @@ class MangaReader {
     async getChapters(mangaId) {
         const request = App.createRequest({
             url: `${this.base_url}/${this.source_path}/${mangaId}`,
-            method: 'GET'
+            method: 'GET',
+            headers: { "User-Agent": this.user_agent }
         });
         const response = await this.requestManager.schedule(request, 1);
         this.CloudFlareError(response.status);
@@ -18853,7 +18858,8 @@ class MangaReader {
     async getChapterDetails(mangaId, chapterId) {
         const request = App.createRequest({
             url: `${this.base_url}/${chapterId}`,
-            method: 'GET'
+            method: 'GET',
+            headers: { "User-Agent": this.user_agent }
         });
         const response = await this.requestManager.schedule(request, 1);
         this.CloudFlareError(response.status);
@@ -18877,7 +18883,8 @@ class MangaReader {
         }
         const request = App.createRequest({
             url,
-            method: 'GET'
+            method: 'GET',
+            headers: { "User-Agent": this.user_agent }
         });
         const response = await this.requestManager.schedule(request, 1);
         this.CloudFlareError(response.status);
@@ -18892,7 +18899,8 @@ class MangaReader {
     async getSearchTags() {
         const request = App.createRequest({
             url: `${this.base_url}/${this.source_path}`,
-            method: 'GET'
+            method: 'GET',
+            headers: { "User-Agent": this.user_agent }
         });
         const response = await this.requestManager.schedule(request, 1);
         this.CloudFlareError(response.status);
@@ -18910,7 +18918,8 @@ class MangaReader {
         for (const section of sections) {
             const request = App.createRequest({
                 url: `${this.base_url}/${this.source_path}/?order=${section.id}`,
-                method: 'GET'
+                method: 'GET',
+                headers: { "User-Agent": this.user_agent }
             });
             const response = await this.requestManager.schedule(request, 1);
             this.CloudFlareError(response.status);
@@ -18923,7 +18932,8 @@ class MangaReader {
         const page = metadata?.page ?? 2;
         const request = App.createRequest({
             url: `${this.base_url}/${this.source_path}/?page=${page}&order=${homepageSectionId}`,
-            method: 'GET'
+            method: 'GET',
+            headers: { "User-Agent": this.user_agent }
         });
         const response = await this.requestManager.schedule(request, 1);
         this.CloudFlareError(response.status);
@@ -18939,7 +18949,8 @@ class MangaReader {
     async getCloudflareBypassRequestAsync() {
         return await App.createRequest({
             url: `${this.base_url}`,
-            method: 'GET'
+            method: 'GET',
+            headers: { "User-Agent": this.user_agent }
         });
     }
     CloudFlareError(status) {

@@ -100,6 +100,7 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
 
         return false
     }
+    user_agent: string = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.6668.69 Mobile/15E148 Safari/604.1"
 
 
     constructor(private cheerio: CheerioAPI) { }
@@ -118,7 +119,8 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
                 request.headers = {
                     ...(request.headers ?? {}),
                     ...{
-                        'referer': this.base_url
+                        'referer': this.base_url,
+                        'user-agent': this.user_agent
                     }
                 }
                 return request
@@ -140,7 +142,8 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const request = App.createRequest({
             url: `${this.base_url}/${this.source_path}/${mangaId}`,
-            method: 'GET'
+            method: 'GET',
+            headers: {"User-Agent": this.user_agent}
         })
 
         const response = await this.requestManager.schedule(request, 1);
@@ -159,7 +162,8 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = App.createRequest({
             url: `${this.base_url}/${this.source_path}/${mangaId}`,
-            method: 'GET'
+            method: 'GET',
+            headers: {"User-Agent": this.user_agent}
         })
 
         const response = await this.requestManager.schedule(request, 1);
@@ -172,7 +176,8 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const request = App.createRequest({
             url: `${this.base_url}/${chapterId}`,
-            method: 'GET'
+            method: 'GET',
+            headers: {"User-Agent": this.user_agent}
         })
 
         const response = await this.requestManager.schedule(request, 1);
@@ -202,7 +207,8 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
 
         const request = App.createRequest({
             url,
-            method: 'GET'
+            method: 'GET',
+            headers: {"User-Agent": this.user_agent}
         })
 
         const response = await this.requestManager.schedule(request, 1)
@@ -221,7 +227,8 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
     async getSearchTags?(): Promise<TagSection[]> {
         const request = App.createRequest({
             url: `${this.base_url}/${this.source_path}`,
-            method: 'GET'
+            method: 'GET',
+            headers: {"User-Agent": this.user_agent}
         })
 
         const response = await this.requestManager.schedule(request, 1);
@@ -246,7 +253,8 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
         for (const section of sections) {
             const request = App.createRequest({
                 url: `${this.base_url}/${this.source_path}/?order=${section.id}`,
-                method: 'GET'
+                method: 'GET',
+                headers: {"User-Agent": this.user_agent}
             })
     
             const response = await this.requestManager.schedule(request, 1);
@@ -263,7 +271,8 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
 
         const request = App.createRequest({
             url: `${this.base_url}/${this.source_path}/?page=${page}&order=${homepageSectionId}`,
-            method: 'GET'
+            method: 'GET',
+            headers: {"User-Agent": this.user_agent}
         })
 
         const response = await this.requestManager.schedule(request, 1);
@@ -285,7 +294,8 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
     async getCloudflareBypassRequestAsync(): Promise<Request> {
         return await App.createRequest({
             url: `${this.base_url}`,
-            method: 'GET'
+            method: 'GET',
+            headers: {"User-Agent": this.user_agent}
         })
     }
 

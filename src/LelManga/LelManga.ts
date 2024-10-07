@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://www.lelmanga.com'
 
 export const LelMangaInfo: SourceInfo = {
-    version: "1.0",
+    version: "1.1",
     language: "FR",
     name: 'LelManga',
     icon: 'icon.png',
@@ -35,5 +35,5 @@ export class LelManga extends MangaReader {
     base_url = DOMAIN
     lang_code = LelMangaInfo.language!
     override date_lang: string = "en"
-    override author_artist_selector: string =  ".postbody .imptdt"
+    override author_artist_selector: string = ".postbody .imptdt"
 }

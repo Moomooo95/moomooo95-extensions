@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://phenixscans.fr'
 
 export const PhenixScansInfo: SourceInfo = {
-    version: "1.0",
+    version: "1.1",
     language: "FR",
     name: 'PhenixScans',
     icon: 'icon.png',

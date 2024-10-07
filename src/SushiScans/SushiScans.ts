@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://sushiscan.fr'
 
 export const SushiScansInfo: SourceInfo = {
-    version: "1.0",
+    version: "1.1",
     language: "FR",
     name: 'SushiScans',
     icon: 'icon.png',
@@ -34,4 +34,5 @@ export const SushiScansInfo: SourceInfo = {
 export class SushiScans extends MangaReader {
     base_url = DOMAIN
     lang_code = SushiScansInfo.language!
+    override source_path: string = "catalogue"
 }

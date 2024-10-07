@@ -13,7 +13,7 @@ import {
 const DOMAIN: string = 'https://sushiscan.net'
 
 export const SushiScanInfo: SourceInfo = {
-    version: "1.0",
+    version: "1.1",
     language: "FR",
     name: 'SushiScan',
     icon: 'icon.png',

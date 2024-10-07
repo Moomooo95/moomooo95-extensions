@@ -1,6 +1,13 @@
-# French Extensions for Paperback
+# Moomooo95 Extensions
 
-## Sources available
+This repository hosts the french sources that are installable directly through the Paperback application.
+
+## Usage
+
+[Add this source list](paperback://addRepo?displayName=Moomooo95%27s%20Extensions&url=https%3A%2F%2Fmoomooo95.github.io%2Fmoomooo95-extensions%2Fmaster) to the Paperback app.
+
+
+## Available Sources
 
 |       Name        |               URL               |
 | :---------------: | :-----------------------------: |

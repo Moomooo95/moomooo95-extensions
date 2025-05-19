@@ -16,7 +16,7 @@ import {
     CloudflareBypassRequestProviding
 } from '@paperback/types'
 
-import { CheerioAPI } from 'cheerio/lib/load'
+import { CheerioAPI } from 'cheerio'
 
 import {
     parseMangaDetails,
@@ -24,7 +24,7 @@ import {
     parseChapterDetails,
     parseSearchResults,
     parseSearchTags,
-} from './MangaReaderParser'
+} from './parser'
 
 
 export abstract class MangaReader implements MangaProviding, ChapterProviding, SearchResultsProviding, HomePageSectionsProviding, CloudflareBypassRequestProviding {
@@ -45,7 +45,7 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
     artist_manga_selector: string = "Artiste"
     latest: string = "Dernières Sorties"
     popular: string = "Populaire"
-    viewer = ($: CheerioStatic, categories: any): string => {
+    viewer = ($: CheerioAPI, categories: any): string => {
         let series_type = $(".postbody .tsinfo .imptdt:contains(Type) a").text().trim().toLowerCase()
         let webtoon_tags = ["manhwa", "manhua", "webtoon", "vertical", "korean", "chinese"]
         let rtl_tags = ["manga", "japan"]
@@ -78,11 +78,11 @@ export abstract class MangaReader implements MangaProviding, ChapterProviding, S
         
         return "unknown"
     }
-    status = ($: CheerioStatic): string => {
+    status = ($: CheerioAPI): string => {
         let status_str = $('.postbody .tsinfo .imptdt:contains(Statu) i').text().trim()
         return (status_str != "") ? status_str : "Inconnu"
     }
-    nsfw = ($: CheerioStatic, categories: any): boolean => {
+    nsfw = ($: CheerioAPI, categories: any): boolean => {
         let nsfw_tags = ["adult", "mature"]
         let suggestive_tags = ["ecchi"]
 

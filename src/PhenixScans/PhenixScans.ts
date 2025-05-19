@@ -7,7 +7,7 @@ import {
 
 import {
     MangaReader
-} from '../templates/MangaReader/MangaReader'
+} from '../templates/mangareader/base'
 
 
 const DOMAIN: string = 'https://phenixscans.fr'

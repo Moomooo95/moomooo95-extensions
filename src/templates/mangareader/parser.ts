@@ -7,11 +7,13 @@ import {
     TagSection,
 } from '@paperback/types'
 
-import { MangaReader } from './MangaReader'
-import { decodeHtmlEntity, parseDate, getImageUrl } from '../TemplateHelper'
+import { CheerioAPI, BasicAcceptedElems } from 'cheerio'
+
+import { MangaReader } from './base'
+import { decodeHtmlEntity, parseDate, getImageUrl } from '../helper'
 
 
-export const parseMangaDetails = async ($: CheerioStatic, mangaId: string, data: MangaReader): Promise<SourceManga> => {
+export const parseMangaDetails = async ($: CheerioAPI, mangaId: string, data: MangaReader): Promise<SourceManga> => {
     const titles = [decodeHtmlEntity($('.postbody .entry-title').text().trim())]   
     const image = getImageUrl($, $('.postbody .thumb img'))
     const author = $(`${data.author_artist_selector}:contains(${data.author_manga_selector}) :last-child`).text().trim()
@@ -53,19 +55,19 @@ export const parseMangaDetails = async ($: CheerioStatic, mangaId: string, data:
     })
 }
 
-export const parseChapters = ($: CheerioStatic, mangaId: string, data: MangaReader): Chapter[] => {
+export const parseChapters = ($: CheerioAPI, mangaId: string, data: MangaReader): Chapter[] => {
     const chapters: Chapter[] = []
 
     for (const chapter of $(data.chapter_selector).toArray()) {
         if ($('span.chapternum', chapter).text().trim() == "") continue
 
-        const chapterId = $('a', chapter).attr('href')?.trim().replace(new RegExp(`${data.base_url+ "/"}`, 'g'), '').replace('/', '')
+        const chapterId = $('a', chapter).attr('href')?.trim().replace(new RegExp(`${data.base_url+ "/"}`, 'g'), '').replace('/', '') ?? ""
         let title = $('span.chapternum', chapter).text().split(/(\d+) /)[2]?.trim().replace('-', '').trim() ?? undefined
 
         let chapNum = 0
         let match_num = chapterId.match(/-(\d+(?:-\d+)?)/)
         if (match_num) {
-            chapNum = Number(match_num[1].replace('-', '.'))
+            chapNum = Number(match_num[1]?.replace('-', '.'))
         } else {
             title = $('span.chapternum', chapter).text().trim()
         }
@@ -88,13 +90,13 @@ export const parseChapters = ($: CheerioStatic, mangaId: string, data: MangaRead
     return chapters
 }
 
-export const parseChapterDetails = async ($: CheerioStatic, mangaId: string, chapterId: string, data: MangaReader): Promise<ChapterDetails> => {
+export const parseChapterDetails = async ($: CheerioAPI, mangaId: string, chapterId: string, data: MangaReader): Promise<ChapterDetails> => {
     const pages: string[] = []
 
     let images = $(data.chapter_details_selector).toArray()
 
     if (images.length > 1) {
-        images.map((page: CheerioElement) => pages.push(getImageUrl($, page)))
+        images.map((page: BasicAcceptedElems<any>) => pages.push(getImageUrl($, page)))
     } else {
         images = JSON.parse(/ts_reader.run\((.[^;]+)\)/.exec($('html').html() ?? '')![1]!).sources[0].images
         images.map((page: string) => pages.push(page))
@@ -109,14 +111,14 @@ export const parseChapterDetails = async ($: CheerioStatic, mangaId: string, cha
     return chapterDetails
 }
 
-export const parseSearchResults = ($: CheerioStatic, data: MangaReader): PartialSourceManga[] => {
+export const parseSearchResults = ($: CheerioAPI, data: MangaReader): PartialSourceManga[] => {
     const mangaItems: PartialSourceManga[] = []
     const collectedIds: string[] = []
 
     for (const manga of $(data.search_selector).toArray()) {
         const id: string = $('a', manga).attr('href')?.split('/')[4] ?? ''
         const image: string = getImageUrl($, $('img', manga))
-        const title: string = decodeHtmlEntity($('a', manga).attr('title')) ?? ''
+        const title: string = decodeHtmlEntity($('a', manga).attr('title') ?? '')
         const subtitle: string = decodeHtmlEntity($('.epxs', manga).text().trim())
 
         if (!id || !title || collectedIds.includes(id)) continue
@@ -134,7 +136,7 @@ export const parseSearchResults = ($: CheerioStatic, data: MangaReader): Partial
     return mangaItems
 }
 
-export const parseSearchTags = ($: CheerioStatic): TagSection[] => {
+export const parseSearchTags = ($: CheerioAPI): TagSection[] => {
     const arrayGenres: Tag[] = []
     const arrayStatus: Tag[] = []
     const arrayType: Tag[] = []

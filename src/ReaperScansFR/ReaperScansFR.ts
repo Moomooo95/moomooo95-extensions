@@ -7,7 +7,7 @@ import {
 
 import {
     Madara
-} from '../templates/Madara/Madara'
+} from '../templates/madara/base'
 
 
 const DOMAIN: string = 'https://reaperscans.fr'

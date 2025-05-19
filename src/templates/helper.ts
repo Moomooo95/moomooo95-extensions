@@ -1,3 +1,5 @@
+import * as cheerio from 'cheerio';
+
 import moment from 'moment/min/moment-with-locales';
 
 export function decodeHtmlEntity(str: string) {
@@ -19,13 +21,15 @@ export function parseDate(date_str: string, date_format: string, date_lang: stri
   let date = moment(date_str, date_format)
   
   if (!date.isValid()) {
-    let match = date_str.match(/(\d+) (\w*)/)
-    if (match) {
-        let unit = match[2]![0]
-        if (unit == "j") unit = "d"
-        if (unit == "s") unit = "w"
+    let tab = date_str.match(/(\d+) (\w*)/)
+    if (tab && tab[1] && tab[2]) {
+      const amount = parseInt(tab[1], 10)
+      let unit = tab[2][0]
+      
+      if (unit == "j") unit = "d"
+      if (unit == "s") unit = "w"
 
-        date = moment().subtract(match[1], unit)
+      date = moment().subtract(amount, unit as moment.unitOfTime.DurationConstructor)
     } else {
       date = moment().startOf("day")
     }
@@ -34,7 +38,7 @@ export function parseDate(date_str: string, date_format: string, date_lang: stri
   return date.toDate()
 }
 
-export function getImageUrl($: CheerioStatic, item: CheerioElement) {
+export function getImageUrl($: cheerio.CheerioAPI, item: cheerio.BasicAcceptedElems<any>) {
   if (item == "") return ""
 
   let all_attrs = Object.keys($(item).get(0).attribs).map(name => ({ name, value: $(item).get(0).attribs[name] }))

@@ -7,13 +7,13 @@ import {
 
 import {
     Madara
-} from '../templates/Madara/Madara'
+} from '../templates/madara/base'
 
 
 const DOMAIN: string = 'https://pantheon-scan.com'
 
 export const PantheonScanInfo: SourceInfo = {
-    version: "1.1",
+    version: "1.2",
     language: "FR",
     name: 'PantheonScan',
     icon: 'icon.png',
@@ -34,6 +34,8 @@ export const PantheonScanInfo: SourceInfo = {
 export class PantheonScan extends Madara {
     base_url = DOMAIN
     lang_code = PantheonScanInfo.language!
+    override title_selector: string = "div#manga-title h1";
+    override description_selector: string = ".post-content_item:contains(Summary) div";
     override date_format: string = "DD MMMM YYYY"
     override alt_ajax: boolean = true
 }

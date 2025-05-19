@@ -17,7 +17,7 @@ import {
     CloudflareBypassRequestProviding
 } from '@paperback/types'
 
-import { CheerioAPI } from 'cheerio/lib/load'
+import { CheerioAPI } from 'cheerio'
 
 import {
     parseMangaDetails,
@@ -28,7 +28,7 @@ import {
     parseSearchFields,
     parseHomePageSections,
     parseViewMoreItems
-} from './MadaraParser'
+} from './parser'
 
 
 export abstract class Madara implements MangaProviding, ChapterProviding, SearchResultsProviding, HomePageSectionsProviding, CloudflareBypassRequestProviding {
@@ -36,82 +36,91 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
     abstract base_url: string
     abstract lang_code: string
 
+    // Website Configuration
     source_path: string = "manga"
     search_cookies: string = "wpmanga-adault=1"
     post_type: string = "wp-manga"
-    date_format: string = "DD/MM/YYYY"
-    date_lang: string = "fr"
-    genres_selector: string = "div.genres-content > a"
-    description_selector: string = "div.description-summary div p"
-    search_selector: string = "div.c-tabs-item__content"
-    base_id_selector: string = "h3.h5 > a"
-    chapter_selector: string = "li.wp-manga-chapter"
-    chapter_details_selector: string = "div.page-break > img"
     alt_ajax: boolean = false
     cloudflare_domain: boolean = true
+
+    // Date Configuration
+    date_format: string = "DD/MM/YYYY"
+    date_lang: string = "fr"
+
+    // Default Selectors Definition
+    title_selector: string = "div.post-title h1"
+    otherstitle_selector: string = "div.post-content_item:contains(Alternative) div.summary-content"
+    image_selector: string = "div.summary_image img"
+    author_selector: string = "[href*=manga-aut]"
+    artist_selector: string = "[href*=manga-art]"
+    description_selector: string = "div.description-summary div p"
+    genres_selector: string = "div.genres-content > a"
+    type_selector: string = "div.post-content_item:contains(Type) div.summary-content"
+    status_selector: string = `div.post-content_item:contains(Statu) div.summary-content`
+    rating_selector: string = ".post-total-rating .total_votes"
+    search_selector: string = "div.c-tabs-item__content"
+    base_id_selector: string = "h3.h5 > a"
+    chapters_selector: string = "li.wp-manga-chapter"
+    chapters_date_selector: string = "span.chapter-release-date"
+    chapter_pictures_selector: string = "div.page-break > img"
+    badge_adult_selector: string = ".manga-title-badges.adult"
+    badges_selector: string = "span.manga-title-badges"
+
+    // String Personnalised
+    search_fileds_name_list: { default: string; new: string }[] = [
+        { default: "Author", new: "Auteur" },
+        { default: "Artist", new: "Artiste" },
+        { default: "Year", new: "Année" },
+    ]
+    genres_conditions_name_list: { default: string; new: string }[] = [
+        { default: "OR (having one of selected genres)", new: "OU (ayant au moins un des genres sélectionné)" },
+        { default: "AND (having all selected genres)", new: "ET (ayant tous les genres sélectionné)" }
+    ]
+    adult_content_name_list: { default: string; new: string }[] = [
+        { default: "All", new: "Tout" },
+        { default: "None adult content", new: "Aucun contenu pour adulte" },
+        { default: "Only adult content", new: "Seulement du contenu pour adulte" }
+    ]
+    status_name_list: { default: string[]; new: string }[] = [
+        { default: ["ongoing", "releasing", "en cours"], new: "En cours" },
+        { default: ["completed", "terminé"], new: "Terminé" },
+        { default: ["canceled", "dropped", "annulé"], new: "Annulé" },
+        { default: ["hiatus", "on hold", "en attente", "en pause"], new: "En pause" },
+        { default: ["upcoming", "à venir", "prochainement"], new: "Prochainement" }
+    ]
     latest: string = "Dernières Sorties"
     trending: string = "Tendance"
-    status_string : string = "Statu"
-    viewer = ($: CheerioStatic, categories: any): string => {
-        let series_type = $("div.post-content_item:contains(Type) div.summary-content").text().trim().toLowerCase()
-        let webtoon_tags = ["manhwa", "manhua", "webtoon", "vertical", "korean", "chinese"]
-        let rtl_tags = ["manga", "japan"]
-        
-        if (series_type) {
-            for (let tag in webtoon_tags) {
-                if (series_type.includes(tag)) {
-                    return tag
-                }
-            }
 
-            for (let tag in rtl_tags) {
-                if (series_type.includes(tag)) {
-                    return tag
-                }
-            }
-        } else {
-            for (let tag in webtoon_tags) {
-                if (categories.includes(tag)) {
-                    return tag
-                }
-            }
+    // Functions
+    viewer = ($: CheerioAPI, categories: any): string => {
+        const seriesType = $(this.type_selector).text().trim().toLowerCase()
+        const webtoonTags = ["manhwa", "manhua", "webtoon", "vertical", "korean", "chinese"]
+        const rtlTags = ["manga", "japan"]
 
-            for (let tag in rtl_tags) {
-                if (categories.includes(tag)) {
-                    return tag
-                }
-            }
-        }
+        const source = seriesType || categories.join(" ").toLowerCase()
+
+        return webtoonTags.find(tag => source.includes(tag))
+            ?? rtlTags.find(tag => source.includes(tag))
+            ?? "unknown"
+
+    }
+    status = ($: CheerioAPI): string => {
+        let status_str = $(this.status_selector).text().trim().toLowerCase()
         
-        return "unknown"
+        const cleaned = status_str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
+        const match = this.status_name_list.find(entry => entry.default.includes(cleaned))
+
+        return match ? match.new : "N/A"
     }
-    status = ($: CheerioStatic): string => {
-        let status_str = $(`div.post-content_item:contains(${this.status_string}) div.summary-content`).text().trim().toLowerCase()
-        if (status_str != "") {
-            return status_str.charAt(0).toUpperCase() + status_str.slice(1).replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
-        } else {
-            return "Inconnu"
-        }
-    }
-    nsfw = ($: CheerioStatic, categories: any): boolean => {
-        if ($(".manga-title-badges.adult")) {
+    nsfw = ($: CheerioAPI, categories: any): boolean => {
+        if ($(this.badge_adult_selector)) {
             return true
         } else {
-            let nsfw_tags = ["adult", "mature"]
-            let suggestive_tags = ["ecchi"]
-
-            for (let tag in nsfw_tags) {
+            for (let tag in ["adult", "mature", "ecchi"]) {
                 if (categories.includes(tag)) {
                     return true
                 }
             }
-
-            for (let tag in suggestive_tags) {
-                if (categories.includes(tag)) {
-                    return true
-                }
-            }
-
             return false
         }
     }
@@ -257,7 +266,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
-        return await parseSearchTags($);
+        return await parseSearchTags($, this);
     }
 
     async getSearchFields?(): Promise<SearchField[]> {
@@ -270,7 +279,7 @@ export abstract class Madara implements MangaProviding, ChapterProviding, Search
         this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
-        return await parseSearchFields($);
+        return await parseSearchFields($, this);
     }
 
 

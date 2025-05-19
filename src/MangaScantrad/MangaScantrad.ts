@@ -7,13 +7,13 @@ import {
 
 import {
     Madara
-} from '../templates/Madara/Madara'
+} from '../templates/madara/base'
 
 
 const DOMAIN: string = 'https://manga-scantrad.io'
 
 export const MangaScantradInfo: SourceInfo = {
-    version: "2.1",
+    version: "2.2",
     language: "FR",
     name: 'MangaScantrad',
     icon: 'icon.png',
@@ -36,7 +36,6 @@ export class MangaScantrad extends Madara {
     lang_code = MangaScantradInfo.language!
     override date_format: string = "DD MMMM YYYY"
     override alt_ajax: boolean = true
-    override status_string : string = "État"
     override cloudflare_domain: boolean = false
-    override description_selector: string = "div.description-summary"
+    override description_selector: string = "div.description-summary .show-more"
 }

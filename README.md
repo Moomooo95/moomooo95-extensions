@@ -9,14 +9,14 @@ This repository hosts the french sources that are installable directly through t
 
 ## Available Sources
 
-|       Name        |               URL               |
-| :---------------: | :-----------------------------: |
-| AstralManga       | https://astral-manga.fr/        |
-| MangaScantrad     | https://manga-scantrad.io/      |
-| MangasOrigines    | https://mangas-origines.fr/     |
-| PantheonScan      | https://pantheon-scan.com/      |
-| ReaperScansFR     | https://reaperscans.fr/         |
-| LelManga          | https://www.lelmanga.com/       |
-| PhenixScans       | https://phenixscans.fr/         |
-| SushiScan         | https://sushiscan.net/          |
-| SushiScans        | https://sushiscan.fr/           |
+|       Name        |               URL               |                       Status                        |
+| :---------------: | :-----------------------------: |:---------------------------------------------------:|
+| Astral Manga      | https://astral-manga.fr/        | ✅                                                  |
+| MangaScantrad     | https://manga-scantrad.io/      | ✅                                                  |
+| MangasOrigines    | https://mangas-origines.fr/     | ✅                                                  |
+| PantheonScan      | https://pantheon-scan.com/      | ✅                                                  |
+| ReaperScansFR     | https://reaper-scans.fr/        | ❌ NOT WORKING (new template to implement)          |
+| LelManga          | https://www.lelmanga.com/       | ✅                                                  |
+| PhenixScans       | https://phenix-scans.com/       | ❌ NOT WORKING (new template to implement)          |
+| SushiScan         | https://sushiscan.net/          | ✅                                                  |
+| SushiScans        | https://sushiscan.fr/           | ✅                                                  |

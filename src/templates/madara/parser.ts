@@ -8,17 +8,20 @@ import {
     SearchField,
 } from '@paperback/types'
 
-import { Madara } from './Madara'
-import { decodeHtmlEntity, parseDate, getImageUrl } from '../TemplateHelper'
+import { CheerioAPI } from 'cheerio'
+
+import { Madara } from './base'
+import { decodeHtmlEntity, parseDate, getImageUrl } from '../helper'
 
 
-export const parseMangaDetails = async ($: CheerioStatic, mangaId: string, data: Madara): Promise<SourceManga> => {
-    const titles = [decodeHtmlEntity($('div.post-title h1').text().trim())]   
-    const image = getImageUrl($, $('div.summary_image img'))
-    const author = $('[href*=manga-aut],[href*=auteur],[href*=author]').text().trim()
-    const artist = $('[href*=manga-art],[href*=artiste],[href*=artist]').text().trim()
-    const description = decodeHtmlEntity($(data.description_selector).text().trim())
-    const rating = $('.post-total-rating .total_votes').attr('value')
+export const parseMangaDetails = async ($: CheerioAPI, mangaId: string, data: Madara): Promise<SourceManga> => {
+    const otherstitles = $(data.otherstitle_selector).text().trim().split(',').map(e => e.trim())
+    const titles = [decodeHtmlEntity($(data.title_selector).clone().children().remove().end().text().trim())].concat(otherstitles)
+    const image = getImageUrl($, $(data.image_selector))
+    const author = $(data.author_selector).text().trim() || "N/A"
+    const artist = $(data.artist_selector).text().trim() || "N/A"
+    const desc = decodeHtmlEntity($(data.description_selector).text().trim())
+    const rating = Number($(data.rating_selector).text().trim())
 
     const categories: Tag[] = []
     for (const tag of $(data.genres_selector).toArray()) {
@@ -35,33 +38,33 @@ export const parseMangaDetails = async ($: CheerioStatic, mangaId: string, data:
 
     const additionalInfo: Record<string, string> = {
         "viewer": (data.viewer)($, categories),
-        "badge": $('span.manga-title-badges').text().trim()
+        "badge": $(data.badges_selector).text().trim()
     }
 
     return App.createSourceManga({
         id: mangaId,
         mangaInfo: App.createMangaInfo({
-            image: image,
-            artist: artist,
-            author: author,
-            desc: description,
-            status: status,
+            image,
+            artist,
+            author,
+            desc,
+            status,
             hentai: nsfw,
-            titles: titles,
-            rating: Number(rating),
+            titles,
+            rating,
             tags: tagSections,
-            additionalInfo: additionalInfo
+            additionalInfo
         })
     })
 }
 
-export const parseChapters = ($: CheerioStatic, mangaId: string, data: Madara): Chapter[] => {
+export const parseChapters = ($: CheerioAPI, mangaId: string, data: Madara): Chapter[] => {
     const chapters: Chapter[] = []
 
-    for (const chapter of $(data.chapter_selector).toArray()) {
+    for (const chapter of $(data.chapters_selector).toArray()) {
         if ($('a', chapter).text().trim() == "") continue
 
-        const chapterId = $("a", chapter).attr('href')?.trim().replace(new RegExp(`${data.base_url+ "/"}|${data.source_path+ "/"}`, 'g'), '')
+        const chapterId = $("a", chapter).attr('href')?.trim().replace(new RegExp(`${data.base_url+ "/"}|${data.source_path+ "/"}`, 'g'), '') ?? ""
         let title = $('a', chapter).text().trim().split('-')[1]?.trim()
         
         let volNum = 0
@@ -69,12 +72,12 @@ export const parseChapters = ($: CheerioStatic, mangaId: string, data: Madara): 
         let match_num = chapterId.match(/(?:v\w*-(\d+)-?)?(?:c\w*-(\d+(?:-\d+)?))/)
         if (match_num) {
             volNum = Number(match_num[1]) 
-            chapNum = Number(match_num[2].replace('-', '.'))
+            chapNum = Number(match_num[2]?.replace('-', '.'))
         } else {
             title = $('a', chapter).text().trim()
         }
         
-        const date = parseDate($('span.chapter-release-date', chapter).text().trim(), data.date_format, data.date_lang)
+        const date = parseDate($(data.chapters_date_selector, chapter).text().trim(), data.date_format, data.date_lang)
 
         chapters.push(App.createChapter({
             id: chapterId,
@@ -93,48 +96,48 @@ export const parseChapters = ($: CheerioStatic, mangaId: string, data: Madara): 
     return chapters
 }
 
-export const parseChapterDetails = async ($: CheerioStatic, mangaId: string, chapterId: string, data: Madara): Promise<ChapterDetails> => {
+export const parseChapterDetails = async ($: CheerioAPI, mangaId: string, chapterId: string, data: Madara): Promise<ChapterDetails> => {
     const pages: string[] = []
 
-    for (const page of $(data.chapter_details_selector).toArray()) {
+    for (const page of $(data.chapter_pictures_selector).toArray()) {
         pages.push(getImageUrl($, page))
     }
     
     const chapterDetails = App.createChapterDetails({
         id: chapterId,
-        mangaId: mangaId,
-        pages: pages
+        mangaId,
+        pages
     })
 
     return chapterDetails
 }
 
-export const parseSearchResults = ($: CheerioStatic, data: Madara): PartialSourceManga[] => {
+export const parseSearchResults = ($: CheerioAPI, data: Madara): PartialSourceManga[] => {
     const mangaItems: PartialSourceManga[] = []
     const collectedIds: string[] = []
 
     for (const manga of $(data.search_selector).toArray()) {
-        const id: string = $('h3 a', manga).attr('href')?.split('/')[4] ?? ''
+        const mangaId: string = $('h3 a', manga).attr('href')?.split('/')[4] ?? ''
         const image: string = getImageUrl($, $('img', manga))
         const title: string = decodeHtmlEntity($('h3 a', manga).text()) ?? ''
         const subtitle: string = decodeHtmlEntity($('.latest-chap .chapter a', manga).text())
 
-        if (!id || !title || collectedIds.includes(id)) continue
+        if (!mangaId || !title || collectedIds.includes(mangaId)) continue
 
         mangaItems.push(App.createPartialSourceManga({
-            image: image,
-            title: title,
-            mangaId: id,
-            subtitle: subtitle
+            image,
+            title,
+            mangaId,
+            subtitle
         }))
         
-        collectedIds.push(id)
+        collectedIds.push(mangaId)
     }
 
     return mangaItems
 }
 
-export const parseSearchTags = ($: CheerioStatic): TagSection[] => {
+export const parseSearchTags = ($: CheerioAPI, data: Madara): TagSection[] => {
     const arrayGenres: Tag[] = []
     const arrayGenresConditions: Tag[] = []
     const arrayAdultContent: Tag[] = []
@@ -150,22 +153,29 @@ export const parseSearchTags = ($: CheerioStatic): TagSection[] => {
     // Genres Conditions
     for (let item of $('#search-advanced .form-group:has([name*=op]) option').toArray()) {
         let id = `${$(item).parent().attr('name')}=${$(item).attr('value')}`
-        let label = decodeHtmlEntity($(item).text().trim())
+        
+        const raw = decodeHtmlEntity($(item).text().trim())
+        let label = data.genres_conditions_name_list.find(item => item.default === raw)?.new ?? raw
 
         arrayGenresConditions.push({ id, label })
     }
     // Adult Content
     for (let item of $('#search-advanced .form-group:has([name*=adult]) option').toArray()) {
         let id = `${$(item).parent().attr('name')}=${$(item).attr('value')}`
-        let label = decodeHtmlEntity($(item).text().trim())
+
+        const raw = decodeHtmlEntity($(item).text().trim())
+        let label = data.adult_content_name_list.find(item => item.default === raw)?.new ?? raw
 
         arrayAdultContent.push({ id, label })
     }
     // Statut
     for (let item of $('#search-advanced .checkbox-inline:has([name*=statu])').toArray()) {
-        let id = `${$('input', item).attr('name')}=${$('input', item).attr('value')}`
-        let label = decodeHtmlEntity($('label', item).text().trim().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, ''))
+        const id = `${$('input', item).attr('name')}=${$('input', item).attr('value')}`
 
+        const raw = $('label', item).text().trim()
+        const cleaned = raw.toLowerCase().replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '')
+        const label = data.status_name_list.find(entry => entry.default.includes(cleaned))?.new ?? raw
+        
         arrayStatutManga.push({ id, label })
     }
 
@@ -177,17 +187,31 @@ export const parseSearchTags = ($: CheerioStatic): TagSection[] => {
     ]
 }
 
-export const parseSearchFields = ($: CheerioStatic): SearchField[] => {
+export const parseSearchFields = ($: CheerioAPI, data: Madara): SearchField[] => {
     const searchFields: SearchField[] = []
 
     for (let item of $('#search-advanced .form-group input[type=text]').toArray()) {
-        searchFields.push(App.createSearchField({ id: $(item).attr('name'), name: $(item).attr('placeholder'), placeholder: $(item).attr('placeholder') }))
+        const id = $(item).attr('name')
+        
+        const raw = $(item).attr('placeholder')?.trim()
+        const name = data.search_fileds_name_list.find(item => item.default === raw)?.new ?? raw
+
+        if (id && name) {
+            searchFields.push(
+                App.createSearchField({
+                    id,
+                    name,
+                    placeholder : name
+                })
+            )
+
+        }
     }
 
     return searchFields
 }
 
-export const parseHomePageSections = ($: CheerioStatic, data: Madara): PartialSourceManga[] => {
+export const parseHomePageSections = ($: CheerioAPI, data: Madara): PartialSourceManga[] => {
     const mangaItems: PartialSourceManga[] = []
     const collectedIds: string[] = []
 
@@ -212,7 +236,7 @@ export const parseHomePageSections = ($: CheerioStatic, data: Madara): PartialSo
     return mangaItems
 }
 
-export const parseViewMoreItems = ($: CheerioStatic, data: Madara): PartialSourceManga[] => {
+export const parseViewMoreItems = ($: CheerioAPI, data: Madara): PartialSourceManga[] => {
     const mangaItems: PartialSourceManga[] = []
     const collectedIds: string[] = []
 

@@ -7,13 +7,13 @@ import {
 
 import {
     MangaReader
-} from '../../templates/mangareader/base'
+} from '../templates/mangareader/base'
 
 
 const DOMAIN: string = 'https://www.lelmanga.com'
 
 export const LelMangaInfo: SourceInfo = {
-    version: "1.3",
+    version: "1.2",
     language: "FR",
     name: 'LelManga',
     icon: 'icon.png',

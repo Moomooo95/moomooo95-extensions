@@ -7,13 +7,13 @@ import {
 
 import {
     Madara
-} from '../../templates/madara/base'
+} from '../templates/madara/base'
 
 
 const DOMAIN: string = 'https://pantheon-scan.com'
 
 export const PantheonScanInfo: SourceInfo = {
-    version: "1.3",
+    version: "1.2",
     language: "FR",
     name: 'PantheonScan',
     icon: 'icon.png',

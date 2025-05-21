@@ -10,7 +10,7 @@ import {
 import { CheerioAPI } from 'cheerio'
 
 import { API_DOMAIN } from './PhenixScans'
-import { decodeHtmlEntity } from '../../templates/helper'
+import { decodeHtmlEntity } from '../templates/helper'
 
 
 export const parseMangaDetails = async (json: any, mangaId: string): Promise<SourceManga> => {

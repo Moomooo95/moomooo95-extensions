@@ -7,13 +7,13 @@ import {
 
 import {
     Madara
-} from '../../templates/madara/base'
+} from '../templates/madara/base'
 
 
 const DOMAIN: string = 'https://astral-manga.fr'
 
 export const AstralMangaInfo: SourceInfo = {
-    version: "1.3",
+    version: "1.2",
     language: "FR",
     name: 'AstralManga',
     icon: 'icon.png',

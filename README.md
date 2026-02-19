@@ -11,6 +11,7 @@ This repository hosts the french sources that are installable directly through t
 
 |       Name        |               URL               |                       Status                        |
 | :---------------: | :-----------------------------: |:---------------------------------------------------:|
+| Anime-Sama        | https://anime-sama.tv/          | ✅                                                  |
 | Astral Manga      | https://astral-manga.fr/        | ✅                                                  |
 | MangaScantrad     | https://manga-scantrad.io/      | ✅                                                  |
 | MangasOrigines    | https://mangas-origines.fr/     | ✅                                                  |

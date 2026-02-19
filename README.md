@@ -11,7 +11,6 @@ This repository hosts the french sources that are installable directly through t
 
 |       Name        |               URL               |                       Status                        |
 | :---------------: | :-----------------------------: |:---------------------------------------------------:|
-| Anime-Sama        | https://anime-sama.tv/          | ✅                                                  |
 | Astral Manga      | https://astral-manga.fr/        | ✅                                                  |
 | MangaScantrad     | https://manga-scantrad.io/      | ✅                                                  |
 | MangasOrigines    | https://mangas-origines.fr/     | ✅                                                  |
@@ -21,3 +20,4 @@ This repository hosts the french sources that are installable directly through t
 | PhenixScans       | https://phenix-scans.com/       | ❌ NOT WORKING (new template to implement)          |
 | SushiScan         | https://sushiscan.net/          | ✅                                                  |
 | SushiScans        | https://sushiscan.fr/           | ✅                                                  |
+| Anime-Sama        | https://anime-sama.tv/          | ✅                                                  |

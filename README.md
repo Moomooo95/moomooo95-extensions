@@ -20,3 +20,4 @@ This repository hosts the french sources that are installable directly through t
 | PhenixScans       | https://phenix-scans.com/       | ❌ NOT WORKING (new template to implement)          |
 | SushiScan         | https://sushiscan.net/          | ✅                                                  |
 | SushiScans        | https://sushiscan.fr/           | ✅                                                  |
+| Anime-Sama        | https://anime-sama.tv/          | ✅                                                  |
